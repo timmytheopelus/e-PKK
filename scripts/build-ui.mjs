@@ -21,6 +21,7 @@ const split = head.lastIndexOf("<script>");
 const pre = head.slice(0, split), main = head.slice(split);
 
 const shim = `<style>
+[hidden] { display: none !important; }
 .meta { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; justify-content: flex-end; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
 .meta a { color: var(--accent); }
 body.ro [data-act="edit"], body.ro [data-pw="edit"], body.ro [data-go^="koor"], body.ro #addBtn, body.ro #dayAdd { display: none !important; }
