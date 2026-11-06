@@ -1,6 +1,6 @@
 // Menerjemahkan panggilan gaya konektor (list/update/create) menjadi REST Airtable, dengan pemeriksaan izin.
-import { Access, HttpError, TABLES, checkRead, checkWrite } from "./policy";
-import { at, clearCaches, listPage, listUntil, resolveLinks, Rec } from "./airtable";
+import { Access, HttpError, T, TABLES, checkRead, checkWrite } from "./policy";
+import { at, clearCaches, getSchema, listPage, listUntil, resolveLinks, Rec } from "./airtable";
 import { evalFilter } from "./filters";
 
 const REC = /^rec[A-Za-z0-9]{14}$/;
@@ -40,6 +40,36 @@ export async function handleCall(tool: string, input: any, acc: Access) {
   throw new HttpError(400, "Perintah tidak dikenal.");
 }
 
+
+/** Konektor claude.ai memberi lookup berupa {linkedRecordIds, valuesByLinkedRecordId}; REST hanya memberi teksnya.
+ *  Prototipe butuh ID umat dari kolom Nama/WA di tabel Pengurus BPK, jadi bentuk itu dibangun ulang di sini. */
+async function lookupInfo(base: string, table: string, fieldIds: string[]) {
+  if (table !== T.pengurus) return { rest: fieldIds, lk: new Map<string, string>() };
+  const sch = (await getSchema(base))[table];
+  const lk = new Map<string, string>();
+  for (const f of fieldIds) {
+    const d: any = sch?.fields[f];
+    if (d?.type === "multipleLookupValues" && d.options?.recordLinkFieldId) lk.set(f, d.options.recordLinkFieldId);
+  }
+  const extra = [...new Set(lk.values())].filter((x) => !fieldIds.includes(x));
+  return { rest: [...fieldIds, ...extra], lk, extra };
+}
+function shapeLookups(records: Rec[], lk: Map<string, string>, extra: string[] = []) {
+  if (!lk.size) return records;
+  for (const r of records) {
+    for (const [fid, linkFid] of lk) {
+      const links = r.fields[linkFid], vals = r.fields[fid];
+      if (!Array.isArray(links) || !Array.isArray(vals)) continue;
+      const ids = links.map((x: any) => (typeof x === "string" ? x : x?.id)).filter(Boolean);
+      const by: Record<string, any[]> = {};
+      ids.forEach((id: string, i: number) => { by[id] = vals[i] === undefined ? [] : [vals[i]]; });
+      r.fields[fid] = { linkedRecordIds: ids, valuesByLinkedRecordId: by };
+    }
+    extra.forEach((e) => delete r.fields[e]);
+  }
+  return records;
+}
+
 async function list(base: string, table: string, input: any) {
   const fieldIds = input.fieldIds;
   if (!Array.isArray(fieldIds) || !fieldIds.length || fieldIds.length > 80 || !fieldIds.every((f: any) => FLD.test(f))) throw new HttpError(400, "fieldIds wajib diisi");
@@ -48,25 +78,28 @@ async function list(base: string, table: string, input: any) {
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < TTL) return hit.v;
 
+  const li = await lookupInfo(base, table, fieldIds);
+  const rest = li.rest;
   let records: Rec[], next: string | undefined;
   if (Array.isArray(input.recordIds) && input.recordIds.length) {
     const ids: string[] = input.recordIds;
     if (ids.length > 50 || !ids.every((i) => REC.test(i))) throw new HttpError(400, "recordIds tidak valid");
     const formula = "OR(" + ids.map((i) => `RECORD_ID()='${i}'`).join(",") + ")";
-    records = (await listUntil(base, table, { fieldIds, want: ids.length, formula })).records;
+    records = (await listUntil(base, table, { fieldIds: rest, want: ids.length, formula })).records;
     records = await resolveLinks(base, table, records);
   } else if (input.filters) {
-    const all = await listUntil(base, table, { fieldIds, want: Infinity, sort: input.sort, maxPages: 200 });
+    const all = await listUntil(base, table, { fieldIds: rest, want: Infinity, sort: input.sort, maxPages: 200 });
     const res = await resolveLinks(base, table, all.records);
     const kept = res.filter((r) => evalFilter(input.filters, r.fields));
     const start = input.cursor ? Number(input.cursor) || 0 : 0;
     records = kept.slice(start, start + pageSize);
     next = start + pageSize < kept.length ? String(start + pageSize) : undefined;
   } else {
-    const r = await listUntil(base, table, { fieldIds, want: pageSize, offset: input.cursor, sort: input.sort });
+    const r = await listUntil(base, table, { fieldIds: rest, want: pageSize, offset: input.cursor, sort: input.sort });
     records = await resolveLinks(base, table, r.records);
     next = r.offset;
   }
+  records = shapeLookups(records, li.lk, li.extra);
   const v = { records: records.map(toOut), nextCursor: next, metadata: { totalRecordCount: records.length } };
   if (cache.size > 60) cache.clear();
   cache.set(key, { at: Date.now(), v });
