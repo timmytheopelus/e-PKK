@@ -22,7 +22,8 @@ export const T = {
   pengguna: "tbls2nQ3hW5rEIZUk",
 };
 
-export type Access = { email: string; nama: string; status: string; level: string; tabs: string[] };
+export type Access = { email: string; nama: string; status: string; level: string; tabs: string[]; jabatan?: string; login?: string };
+export const canEdit = (a: Access) => a.level === "Edit" || a.level === "Superadmin";
 
 type Spec = {
   base: string;
@@ -68,7 +69,7 @@ export function checkRead(spec: Spec, tableId: string, input: any, acc: Access) 
 export function checkWrite(spec: Spec, kind: "update" | "create", records: any[], acc: Access) {
   const rule = spec[kind];
   if (!rule) throw new HttpError(403, "Penulisan ke tabel ini tidak diizinkan.");
-  if (acc.level !== "Edit") throw new HttpError(403, "Level Anda View saja, tidak boleh mengubah data.");
+  if (!canEdit(acc)) throw new HttpError(403, "Level Anda View saja, tidak boleh mengubah data.");
   if (!any(acc, rule.tabs)) throw new HttpError(403, "Anda tidak punya izin mengubah data ini.");
   for (const r of records) {
     for (const k of Object.keys(r.fields || {})) {

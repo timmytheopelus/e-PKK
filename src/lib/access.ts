@@ -1,6 +1,7 @@
 // Daftar pengguna yang disetujui, disimpan di tabel "Pengguna Dashboard" (Airtable).
 import { Access, ALL_TABS, BASE_BPK, T } from "./policy";
 import { at, listPage } from "./airtable";
+import { notifySuperadmins } from "./mail";
 
 export const AF = { email: "fldXCAPjc4bPkTbSq", nama: "fldR7uM68NdmjWJdK", status: "fldRiPREBGEFPsyjW", level: "fldvlRQXDZJdIIcw8", tabs: "fldgMD37Bgpg1ZdW6", jabatan: "fldKD8CpWcra5yaTR", login: "fldhehrsHwvACGhiu" };
 
@@ -16,8 +17,9 @@ async function fetchUser(email: string) {
   const r = records[0];
   if (!r) return { v: null as Access | null };
   const f = r.fields;
-  const tabs = ((f[AF.tabs] as string[]) || []).filter((t) => ALL_TABS.includes(t));
-  return { id: r.id, v: { email: norm(email), nama: f[AF.nama] || "", status: f[AF.status] || "Menunggu", level: f[AF.level] || "View", tabs } as Access };
+  const level = f[AF.level] || "View";
+  const tabs = level === "Superadmin" ? [...ALL_TABS] : ((f[AF.tabs] as string[]) || []).filter((t) => ALL_TABS.includes(t));
+  return { id: r.id, v: { email: norm(email), nama: f[AF.nama] || "", status: f[AF.status] || "Menunggu", level, tabs, jabatan: f[AF.jabatan] || "", login: f[AF.login] || "" } as Access };
 }
 
 /** Akses pengguna (cache 30 detik, jadi pencabutan hak berlaku cepat). */
@@ -35,8 +37,11 @@ export async function registerLogin(email: string, name: string) {
   const now = new Date().toISOString();
   if (!id) {
     await at(`/v0/${BASE_BPK}/${T.pengguna}`, { method: "POST", body: JSON.stringify({ records: [{ fields: { [AF.email]: norm(email), [AF.nama]: name || "", [AF.status]: "Menunggu", [AF.level]: "View", [AF.login]: now } }] }) });
+    try { await notifySuperadmins(norm(email), name || ""); } catch (e) { console.error("notif email gagal", e); }
   } else {
     await at(`/v0/${BASE_BPK}/${T.pengguna}`, { method: "PATCH", body: JSON.stringify({ records: [{ id, fields: { [AF.login]: now, ...(v && !v.nama && name ? { [AF.nama]: name } : {}) } }] }) });
   }
   cache.delete(norm(email));
 }
+
+export function invalidateAccess() { cache.clear(); }

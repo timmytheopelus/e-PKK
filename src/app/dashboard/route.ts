@@ -8,8 +8,10 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   const s = await auth();
   const email = s?.user?.email;
-  if (!email) return NextResponse.redirect(new URL("/masuk", req.url));
+  const url = new URL(req.url);
+  const kelola = url.searchParams.get("kelola") === "1";
+  if (!email) return NextResponse.redirect(new URL(kelola ? "/masuk?kelola=1" : "/masuk", req.url));
   const acc = await getAccess(email);
   if (!acc || acc.status !== "Disetujui" || !acc.tabs.length) return NextResponse.redirect(new URL("/", req.url));
-  return new NextResponse(renderDashboard(acc), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+  return new NextResponse(renderDashboard(acc, kelola), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
 }
