@@ -1,4 +1,8 @@
 .env*
+!.env.example
 node_modules/
 .next/
 .vercel/
+src/ui/dashboard-html.ts
+next-env.d.ts
+*.tsbuildinfo
