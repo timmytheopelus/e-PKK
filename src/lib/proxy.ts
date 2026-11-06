@@ -54,8 +54,12 @@ async function lookupInfo(base: string, table: string, fieldIds: string[]) {
   const extra = [...new Set(lk.values())].filter((x) => !fieldIds.includes(x));
   return { rest: [...fieldIds, ...extra], lk, extra };
 }
+function filterFieldIds(f: any, out = new Set<string>()): Set<string> {
+  if (f && typeof f === "object") (f.operands || []).forEach((o: any) => { if (typeof o === "string" && FLD.test(o) && f.operator !== "and" && f.operator !== "or") { if (o === (f.operands || [])[0]) out.add(o); } else filterFieldIds(o, out); });
+  return out;
+}
 function shapeLookups(records: Rec[], lk: Map<string, string>, extra: string[] = []) {
-  if (!lk.size) return records;
+  if (!lk.size) { if (extra.length) for (const r of records) extra.forEach((e) => delete r.fields[e]); return records; }
   for (const r of records) {
     for (const [fid, linkFid] of lk) {
       const links = r.fields[linkFid], vals = r.fields[fid];
@@ -79,7 +83,9 @@ async function list(base: string, table: string, input: any) {
   if (hit && Date.now() - hit.at < TTL) return hit.v;
 
   const li = await lookupInfo(base, table, fieldIds);
-  const rest = li.rest;
+  const need = [...filterFieldIds(input.filters)].filter((x) => !li.rest.includes(x));
+  const rest = [...li.rest, ...need];
+  const extraAll = [...(li.extra || []), ...need];
   let records: Rec[], next: string | undefined;
   if (Array.isArray(input.recordIds) && input.recordIds.length) {
     const ids: string[] = input.recordIds;
@@ -99,7 +105,7 @@ async function list(base: string, table: string, input: any) {
     records = await resolveLinks(base, table, r.records);
     next = r.offset;
   }
-  records = shapeLookups(records, li.lk, li.extra);
+  records = shapeLookups(records, li.lk, extraAll);
   const v = { records: records.map(toOut), nextCursor: next, metadata: { totalRecordCount: records.length } };
   if (cache.size > 60) cache.clear();
   cache.set(key, { at: Date.now(), v });

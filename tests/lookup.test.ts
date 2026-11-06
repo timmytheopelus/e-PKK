@@ -23,3 +23,23 @@ it("lookup Nama pengurus membawa ID umat", async () => {
   expect(c.fldHK8r2o5q60IDXW.valuesByLinkedRecordId.recAAAAAAAAAAAAAA).toEqual(["Budi"]);
   expect(c.fldfYrY68cNtbaXtN).toBeUndefined();
 });
+
+it("filter memakai kolom yang tidak diminta klien", async () => {
+  vi.resetModules();
+  const { handleCall } = await import("@/lib/proxy");
+  process.env.AIRTABLE_TOKEN = "x";
+  const reqs: string[] = [];
+  vi.stubGlobal("fetch", async (u: string) => {
+    reqs.push(u);
+    const j = u.includes("/meta/bases/")
+      ? { tables: [{ id: "tbluIlEgPdHeodJHK", primaryFieldId: "fldA", fields: [{ id: "fldHngi5Klnm5bUmM", type: "multipleRecordLinks", options: { linkedTableId: "tblPER" } }] },
+          { id: "tblPER", primaryFieldId: "fldN", fields: [{ id: "fldN", type: "singleLineText" }] }] }
+      : u.includes("tblPER") ? { records: [{ id: "recPPPPPPPPPPPPPP", fields: { fldN: "2026-2031" } }] }
+      : { records: [{ id: "recCCCCCCCCCCCCCC", fields: { fldHK8r2o5q60IDXW: ["x"], fldHngi5Klnm5bUmM: ["recPPPPPPPPPPPPPP"] } }] };
+    return new Response(JSON.stringify(j), { status: 200 });
+  });
+  const acc: any = { email: "z@b.c", status: "Disetujui", level: "View", tabs: ["Pengurus"], nama: "A" };
+  const out: any = await handleCall("list_records_for_table", { baseId: "appIGR8Duhj3Vsz48", tableId: "tbluIlEgPdHeodJHK", fieldIds: ["fldHK8r2o5q60IDXW"], pageSize: 10, filters: { operands: [{ operator: "contains", operands: ["fldHngi5Klnm5bUmM", "2026-2031"] }] } }, acc);
+  expect(out.records.length).toBe(1);
+  expect(out.records[0].cellValuesByFieldId.fldHngi5Klnm5bUmM).toBeUndefined();
+});
