@@ -697,7 +697,7 @@ var GROUPS = [
 ];
 function ruleFor(j) {
   var m;
-  if (/Pastor|Penasehat/.test(j)) return ["Pastor & Penasehat", 0];
+  if (/\bPastor\b|Penasehat/.test(j)) return ["Pastor & Penasehat", 0];
   if (/^Koordinator$|^Wakil Koordinator$|Urusan BPN|Sekretaris Jenderal/.test(j)) return ["Pimpinan Inti Koordinator", 1];
   if ((m = j.match(/Dekanat (Barat|Timur|Selatan|Kepemudaan|Pantura|Priangan 1|Priangan 2)/))) return ["Dekanat " + m[1], /Tim Dekanat/.test(j) ? 20 : 1.5];
   if (/Ketua Bidang|Ketua Forkom/.test(j)) return ["Ketua Bidang & Ketua Forkom", 2];
