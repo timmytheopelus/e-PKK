@@ -43,3 +43,18 @@ it("filter memakai kolom yang tidak diminta klien", async () => {
   expect(out.records.length).toBe(1);
   expect(out.records[0].cellValuesByFieldId.fldHngi5Klnm5bUmM).toBeUndefined();
 });
+
+it("urutan opsi Bidang/Seksi/Peran diambil dari skema", async () => {
+  vi.resetModules();
+  const { handleCall } = await import("@/lib/proxy");
+  process.env.AIRTABLE_TOKEN = "x";
+  vi.stubGlobal("fetch", async () => new Response(JSON.stringify({ tables: [{ id: "tblrfilR2eNUOiFMa", primaryFieldId: "fldN", fields: [
+    { id: "fldCCi0hV9yTL091P", type: "singleSelect", options: { choices: [{ name: "Pimpinan" }, { name: "Unit Staf" }] } },
+    { id: "fldAAyRg1kko5YgrK", type: "singleSelect", options: { choices: [{ name: "Pimpinan Inti" }] } },
+    { id: "fldI8J3VXZDyjWa3f", type: "singleSelect", options: { choices: [{ name: "Ketua" }, { name: "Anggota" }] } }] }] }), { status: 200 }));
+  const acc: any = { email: "z@b.c", status: "Disetujui", level: "View", tabs: ["Pengurus"], nama: "A" };
+  const out: any = await handleCall("get_select_order", { baseId: "appIGR8Duhj3Vsz48", tableId: "tblrfilR2eNUOiFMa" }, acc);
+  expect(out.bidang).toEqual(["Pimpinan", "Unit Staf"]);
+  expect(out.peran).toEqual(["Ketua", "Anggota"]);
+  await expect(handleCall("get_select_order", { baseId: "appIGR8Duhj3Vsz48", tableId: "tblrfilR2eNUOiFMa" }, { ...acc, tabs: ["Pewarta"] })).rejects.toThrow();
+});

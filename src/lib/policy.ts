@@ -20,7 +20,11 @@ export const T = {
   smpEvents: "tbll71vbqU6JbmrJq",
   smpKui: "tblIMjnv1ffB4LqK7",
   pengguna: "tbls2nQ3hW5rEIZUk",
+  jabatan: "tblrfilR2eNUOiFMa",
 };
+
+/** MasterJabatanBPK: kolom pengelompokan (urutan opsi select = urutan tampil di dashboard). */
+export const JAB = { bidang: "fldCCi0hV9yTL091P", seksi: "fldAAyRg1kko5YgrK", peran: "fldI8J3VXZDyjWa3f" };
 
 export type Access = { email: string; nama: string; status: string; level: string; tabs: string[]; jabatan?: string; login?: string };
 export const canEdit = (a: Access) => a.level === "Edit" || a.level === "Superadmin";
@@ -37,6 +41,7 @@ const PERSON = ["fldIpQTSkFB9sU0lo", "fld469PYR80nAUNIF", "fldzY1Z2QvIIEkYXR", "
 
 export const TABLES: Record<string, Spec> = {
   [T.pengurus]: { base: BASE_BPK, read: ["Pengurus"] },
+  [T.jabatan]: { base: BASE_BPK, read: ["Pengurus"] },
   [T.umat]: {
     base: BASE_BPK,
     read: ["Pengurus", "Pewarta", "PD", "Umat", "Dashboard"],

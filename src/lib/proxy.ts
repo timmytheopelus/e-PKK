@@ -1,5 +1,5 @@
 // Menerjemahkan panggilan gaya konektor (list/update/create) menjadi REST Airtable, dengan pemeriksaan izin.
-import { Access, HttpError, T, TABLES, checkRead, checkWrite } from "./policy";
+import { Access, HttpError, JAB, T, TABLES, checkRead, checkWrite } from "./policy";
 import { at, clearCaches, getSchema, listPage, listUntil, resolveLinks, Rec } from "./airtable";
 import { evalFilter } from "./filters";
 
@@ -17,6 +17,13 @@ export async function handleCall(tool: string, input: any, acc: Access) {
   if (tool === "list_records_for_table") {
     checkRead(spec, table, input, acc);
     return list(base, table, input);
+  }
+  if (tool === "get_select_order") {
+    if (table !== T.jabatan) throw new HttpError(400, "Perintah tidak dikenal.");
+    checkRead(spec, table, {}, acc);
+    const sch = (await getSchema(base))[table];
+    const names = (id: string): string[] => ((sch?.fields[id] as any)?.options?.choices || []).map((c: any) => String(c.name));
+    return { bidang: names(JAB.bidang), seksi: names(JAB.seksi), peran: names(JAB.peran) };
   }
   if (tool === "update_records_for_table" || tool === "create_records_for_table") {
     const kind = tool === "update_records_for_table" ? "update" : "create";

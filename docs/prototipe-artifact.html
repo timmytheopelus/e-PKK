@@ -87,6 +87,7 @@ tbody tr:last-child td { border-bottom: 0; }
 td.no { font-family: var(--font-mono); color: var(--muted); width: 48px; font-variant-numeric: tabular-nums; }
 td.nama { font-weight: 600; }
 td.kosong { color: var(--warn); font-weight: 500; }
+tr.grp2 td { font-weight: 600; font-size: 13px; padding-left: 26px; background: var(--bg); color: var(--fg); }
 .tag { display: inline-block; font-size: 12.5px; padding: 2px 8px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
 .tag.k0 { background: var(--warn-soft); color: var(--warn); }
 .jab { display: block; }
@@ -540,143 +541,6 @@ footer { color: var(--muted); font-size: 13px; }
 
 <script>
 var RAW = [
-"Yanette Yanmy Yulianti|Sie Formasi|K|K",
-"Katarina Noviyanti Sugita|Sekretaris Jenderal|I|K",
-"Fransiskus Agus Muliana Saldjani|Tim Dekanat Priangan 1|P|L",
-"Marco Sutisna Putra|Subsie Konten Website|K|K",
-"Sesilia Dinda Prameswari|Sie Acara & Hub. Eksternal|K|K",
-"Lukas Kuswandi|Tim Dekanat Timur|P|K",
-"Agata Joan Tania Godjali|Forkom Konselor|K|K",
-"Stanislas Kostka Inggriani Widjaja|Forkom Konselor|K|K",
-"Melica Angela Soeganda|Tim Dekanat Selatan|P|K",
-"Bernadetha Dina Andriani Agusta|Forkom Pujian & Pemusik|K|K",
-"Laurentia Felyya Sopha|Ketua Forkom 1|I|K",
-"Maria Regina Limijarni|Forkom Doa|K|K",
-"Lambertha Sutarmi|Tim Dekanat Timur|P|K",
-"Georgius Achilles Oscar Benyamin|Koordinator Dekanat Barat (Ex-Officio Koordinator PDPKK St. Laurentius)|H|K",
-"Marla Setiawati|Sie Sekretaris|I|K",
-"|Wakil Ketua 1 El Shaddai Training Center|-|-",
-"Fransiska Fen Ing|Tim Dekanat Priangan 2|P|L",
-"Darius Feri|Tim Dekanat Pantura|P|L",
-"Maria Theresia Yuliawaty Widjaja|Sekolah Pujian; Wakil Koordinator Dekanat Barat|H|K",
-"Leonardus Andres Yanuar|Koordinator Dekanat Priangan 2 (Ex-Officio Koordinator PDPKK Hati Kudus Yesus Tasikmalaya)|H|L",
-"Indra Kurniawan|Sekolah Sound|K|K",
-"Genevieve Tannya Erika Mayasteta|Sie Humas & Media Kreatif|K|K",
-"Vonny Yunita|Sekolah Sound|K|K",
-"Lili Karlina|Tim Dekanat Priangan 1|P|L",
-"Julius Kevin Prasetyo Adhi|Tim Dekanat Barat|P|K",
-"Uum Jumiati|Koordinator Dekanat Priangan 1 (Ex-Officio Koordinator PDPKK St. Yosef Cirebon)|H|L",
-"Nicolas Nikky Chandra Gunawan|Bidang Penelitian & Pengembangan; Tim Dekanat Kepemudaan|K|K",
-"Maria Theresia Lusiawati Halim|Sie Liturgi|K|K",
-"Valentina Prisilla Evariany|Forkom Multimedia|K|K",
-"Agustinus Sandy Indrasakti Tjintarsa Putra|Wakil Koordinator Dekanat Priangan 2|H|L",
-"Stefanie Cinthya Aurellia|Tim Dekanat Kepemudaan|P|K",
-"Martina Henny|Tim Dekanat Selatan|P|K",
-"Maria Catharina Budiwati|Forkom Pujian & Pemusik|K|K",
-"Stefanus Iwan Santoso|Penasehat; Forkom Pewarta & Pengajar|H|K",
-"Antoni Setiawan|Sie Evangelisasi Pribadi / SEP El Shaddai|K|K",
-"Petra Kartini Kelyombar|Tim Dekanat Kepemudaan|P|K",
-"Maria Florentina Susilawaty Surjana|Bidang Dana Usaha|H|K",
-"Lo Maria Felycia Senjaya|Koordinator Dekanat Kepemudaan (Ex-Officio Koordinator KomPKK Creative Ministry)|H|K",
-"Dewi Yunda Irayani|Tim Dekanat Selatan|P|K",
-"Fenny Junita Santoso|Sekolah Pengajar Evangelisasi; Tim Dekanat Selatan|K|K",
-"Christophorus Gunawan|Koordinator Dekanat Selatan (Ex-Officio Koordinator PDPKK St. Paulus)|H|K",
-"Visca Puspa Kartina|Sie Formasi|K|K",
-"Agnes Stefanie Agustine|Ketua El Shaddai Training Center|I|K",
-"Theresia Setiawan|Bidang Dana Usaha|K|K",
-"R.P. Basilius Hendra Kimawan, OSC|Pastor Moderator|H|-",
-"Yosep Copertino Frendi Ehfanto|Tim Dekanat Pantura|P|L",
-"Jessica Stela|Subsie Desain|K|K",
-"Gregorius Widyanta Ladjuba|Koordinator Catholic Family Ministry (CFM)|P|K",
-"Richie Osfred Sugiarto Suryadi|Sie Sekretaris; Tim Dekanat Kepemudaan|K|K",
-"Nova Roselvi|Sie Formasi|K|K",
-"Hanmanto|Sie Sarana & Prasarana|K|K",
-"Sesilia Wahyu Redjeki|Wakil Koordinator Urusan BPN|I|K",
-"Felicia Monica Prasetia|Sekretariat|I|K",
-"Yohanes Gunawan Tanuwidjaja|Wakil Koordinator Dekanat Priangan 1|H|L",
-"Maria Chatarina Marina Hendra Susilo|Forkom Doa|K|K",
-"Georgius Johannes George Wangsanegara|Penasehat|H|K",
-"Elvin Aryaputra|Forkom Sound|K|K",
-"Martinus T. Hendratmono Sevi|Koordinator Dekanat Timur (Ex-Officio Koordinator PDPKK St. Petrus Katedral)|H|K",
-"Teresa Ivone Chow|Sekolah Konselor; Ketua Bidang Pastoral|I|K",
-"Theresia Agustina Mamie|Tim Dekanat Kepemudaan|P|K",
-"Ana Yanuarsih|Tim Dekanat Priangan 1|P|L",
-"|Subsie Video|-|-",
-"Maria Isika Oktaviana Pramono|Subsie Desain; Subsie Media Sosial|K|K",
-"Chintami Sendjaja|Forkom Pewarta & Pengajar|K|K",
-"Maria Goretti Sri Ngatini|Tim Dekanat Timur|P|K",
-"Vincencia Catherine Margaretha Setiawan|Forkom Doa|K|K",
-"Merrida Kartawidjaja|Koordinator The Marriage Course Experience (TMCE)|K|K",
-"|Sekolah Tarian|-|-",
-"Mikael Michael Nataatmadja|Tim Dekanat Kepemudaan; Sekolah Pewarta|K|K",
-"Leonard Egan Octavian|Sekolah Pemusik|K|K",
-"Marcellia Revita Sukarja|Bendahara|I|K",
-"Hendra Kurniawan|Wakil Koordinator Dekanat Selatan|H|K",
-"Josef Antonius Hartanto Widjaja|Koordinator Dekanat Pantura (Ex-Officio Koordinator PDPKK Kristus Raja Karawang)|H|L",
-"Faustina Nia Mardiana|Tim Dekanat Selatan|P|K",
-"Imanuel Allan Marcellino Ronaldo Hidajat|Sekolah Multimedia|K|K",
-"Petra Santi Gultom|Wakil Ketua 2 El Shaddai Training Center|K|K",
-"R.D. Yustinus Sigit Danang Koesworo|Pastor co Moderator|H|-",
-"Patriani Yonastri Chelan Daeng|Sekolah Pewarta; Tim Dekanat Barat|K|K",
-"Stevia Yollanda Adi Wiguna|Forkom Tarian|K|K",
-"Maria Theresia Meike Widjaja|Tim Dekanat Pantura|P|L",
-"Leonardus Bing Muljana Dharmawan|Tim Dekanat Barat|P|K",
-"Lidwina Oktavianty|Wakil Koordinator Dekanat Pantura|H|L",
-"Anastasia Bridia Tanaka Barus|Sekolah Doa|K|K",
-"FX Sjafii Sunjata|Tim Dekanat Barat|P|K",
-"Winda Nursyamsi|Tim Dekanat Timur|P|K",
-"Alfonsus Steven Hartono|Wakil Koordinator; Sie Sarana & Prasarana|I|K",
-"Susana Suyatmi|Tim Dekanat Barat|P|K",
-"Magdalena Lenyh Sukandi|Tim Dekanat Priangan 2|P|L",
-"Fransiska Chynthia Ritardy|Tim Dekanat Priangan 2|P|L",
-"Maria Monica Lianawati|Forkom Pewarta & Pengajar|K|K",
-"Frederick Arvin Karyadinata|Subsie Dokumentasi; Sie Sarana & Prasarana|K|K",
-"Michael Steven Setyawan|Tim Dekanat Kepemudaan|P|K",
-"Christian Dian Sastra|Sie Sarana & Prasarana|K|K",
-"Luisa Lily Linnawaty|Forkom Doa|K|K",
-"Agustinus Rendrawan|Tim Dekanat Selatan|P|K",
-"Maria Clarentia Meilinda|Bendahara|K|K",
-"Rafael Roland Lesmana Subagia|Bidang Penelitian & Pengembangan|H|K",
-"Fransiskus Rianto Alsuyoso|Tim Dekanat Pantura|P|L",
-"Veronica Yoke Taufikrahardja|Tim Dekanat Selatan|P|K",
-"Dedy Budiman|Tim Dekanat Priangan 1|P|L",
-"Timotius Theopelus|Koordinator|I|K",
-"Maria Veronika|Sie Formasi|K|K",
-"Elizabeth Erlina Kusnadi|Bidang Penelitian & Pengembangan|K|K",
-"Santi Fitrianingsih|Forkom Tarian|K|K",
-"Paulina Yanti|Tim Dekanat Selatan|P|K",
-"Maria Juliana Ingried Wijaya|Sie Evangelisasi Pribadi / SEP El Shaddai|K|K",
-"Theodora Liani Rusli|Sie Evangelisasi Pribadi / SEP El Shaddai|K|K",
-"Nicklaus Handry Kawijaya|Sie Sarana & Prasarana|K|K",
-"Gabrielle Lysandra Vianney Dewantari|Forkom Multimedia|K|K",
-"Alphonsus Aurinus Gunawidjaja|Forkom Pewarta & Pengajar|K|K",
-"Peni Fati Hatigoran Gulo|Tim Dekanat Timur|P|K",
-"Silvy Omar|Tim Dekanat Barat|P|K",
-"Tinche Agustina|Tim Dekanat Selatan|P|K",
-"Melinda Astari Widjaja|Tim Dekanat Kepemudaan|P|K",
-"Antonius Lucky Tjandradinata|Koordinator Komunitas Pengusaha & Profesional Katolik (KPPK) St. Yosef|P|K",
-"Natalia Banowati|Tim Dekanat Timur|P|K",
-"Vinsensia Shelvy Indawaty|Wakil Koordinator Dekanat Timur|H|K",
-"Yuliana Sumarti|Tim Dekanat Selatan|P|K",
-"Petrus Kanisius Dedy Handoyo|Forkom Sound|K|K",
-"Thomas Aquino Edison|Tim Dekanat Pantura|P|L",
-"Monika Villianty Gowinata|Sie Merchandise|K|K",
-"Katharina Kerliana S|Tim Dekanat Timur|P|K",
-"Christophorus Krismanto Kusbiantoro|Sekolah Doa; Penasehat|I|K",
-"Albertus Anugerah Pekerti|Sekolah Konselor; Tim Dekanat Kepemudaan|K|K",
-"Felicia Linawati|Tim Dekanat Pantura|P|L",
-"Veronika Wella Christa|Sie Misi|K|K",
-"Theresia Seto Chandra|Tim Dekanat Selatan|P|K",
-"Eduardus Martin|Tim Dekanat Kepemudaan|P|K",
-"Maria Sesilia Ade Santi|Tim Dekanat Barat|P|K",
-"Erika Sitanggang|Tim Dekanat Timur|P|K",
-"Sri Wahyuni|Tim Dekanat Barat|P|K",
-"Ignatius Dedy Kurniawan|Sekolah Multimedia; Tim Dekanat Timur|K|K",
-"Petra Yosevine|Ketua Forkom 2|I|K",
-"Hendrikus Ardianto|Ketua Bidang Outreach; Tim Dekanat Timur|I|K",
-"Annastasia Yanti|Bidang Dana Usaha|K|K",
-"Veronica Lukardi|Sie Buku|K|K",
-"Teresa Ivone Chow|Koordinator Alpha|-|K"
 ];
 var TINGKAT = {
   I: { label: "Tim Inti Koordinator", color: "var(--t-inti)" },
@@ -688,103 +552,117 @@ var TINGKAT = {
 var WIL = { K: "Kota Bandung", L: "Luar Kota Bandung", "-": "–" };
 var TORDER = { I: 0, H: 1, K: 2, P: 3, "-": 4 };
 
-/* Kelompok seksi / bidang, urutan tampil */
-var GROUPS = [
-  "Pastor & Penasehat", "Pimpinan Inti Koordinator", "Ketua Bidang & Ketua Forkom", "Sekretariat & Bendahara",
-  "El Shaddai Training Center & Sekolah", "Forum Komunikasi (Forkom)", "Penelitian & Pengembangan", "Dana & Usaha",
-  "Humas & Media Kreatif", "Sarana & Prasarana", "Seksi Lainnya", "Program & Komunitas Binaan",
-  "Dekanat Barat", "Dekanat Timur", "Dekanat Selatan", "Dekanat Kepemudaan", "Dekanat Pantura", "Dekanat Priangan 1", "Dekanat Priangan 2"
-];
-function ruleFor(j) {
-  var m;
-  if (/\bPastor\b|Penasehat/.test(j)) return ["Pastor & Penasehat", 0];
-  if (/^Koordinator$|^Wakil Koordinator$|Urusan BPN|Sekretaris Jenderal/.test(j)) return ["Pimpinan Inti Koordinator", 1];
-  if ((m = j.match(/Dekanat (Barat|Timur|Selatan|Kepemudaan|Pantura|Priangan 1|Priangan 2)/))) return ["Dekanat " + m[1], /Tim Dekanat/.test(j) ? 20 : 1.5];
-  if (/Ketua Bidang|Ketua Forkom/.test(j)) return ["Ketua Bidang & Ketua Forkom", 2];
-  if (/Sekretariat|Sie Sekretaris|Bendahara/.test(j)) return ["Sekretariat & Bendahara", 3];
-  if (/El Shaddai Training Center|SEP El Shaddai|^Sekolah/.test(j)) return ["El Shaddai Training Center & Sekolah", 4];
-  if (/^Forkom/.test(j)) return ["Forum Komunikasi (Forkom)", 5];
-  if (/Penelitian/.test(j)) return ["Penelitian & Pengembangan", 6];
-  if (/Dana Usaha/.test(j)) return ["Dana & Usaha", 7];
-  if (/Humas|Subsie/.test(j)) return ["Humas & Media Kreatif", 8];
-  if (/Sarana/.test(j)) return ["Sarana & Prasarana", 9];
-  if (/^Koordinator (Catholic|The Marriage|Alpha|Komunitas)/.test(j)) return ["Program & Komunitas Binaan", 11];
-  return ["Seksi Lainnya", 10];
+/* Roster pengurus dimuat langsung dari Airtable (Pengurus BPK + MasterJabatanBPK).
+   Pengelompokan memakai kolom Bidang, Seksi / Unit, dan Peran di MasterJabatanBPK; urutan mengikuti urutan opsi select di Airtable. */
+var ORDER = { bidang: [], seksi: [], peran: [] };
+var DATA = [], GROUPS = [], posisi = 0, terisi = [], jmlOrang = null, kosong = 0;
+var roster = { state: "loading", msg: "" };
+var UNGROUPED = "Belum dikelompokkan";
+function rankOf(list, v) { var i = list.indexOf(v); return i < 0 ? 999 : i; }
+function selName(c) {
+  if (c == null) return "";
+  if (Array.isArray(c)) return c.length ? selName(c[0]) : "";
+  if (typeof c === "string") return c;
+  return c.name ? String(c.name) : "";
 }
-function groupOf(jabs) {
-  var best = null;
-  jabs.forEach(function (j) { var r = ruleFor(j); if (!best || r[1] < best[1]) best = r; });
-  return best[0];
+function tingkatOf(s) {
+  s = String(s || "");
+  if (/Inti/i.test(s)) return "I";
+  if (/Harian/i.test(s)) return "H";
+  if (/Pleno/i.test(s)) return "P";
+  if (/Kerja/i.test(s)) return "K";
+  return "-";
 }
-function roleRank(jabs) {
-  var j = jabs.join(" ");
-  if (/^Koordinator/.test(jabs[0]) || /Koordinator Dekanat/.test(j) && !/Wakil/.test(j) && !/Tim Dekanat/.test(j)) return 0;
-  if (/Wakil/.test(j)) return 1;
-  return 2;
+function wilayahOf(s) {
+  s = String(s || "").trim();
+  if (!s) return "-";
+  return /luar/i.test(s) ? "L" : "K";
 }
-var DATA = RAW.map(function (r) {
-  var p = r.split("|");
-  var jab = p[1].split(";").map(function (s) { return s.trim(); });
-  return { nama: p[0].trim(), jab: jab, t: p[2], w: p[3], g: groupOf(jab), rr: roleRank(jab) };
-});
-DATA.sort(function (a, b) {
-  return (GROUPS.indexOf(a.g) - GROUPS.indexOf(b.g)) || (TORDER[a.t] - TORDER[b.t]) || (a.rr - b.rr) || a.nama.localeCompare(b.nama);
-});
-
-DATA.forEach(function (d, i) { d.i = i; });
-var posisi = DATA.length;
-var terisi = DATA.filter(function (d) { return d.nama; });
-var persT = {}, persW = {};
-terisi.forEach(function (d) {
-  (persT[d.nama] = persT[d.nama] || {})[d.t] = 1;
-  if (!persW[d.nama] || persW[d.nama] === "-") persW[d.nama] = d.w;
-});
-var names = Object.keys(persT);
-var jmlOrang = names.length, kosong = posisi - terisi.length;
-var nInti = 0, nHarian = 0, nKerja = 0, nPleno = 0, nKota = 0, nLuar = 0;
-names.forEach(function (n) {
-  var s = persT[n];
-  if (s.I) nInti++;
-  if (s.I || s.H) nHarian++;      /* Tim Inti otomatis anggota Grup Harian */
-  if (s.K) nKerja++;
-  if (s.P) nPleno++;
-  if (persW[n] === "K") nKota++;
-  if (persW[n] === "L") nLuar++;
-});
-
-document.getElementById("bigNum").textContent = jmlOrang;
-document.getElementById("bigSub").textContent = "orang pengurus aktif, mengisi " + terisi.length + " dari " + posisi + " posisi pada periode 2026–2031";
-
-var segs = [
-  { label: "Tim Inti Koordinator", n: nInti, color: "var(--t-inti)", note: "" },
-  { label: "Grup Harian", n: nHarian, color: "var(--t-harian)", note: "termasuk " + nInti + " Tim Inti" },
-  { label: "Tim Kerja", n: nKerja, color: "var(--t-kerja)", note: "" },
-  { label: "Pleno", n: nPleno, color: "var(--t-pleno)", note: "" }
-];
-/* bar memakai kelompok yang tidak tumpang tindih agar lebarnya sesuai total orang */
-var bar = [
-  { label: "Tim Inti Koordinator", n: nInti, color: "var(--t-inti)" },
-  { label: "Grup Harian (di luar Tim Inti)", n: nHarian - nInti, color: "var(--t-harian)" },
-  { label: "Tim Kerja", n: nKerja, color: "var(--t-kerja)" },
-  { label: "Pleno", n: nPleno, color: "var(--t-pleno)" }
-];
-var barTotal = bar.reduce(function (a, b) { return a + b.n; }, 0);
-var stack = document.getElementById("stack"), legend = document.getElementById("legend");
-bar.forEach(function (b) {
-  var s = document.createElement("span");
-  s.style.width = (b.n / barTotal * 100) + "%";
-  s.style.background = b.color; s.title = b.label + ": " + b.n;
-  stack.appendChild(s);
-});
-segs.forEach(function (s) {
-  var li = document.createElement("li");
-  li.innerHTML = '<span class="dot" style="background:' + s.color + '"></span><span>' + s.label + ' <b>' + s.n + '</b>' + (s.note ? '<br><small class="note">' + s.note + '</small>' : '') + '</span>';
-  legend.appendChild(li);
-});
-document.getElementById("facts").innerHTML =
-  "<span>Kota Bandung <b>" + nKota + "</b></span>" +
-  "<span>Luar Kota Bandung <b>" + nLuar + "</b></span>" +
-  "<span>Posisi belum terisi <b>" + kosong + "</b></span>";
+function buildRoster(recs, jabMap) {
+  var rows = recs.map(function (r) {
+    var v = r.cellValuesByFieldId || {};
+    var nama = cellFirst(v[F_PNG_NAMA]).replace(/\s+/g, " ").trim();
+    var links = Array.isArray(v[F_PNG_JAB]) ? v[F_PNG_JAB] : [];
+    var jabs = links.map(function (l) {
+      var id = typeof l === "string" ? l : l.id, m = jabMap[id] || {};
+      return { nama: (l && l.name) || m.nama || "", bidang: m.bidang || "", seksi: m.seksi || "", peran: m.peran || "" };
+    });
+    var best = null;
+    jabs.forEach(function (j) {
+      if (!j.bidang || !j.seksi) return;
+      j.pr = rankOf(ORDER.peran, j.peran); j.sr = rankOf(ORDER.seksi, j.seksi);
+      if (!best || j.pr < best.pr || (j.pr === best.pr && j.sr < best.sr)) best = j;
+    });
+    return {
+      nama: nama, jab: jabs.map(function (j) { return j.nama; }).filter(Boolean),
+      t: tingkatOf(cellFirst(v[F_PNG_TINGKAT])), w: wilayahOf(cellFirst(v[F_PNG_WIL])),
+      b: best ? best.bidang : UNGROUPED, g: best ? best.seksi : UNGROUPED,
+      br: best ? rankOf(ORDER.bidang, best.bidang) : 9999, sr: best ? best.sr : 9999, rr: best ? best.pr : 9999
+    };
+  });
+  rows.sort(function (a, b) {
+    return (a.br - b.br) || (a.sr - b.sr) || (a.rr - b.rr) || (TORDER[a.t] - TORDER[b.t]) || a.nama.localeCompare(b.nama);
+  });
+  rows.forEach(function (d, i) { d.i = i; });
+  DATA = rows;
+  GROUPS = [];
+  rows.forEach(function (d) { if (!GROUPS.some(function (g) { return g.seksi === d.g && g.bidang === d.b; })) GROUPS.push({ bidang: d.b, seksi: d.g }); });
+  computeStats();
+}
+function computeStats() {
+  posisi = DATA.length;
+  terisi = DATA.filter(function (d) { return d.nama; });
+  var persT = {}, persW = {};
+  terisi.forEach(function (d) {
+    (persT[d.nama] = persT[d.nama] || {})[d.t] = 1;
+    if (!persW[d.nama] || persW[d.nama] === "-") persW[d.nama] = d.w;
+  });
+  var names = Object.keys(persT);
+  jmlOrang = names.length; kosong = posisi - terisi.length;
+  var nInti = 0, nHarian = 0, nKerja = 0, nPleno = 0, nKota = 0, nLuar = 0;
+  names.forEach(function (n) {
+    var s = persT[n];
+    if (s.I) nInti++;
+    if (s.I || s.H) nHarian++;      /* Tim Inti otomatis anggota Grup Harian */
+    if (s.K) nKerja++;
+    if (s.P) nPleno++;
+    if (persW[n] === "K") nKota++;
+    if (persW[n] === "L") nLuar++;
+  });
+  document.getElementById("bigNum").textContent = jmlOrang;
+  document.getElementById("bigSub").textContent = "orang pengurus aktif, mengisi " + terisi.length + " dari " + posisi + " posisi pada periode 2026–2031";
+  var segs = [
+    { label: "Tim Inti Koordinator", n: nInti, color: "var(--t-inti)", note: "" },
+    { label: "Grup Harian", n: nHarian, color: "var(--t-harian)", note: "termasuk " + nInti + " Tim Inti" },
+    { label: "Tim Kerja", n: nKerja, color: "var(--t-kerja)", note: "" },
+    { label: "Pleno", n: nPleno, color: "var(--t-pleno)", note: "" }
+  ];
+  /* bar memakai kelompok yang tidak tumpang tindih agar lebarnya sesuai total orang */
+  var bar = [
+    { label: "Tim Inti Koordinator", n: nInti, color: "var(--t-inti)" },
+    { label: "Grup Harian (di luar Tim Inti)", n: nHarian - nInti, color: "var(--t-harian)" },
+    { label: "Tim Kerja", n: nKerja, color: "var(--t-kerja)" },
+    { label: "Pleno", n: nPleno, color: "var(--t-pleno)" }
+  ];
+  var barTotal = bar.reduce(function (a, b) { return a + b.n; }, 0) || 1;
+  var stack = document.getElementById("stack"), legend = document.getElementById("legend");
+  stack.innerHTML = ""; legend.innerHTML = "";
+  bar.forEach(function (b) {
+    var s = document.createElement("span");
+    s.style.width = (b.n / barTotal * 100) + "%";
+    s.style.background = b.color; s.title = b.label + ": " + b.n;
+    stack.appendChild(s);
+  });
+  segs.forEach(function (s) {
+    var li = document.createElement("li");
+    li.innerHTML = '<span class="dot" style="background:' + s.color + '"></span><span>' + s.label + ' <b>' + s.n + '</b>' + (s.note ? '<br><small class="note">' + s.note + '</small>' : '') + '</span>';
+    legend.appendChild(li);
+  });
+  document.getElementById("facts").innerHTML =
+    "<span>Kota Bandung <b>" + nKota + "</b></span>" +
+    "<span>Luar Kota Bandung <b>" + nLuar + "</b></span>" +
+    "<span>Posisi belum terisi <b>" + kosong + "</b></span>";
+}
 
 var state = { q: "", f: "all" };
 var chips = [
@@ -813,14 +691,19 @@ function render() {
     if (state.f === "kosong" && d.nama) return false;
     if (state.f === "H" && d.t !== "H" && d.t !== "I") return false;   /* Grup Harian mencakup Tim Inti */
     if (["I", "K", "P"].indexOf(state.f) > -1 && d.t !== state.f) return false;
-    if (state.q && (d.nama + " " + d.jab.join(" ") + " " + d.g).toLowerCase().indexOf(state.q) < 0) return false;
+    if (state.q && (d.nama + " " + d.jab.join(" ") + " " + d.g + " " + d.b).toLowerCase().indexOf(state.q) < 0) return false;
     return true;
   });
-  var html = "", cur = null, no = 0;
+  var html = "", no = 0, lastB = null;
   GROUPS.forEach(function (g) {
-    var items = list.filter(function (d) { return d.g === g; });
+    var items = list.filter(function (d) { return d.g === g.seksi && d.b === g.bidang; });
     if (!items.length) return;
-    html += '<tr class="grp"><td colspan="5">' + esc(g) + ' <span class="gn">' + items.length + " posisi</span></td></tr>";
+    if (g.bidang !== lastB) {
+      lastB = g.bidang;
+      var tot = list.filter(function (d) { return d.b === g.bidang; }).length;
+      html += '<tr class="grp"><td colspan="5">' + esc(g.bidang) + ' <span class="gn">' + tot + " posisi</span></td></tr>";
+    }
+    if (g.seksi !== g.bidang) html += '<tr class="grp2"><td colspan="5">' + esc(g.seksi) + ' <span class="gn">' + items.length + " posisi</span></td></tr>";
     items.forEach(function (d) {
       no++;
       var nm = d.nama ? whoCell(d) : '<td class="nama kosong">Belum terisi</td>';
@@ -828,8 +711,12 @@ function render() {
     });
   });
   document.getElementById("rows").innerHTML = html;
-  document.getElementById("none").hidden = list.length > 0;
-  document.getElementById("count").textContent = "Menampilkan " + list.length + " dari " + posisi + " posisi, dikelompokkan menurut seksi / bidang";
+  var none = document.getElementById("none");
+  if (roster.state === "loading") none.textContent = "Memuat daftar pengurus dari Airtable…";
+  else if (roster.state === "error") none.textContent = roster.msg || "Daftar pengurus gagal dimuat.";
+  else none.textContent = "Tidak ada pengurus yang cocok dengan pencarian ini.";
+  none.hidden = list.length > 0;
+  document.getElementById("count").textContent = roster.state === "ok" ? "Menampilkan " + list.length + " dari " + posisi + " posisi, dikelompokkan menurut bidang dan seksi" : "";
 }
 /* ---------- Airtable (lewat konektor milik pemilik halaman) ---------- */
 var SRV = "Airtable", BASE = "appIGR8Duhj3Vsz48", T_PENGURUS = "tbluIlEgPdHeodJHK", T_UMAT = "tblwRNtXSVzgzVXuk";
@@ -874,15 +761,27 @@ function errInfo(e) {
 }
 function call(tool, input) { return mcp.callTool(SRV, tool, input, { cache: false }); }
 
+var T_JABATAN = "tblrfilR2eNUOiFMa";
+var F_JAB = { nama: "fld7SUdwimYBrCRTC", bidang: "fldCCi0hV9yTL091P", seksi: "fldAAyRg1kko5YgrK", peran: "fldI8J3VXZDyjWa3f" };
+var F_PNG_JAB = "fldwW6zQoxhbTWLDv", F_PNG_TINGKAT = "fldKCj7r6YV6JLLcX", F_PNG_WIL = "fldwI15ARE7VL3MmY";
+function recsOf(res) { var pl = payloadOf(res); return (pl && pl.records) || []; }
 function loadContacts() {
   if (!mcp) return Promise.resolve(false);
-  link = { state: "loading", msg: "" }; renderLink();
-  return call("list_records_for_table", {
-    baseId: BASE, tableId: T_PENGURUS, pageSize: 200,
-    fieldIds: [F_PNG_NAMA, F_PNG_WA],
+  link = { state: "loading", msg: "" }; roster = { state: "loading", msg: "" }; renderLink(); render();
+  var pg = call("list_records_for_table", {
+    baseId: BASE, tableId: T_PENGURUS, pageSize: 500,
+    fieldIds: [F_PNG_NAMA, F_PNG_WA, F_PNG_JAB, F_PNG_TINGKAT, F_PNG_WIL],
     filters: { operands: [{ operator: "contains", operands: [F_PNG_PERIODE, "2026-2031"] }] }
-  }).then(function (res) {
-    var pl = payloadOf(res), recs = (pl && pl.records) || [], map = {};
+  });
+  var jb = call("list_records_for_table", { baseId: BASE, tableId: T_JABATAN, pageSize: 500, fieldIds: [F_JAB.nama, F_JAB.bidang, F_JAB.seksi, F_JAB.peran] });
+  var od = call("get_select_order", { baseId: BASE, tableId: T_JABATAN });
+  return Promise.all([pg, jb, od]).then(function (rs) {
+    var recs = recsOf(rs[0]), map = {}, jabMap = {}, ord = payloadOf(rs[2]) || {};
+    ORDER = { bidang: ord.bidang || [], seksi: ord.seksi || [], peran: ord.peran || [] };
+    recsOf(rs[1]).forEach(function (r) {
+      var v = r.cellValuesByFieldId || {};
+      jabMap[r.id] = { nama: cellFirst(v[F_JAB.nama]), bidang: selName(v[F_JAB.bidang]), seksi: selName(v[F_JAB.seksi]), peran: selName(v[F_JAB.peran]) };
+    });
     recs.forEach(function (r) {
       var v = r.cellValuesByFieldId || {}, nameCell = v[F_PNG_NAMA];
       var nm = cellFirst(nameCell), ids = (nameCell && nameCell.linkedRecordIds) || [];
@@ -890,12 +789,15 @@ function loadContacts() {
       map[keyOf(nm)] = { id: ids[0], wa: cellFirst(v[F_PNG_WA]) };
     });
     contacts = map;
+    buildRoster(recs, jabMap);
+    roster = { state: "ok", msg: "" };
     link = { state: "ok", msg: "" };
-    renderLink(); render();
+    renderLink(); render(); refreshViews();
     return true;
   }, function (e) {
     var i = errInfo(e);
     link = { state: i.kind, msg: i.text };
+    roster = { state: "error", msg: "Daftar pengurus gagal dimuat. " + i.text };
     renderLink(); render();
     return false;
   });
@@ -1630,7 +1532,7 @@ function renderBeranda() {
   var konselor = um ? um.filter(function (o) { return o.sk && isAktif(o.sk); }).length : "–";
   var pdAktif = pd ? pd.filter(function (p) { return isAktif(p.status); }).length : "–";
   var anggota = pd ? pd.reduce(function (a, p) { return a + p.mem.length; }, 0) : "–";
-  document.getElementById("dashTiles").innerHTML = tile(jmlOrang, "Pengurus BPKPKK", "periode 2026–2031, " + kosong + " posisi kosong") +
+  document.getElementById("dashTiles").innerHTML = tile(jmlOrang == null ? "–" : jmlOrang, "Pengurus BPKPKK", jmlOrang == null ? "" : "periode 2026–2031, " + kosong + " posisi kosong") +
     tile(nBulan, "Kegiatan bulan ini", nMinggu + " dalam 7 hari ke depan") +
     tile(pewarta, "Pewarta aktif", um ? "dari " + um.filter(function (o) { return o.sp || o.kp; }).length + " terdaftar" : "") +
     tile(pengajar, "Pengajar aktif", um ? "dari " + um.filter(function (o) { return o.sg; }).length + " terdaftar" : "") +
@@ -2112,7 +2014,7 @@ function refreshViews() { renderBeranda(); renderPewarta(); renderLuar(); render
 
 (function boot() {
   var c = window.claude;
-  function none() { mcpState = "none"; link = { state: "unavailable", msg: "" }; renderLink(); render(); if (!document.getElementById("tab-kalender").hidden) calOpen(); refreshViews(); }
+  function none() { mcpState = "none"; link = { state: "unavailable", msg: "" }; roster = { state: "error", msg: "Daftar pengurus hanya tampil bila terhubung ke Airtable." }; renderLink(); render(); if (!document.getElementById("tab-kalender").hidden) calOpen(); refreshViews(); }
   if (!c || !c.use) { none(); return; }
   c.use("mcp").then(function (m) {
     if (!m) { none(); return; }
