@@ -86,6 +86,30 @@ th { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: 
 tbody tr:last-child td { border-bottom: 0; }
 td.no { font-family: var(--font-mono); color: var(--muted); width: 48px; font-variant-numeric: tabular-nums; }
 td.nama { font-weight: 600; }
+
+.vchips { display: flex; gap: 8px; }
+.ocwrap { overflow: auto; padding: 16px 8px 24px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.oc { display: inline-block; min-width: 100%; text-align: center; }
+.oc ul { display: flex; justify-content: center; padding: 16px 0 0; margin: 0; list-style: none; position: relative; }
+.oc li { padding: 16px 6px 0; position: relative; text-align: center; vertical-align: top; list-style: none; }
+.oc li::before, .oc li::after { content: ""; position: absolute; top: 0; right: 50%; width: 50%; height: 16px; border-top: 2px solid var(--line); }
+.oc li::after { right: auto; left: 50%; border-left: 2px solid var(--line); }
+.oc li:only-child::before, .oc li:only-child::after { display: none; }
+.oc li:only-child { padding-top: 0; }
+.oc li:first-child::before, .oc li:last-child::after { border: 0 none; }
+.oc li:last-child::before { border-right: 2px solid var(--line); border-radius: 0 6px 0 0; }
+.oc li:first-child::after { border-radius: 6px 0 0 0; }
+.oc ul ul::before { content: ""; position: absolute; top: 0; left: 50%; height: 16px; border-left: 2px solid var(--line); }
+.oc-card { display: inline-block; min-width: 150px; max-width: 240px; border: 1.5px solid var(--cc, var(--accent)); border-radius: 8px; background: var(--surface); overflow: hidden; font-size: 13px; text-align: center; vertical-align: top; }
+.oc-h { background: var(--cc, var(--accent)); color: #fff; padding: 5px 8px; font-weight: 700; line-height: 1.25; }
+.oc-b { padding: 6px 8px; display: grid; gap: 3px; color: var(--fg); }
+.oc-n { font: inherit; background: none; border: 0; padding: 0; color: var(--fg); cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+.oc-b small { color: var(--muted); margin-left: 4px; }
+.oc-v0 { color: var(--warn); }
+.oc-stack { display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 14px; position: relative; }
+.oc-stack::before { content: ""; position: absolute; top: 0; left: 50%; height: 100%; border-left: 2px solid var(--line); }
+.oc-stack > .oc-card, .oc-stack > .oc-sub > .oc-card { position: relative; }
+.oc-sub { display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; }
 td.kosong { color: var(--warn); font-weight: 500; }
 tr.grp2 td { font-weight: 600; font-size: 13px; padding-left: 26px; background: var(--bg); color: var(--fg); }
 .tag { display: inline-block; font-size: 12.5px; padding: 2px 8px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
@@ -309,7 +333,18 @@ footer { color: var(--muted); font-size: 13px; }
     </div>
   </section>
 
-  <section style="display:grid;gap:12px" aria-label="Daftar pengurus">
+  <div class="vchips" id="viewChips" role="group" aria-label="Tampilan pengurus">
+    <button type="button" class="chip" data-v="tabel" aria-pressed="true">Tabel</button>
+    <button type="button" class="chip" data-v="bagan" aria-pressed="false">Bagan</button>
+  </div>
+
+  <section id="baganSec" style="display:grid;gap:12px" aria-label="Bagan struktur" hidden>
+    <div class="chips" id="baganChips"></div>
+    <p class="sub" style="margin:0">Geser ke samping untuk melihat seluruh bagan. Klik nama untuk melihat detail.</p>
+    <div class="ocwrap"><div class="oc" id="baganBox"></div></div>
+  </section>
+
+  <section id="listSec" style="display:grid;gap:12px" aria-label="Daftar pengurus">
     <div class="tools">
       <input type="search" id="q" placeholder="Cari nama atau jabatan" autocomplete="off">
       <div class="chips" id="chips"></div>
@@ -585,7 +620,7 @@ function buildRoster(recs, jabMap) {
     var links = Array.isArray(v[F_PNG_JAB]) ? v[F_PNG_JAB] : [];
     var jabs = links.map(function (l) {
       var id = typeof l === "string" ? l : l.id, m = jabMap[id] || {};
-      return { nama: (l && l.name) || m.nama || "", bidang: m.bidang || "", seksi: m.seksi || "", peran: m.peran || "" };
+      return { nama: (l && l.name) || m.nama || "", bidang: m.bidang || "", seksi: m.seksi || "", peran: m.peran || "", sub: m.sub || "", urut: m.urut == null ? 999 : m.urut };
     });
     var best = null;
     jabs.forEach(function (j) {
@@ -593,8 +628,9 @@ function buildRoster(recs, jabMap) {
       j.pr = rankOf(ORDER.peran, j.peran); j.sr = rankOf(ORDER.seksi, j.seksi);
       if (!best || j.pr < best.pr || (j.pr === best.pr && j.sr < best.sr)) best = j;
     });
+    var pl = jabs.filter(function (j) { return j.bidang && j.seksi; });
     return {
-      nama: nama, jab: jabs.map(function (j) { return j.nama; }).filter(Boolean),
+      pl: pl, nama: nama, jab: jabs.map(function (j) { return j.nama; }).filter(Boolean),
       t: tingkatOf(cellFirst(v[F_PNG_TINGKAT])), w: wilayahOf(cellFirst(v[F_PNG_WIL])),
       b: best ? best.bidang : UNGROUPED, g: best ? best.seksi : UNGROUPED,
       br: best ? rankOf(ORDER.bidang, best.bidang) : 9999, sr: best ? best.sr : 9999, rr: best ? best.pr : 9999
@@ -608,6 +644,7 @@ function buildRoster(recs, jabMap) {
   GROUPS = [];
   rows.forEach(function (d) { if (!GROUPS.some(function (g) { return g.seksi === d.g && g.bidang === d.b; })) GROUPS.push({ bidang: d.b, seksi: d.g }); });
   computeStats();
+  renderBagan();
 }
 function computeStats() {
   posisi = DATA.length;
@@ -663,6 +700,95 @@ function computeStats() {
     "<span>Luar Kota Bandung <b>" + nLuar + "</b></span>" +
     "<span>Posisi belum terisi <b>" + kosong + "</b></span>";
 }
+
+
+/* ---------- Bagan (struktur) dari data yang sama ---------- */
+var baganSel = "all";
+var OC_COLORS = ["#a31621", "#2563a8", "#2f855a", "#c26a00", "#7c3aed", "#0f8b8d", "#6b7280"];
+var PERAN_LABEL = { Pimpinan: 1, Penasihat: 1, Ketua: 1, Wakil: 1 };
+function ocNode(title) { return { title: title, persons: [], kids: [], urut: 999 }; }
+function ocKid(n, title, urut) {
+  var k = n.kids.filter(function (x) { return x.title === title; })[0];
+  if (!k) { k = ocNode(title); n.kids.push(k); }
+  if (urut < k.urut) k.urut = urut;
+  return k;
+}
+function buildTree(only) {
+  var root = ocNode("BPKPKK Bandung");
+  var by = {};
+  DATA.forEach(function (d) {
+    (d.pl || []).forEach(function (j) {
+      if (only && j.bidang !== only) return;
+      var bn = by[j.bidang] || (by[j.bidang] = ocNode(j.bidang));
+      var n = ocKid(bn, j.seksi, 0);
+      var path = j.sub ? j.sub.split("›").map(function (s) { return s.trim(); }).filter(Boolean) : [];
+      path.forEach(function (t) { n = ocKid(n, t, j.urut); });
+      n.persons.push({ d: d, pr: rankOf(ORDER.peran, j.peran), peran: j.peran });
+    });
+  });
+  Object.keys(by).sort(function (a, b) { return rankOf(ORDER.bidang, a) - rankOf(ORDER.bidang, b); }).forEach(function (b, i) { by[b].ci = i; root.kids.push(by[b]); });
+  root.kids.forEach(function (bn) {
+    bn.kids.sort(function (a, b) { return rankOf(ORDER.seksi, a.title) - rankOf(ORDER.seksi, b.title); });
+    bn.kids.forEach(function (sn) { sortKids(sn); });
+  });
+  return only ? root.kids[0] || root : root;
+}
+function sortKids(n) {
+  n.kids.sort(function (a, b) { return (a.urut - b.urut) || a.title.localeCompare(b.title); });
+  n.persons.sort(function (a, b) { return (a.pr - b.pr) || a.d.nama.localeCompare(b.d.nama); });
+  n.kids.forEach(sortKids);
+}
+function ocCard(n, color) {
+  var h = '<div class="oc-card" style="--cc:' + color + '"><div class="oc-h">' + esc(n.title) + "</div>";
+  if (n.persons.length) {
+    h += '<div class="oc-b">' + n.persons.map(function (p) {
+      var lbl = PERAN_LABEL[p.peran] ? "<small>" + esc(p.peran) + "</small>" : "";
+      if (!p.d.nama) return '<span class="oc-v0">Belum terisi</span>';
+      return '<span><button type="button" class="oc-n" data-act="view" data-i="' + p.d.i + '">' + esc(p.d.nama) + "</button>" + lbl + "</span>";
+    }).join("") + "</div>";
+  }
+  return h + "</div>";
+}
+function ocStack(n, color) {
+  return '<div class="oc-sub">' + ocCard(n, color) + (n.kids.length ? '<div class="oc-stack">' + n.kids.map(function (k) { return ocStack(k, color); }).join("") + "</div>" : "") + "</div>";
+}
+function ocTree(n, depth, ci) {
+  var color = OC_COLORS[(ci == null ? 6 : ci) % OC_COLORS.length];
+  if (ci == null && n.ci != null) { ci = n.ci; color = OC_COLORS[ci % OC_COLORS.length]; }
+  var kids = "";
+  if (n.kids.length) {
+    if (depth >= 3) kids = '<div class="oc-stack">' + n.kids.map(function (k) { return ocStack(k, color); }).join("") + "</div>";
+    else kids = "<ul>" + n.kids.map(function (k) { return ocTree(k, depth + 1, ci); }).join("") + "</ul>";
+  }
+  return "<li>" + ocCard(n, color) + kids + "</li>";
+}
+function renderBagan() {
+  var chips = document.getElementById("baganChips"), box = document.getElementById("baganBox");
+  if (!chips || !box) return;
+  var bidangs = [];
+  DATA.forEach(function (d) { (d.pl || []).forEach(function (j) { if (bidangs.indexOf(j.bidang) < 0) bidangs.push(j.bidang); }); });
+  bidangs.sort(function (a, b) { return rankOf(ORDER.bidang, a) - rankOf(ORDER.bidang, b); });
+  if (baganSel !== "all" && bidangs.indexOf(baganSel) < 0) baganSel = "all";
+  chips.innerHTML = "";
+  [["all", "Seluruh organisasi"]].concat(bidangs.map(function (b) { return [b, b]; })).forEach(function (c) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.textContent = c[1];
+    b.setAttribute("aria-pressed", c[0] === baganSel ? "true" : "false");
+    b.addEventListener("click", function () { baganSel = c[0]; renderBagan(); });
+    chips.appendChild(b);
+  });
+  if (!DATA.length) { box.innerHTML = '<p class="sub">' + esc(roster.state === "loading" ? "Memuat bagan…" : (roster.msg || "Bagan belum tersedia.")) + "</p>"; return; }
+  var tree = buildTree(baganSel === "all" ? null : baganSel);
+  box.innerHTML = "<ul>" + ocTree(tree, baganSel === "all" ? 0 : 1, baganSel === "all" ? null : tree.ci) + "</ul>";
+}
+document.getElementById("viewChips").addEventListener("click", function (e) {
+  var b = e.target.closest && e.target.closest("[data-v]"); if (!b) return;
+  var v = b.dataset.v;
+  Array.prototype.forEach.call(this.children, function (x) { x.setAttribute("aria-pressed", x.dataset.v === v ? "true" : "false"); });
+  document.getElementById("listSec").hidden = v === "bagan";
+  document.getElementById("baganSec").hidden = v !== "bagan";
+  if (v === "bagan") renderBagan();
+});
 
 var state = { q: "", f: "all" };
 var chips = [
@@ -762,7 +888,7 @@ function errInfo(e) {
 function call(tool, input) { return mcp.callTool(SRV, tool, input, { cache: false }); }
 
 var T_JABATAN = "tblrfilR2eNUOiFMa";
-var F_JAB = { nama: "fld7SUdwimYBrCRTC", bidang: "fldCCi0hV9yTL091P", seksi: "fldAAyRg1kko5YgrK", peran: "fldI8J3VXZDyjWa3f" };
+var F_JAB = { nama: "fld7SUdwimYBrCRTC", bidang: "fldCCi0hV9yTL091P", seksi: "fldAAyRg1kko5YgrK", peran: "fldI8J3VXZDyjWa3f", sub: "fld323LjkUlUTmCoB", urut: "fldM7jl2Zp3LCblV8" };
 var F_PNG_JAB = "fldwW6zQoxhbTWLDv", F_PNG_TINGKAT = "fldKCj7r6YV6JLLcX", F_PNG_WIL = "fldwI15ARE7VL3MmY";
 function recsOf(res) { var pl = payloadOf(res); return (pl && pl.records) || []; }
 function loadContacts() {
@@ -773,14 +899,14 @@ function loadContacts() {
     fieldIds: [F_PNG_NAMA, F_PNG_WA, F_PNG_JAB, F_PNG_TINGKAT, F_PNG_WIL],
     filters: { operands: [{ operator: "contains", operands: [F_PNG_PERIODE, "2026-2031"] }] }
   });
-  var jb = call("list_records_for_table", { baseId: BASE, tableId: T_JABATAN, pageSize: 500, fieldIds: [F_JAB.nama, F_JAB.bidang, F_JAB.seksi, F_JAB.peran] });
+  var jb = call("list_records_for_table", { baseId: BASE, tableId: T_JABATAN, pageSize: 500, fieldIds: [F_JAB.nama, F_JAB.bidang, F_JAB.seksi, F_JAB.peran, F_JAB.sub, F_JAB.urut] });
   var od = call("get_select_order", { baseId: BASE, tableId: T_JABATAN });
   return Promise.all([pg, jb, od]).then(function (rs) {
     var recs = recsOf(rs[0]), map = {}, jabMap = {}, ord = payloadOf(rs[2]) || {};
     ORDER = { bidang: ord.bidang || [], seksi: ord.seksi || [], peran: ord.peran || [] };
     recsOf(rs[1]).forEach(function (r) {
       var v = r.cellValuesByFieldId || {};
-      jabMap[r.id] = { nama: cellFirst(v[F_JAB.nama]), bidang: selName(v[F_JAB.bidang]), seksi: selName(v[F_JAB.seksi]), peran: selName(v[F_JAB.peran]) };
+      jabMap[r.id] = { nama: cellFirst(v[F_JAB.nama]), bidang: selName(v[F_JAB.bidang]), seksi: selName(v[F_JAB.seksi]), peran: selName(v[F_JAB.peran]), sub: cellFirst(v[F_JAB.sub]), urut: typeof v[F_JAB.urut] === "number" ? v[F_JAB.urut] : 999 };
     });
     recs.forEach(function (r) {
       var v = r.cellValuesByFieldId || {}, nameCell = v[F_PNG_NAMA];
@@ -874,7 +1000,7 @@ function openEdit(i) {
     });
   }).catch(function (e) { if (editing === me) setMsg(errInfo(e).text, true); });
 }
-document.getElementById("rows").addEventListener("click", function (e) {
+function rowsClick(e) {
   var b = e.target.closest && e.target.closest("[data-act=edit]");
   if (b && !b.disabled) { openEdit(+b.dataset.i); return; }
   var v = e.target.closest && e.target.closest("[data-act=view]");
@@ -889,7 +1015,9 @@ document.getElementById("rows").addEventListener("click", function (e) {
       else document.getElementById("infoBody").innerHTML = '<p class="sub">' + esc(link.state === "ok" ? "Data orang ini tidak ditemukan di tabel MasterData TeamUmat." : (link.msg || "Tidak bisa terhubung ke Airtable.")) + "</p>";
     });
   }
-});
+}
+document.getElementById("rows").addEventListener("click", rowsClick);
+document.getElementById("baganBox").addEventListener("click", rowsClick);
 function openEditPerson(id, name, sub, opener, onSaved) {
   if (!mcp) return;
   lastFocusI = null;
