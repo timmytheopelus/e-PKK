@@ -1519,7 +1519,8 @@ function loadSmp() {
       var v = r.cellValuesByFieldId || {};
       var o = { id: r.id, tgl: one(v[SM.tgl]).slice(0, 10), nama: one(v[SM.nama]) || one(v[SM.nama2]), tema: one(v[SM.tema]), pd: flat(v[SM.pd]).join(", "), asal: one(v[SM.asal]), jenis: one(v[SM.jenis]), dari: one(v[SM.dari]),
         konf: one(v[SM.konf]), acc: flat(v[SM.acc]).join(", "), status: one(v[SM.status]), kual: one(v[SM.kual]), bpk: flat(v[SM.bpk]).join(", "), jml: one(v[SM.jml]), ket: one(v[SM.ket]), req: one(v[SM.req]).slice(0, 10), hapus: v[SM.hapus] === true };
-      o.luar = !!((o.asal && o.asal !== "BPK Bandung") || o.acc);
+      var org = o.asal || o.bpk;   /* asal pewarta menentukan; ACC surat hanya dipakai bila asal kosong */
+      o.luar = org ? org !== "BPK Bandung" : !!o.acc;
       return o;
     }).filter(function (o) { return !o.hapus && o.tgl; });
   });
