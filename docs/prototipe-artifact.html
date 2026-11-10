@@ -592,7 +592,7 @@ var TORDER = { I: 0, H: 1, K: 2, P: 3, "-": 4 };
 /* Roster pengurus dimuat langsung dari Airtable (Pengurus BPK + MasterJabatanBPK).
    Pengelompokan memakai kolom Bidang, Seksi / Unit, dan Peran di MasterJabatanBPK; urutan mengikuti urutan opsi select di Airtable. */
 var ORDER = { bidang: [], seksi: [], peran: [] };
-var DATA = [], GROUPS = [], posisi = 0, terisi = [], jmlOrang = null, kosong = 0;
+var DATA = [], ALIAS = [], GROUPS = [], posisi = 0, terisi = [], jmlOrang = null, kosong = 0;
 var roster = { state: "loading", msg: "" };
 var UNGROUPED = "Belum dikelompokkan";
 function rankOf(list, v) { var i = list.indexOf(v); return i < 0 ? 999 : i; }
@@ -854,10 +854,10 @@ function render() {
     if (!items.length) return;
     if (g.bidang !== lastB) {
       lastB = g.bidang;
-      var tot = list.filter(function (d) { return d.b === g.bidang; }).length;
+      var tot = list.filter(function (d) { return d.b === g.bidang && !d.alias; }).length;
       html += '<tr class="grp"><td colspan="5">' + esc(g.bidang) + ' <span class="gn">' + tot + " posisi</span></td></tr>";
     }
-    if (g.seksi !== g.bidang) html += '<tr class="grp2"><td colspan="5">' + esc(g.seksi) + ' <span class="gn">' + items.length + " posisi</span></td></tr>";
+    if (g.seksi !== g.bidang) { var nAl = items.filter(function (d) { return d.alias; }).length; html += '<tr class="grp2"><td colspan="5">' + esc(g.seksi) + ' <span class="gn">' + (items.length - nAl) + " posisi" + (nAl ? " · +" + nAl + " jabatan ganda ↳" : "") + "</span></td></tr>"; }
     items.forEach(function (d) {
       if (!d.alias) no++;
       var nm = d.nama ? whoCell(d) : '<td class="nama kosong">Belum terisi</td>';
