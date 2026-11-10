@@ -120,6 +120,8 @@ tr.grp2 td { font-weight: 600; font-size: 13px; padding-left: 26px; background: 
 .gn { font-family: var(--font-body); font-weight: 400; color: var(--muted); font-size: 12.5px; margin-left: 8px; }
 .tag.alt { background: transparent; border: 1px solid var(--line); color: var(--muted); }
 .note { color: var(--muted); font-size: 12.5px; }
+tr.alias td { color: var(--muted); }
+tr.alias td.nama { font-weight: 500; }
 .who { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .who .n { min-width: 0; overflow-wrap: anywhere; }
 .acts { display: inline-flex; gap: 6px; flex: none; }
@@ -629,7 +631,12 @@ function buildRoster(recs, jabMap) {
       if (!best || j.pr < best.pr || (j.pr === best.pr && j.sr < best.sr)) best = j;
     });
     var pl = jabs.filter(function (j) { return j.bidang && j.seksi; });
+    var tT = tingkatOf(cellFirst(v[F_PNG_TINGKAT]));
+    var grp = Array.isArray(v[F_PNG_GRUP]) ? v[F_PNG_GRUP] : [];
+    /* x = keanggotaan Tim Kerja di luar tingkat tertingginya (mis. Grup Harian yang juga Tim Kerja) */
+    var x = tT !== "K" && grp.some(function (g) { return tingkatOf((g && g.name) || "") === "K"; }) ? "K" : "";
     return {
+      x: x, best: best,
       pl: pl, nama: nama, jab: jabs.map(function (j) { return j.nama; }).filter(Boolean),
       t: tingkatOf(cellFirst(v[F_PNG_TINGKAT])), w: wilayahOf(cellFirst(v[F_PNG_WIL])),
       b: best ? best.bidang : UNGROUPED, g: best ? best.seksi : UNGROUPED,
@@ -640,28 +647,48 @@ function buildRoster(recs, jabMap) {
     return (a.br - b.br) || (a.sr - b.sr) || (a.rr - b.rr) || (TORDER[a.t] - TORDER[b.t]) || a.nama.localeCompare(b.nama);
   });
   rows.forEach(function (d, i) { d.i = i; });
+  /* Jabatan ganda: orang dihitung sekali di kelompok utamanya, tapi juga tampil (bertanda ↳) di seksi jabatan lainnya. */
+  var alias = [];
+  rows.forEach(function (d) {
+    if (!d.nama || !d.best) return;
+    var by = {};
+    d.pl.forEach(function (j) {
+      if (j.bidang === d.b && j.seksi === d.g) return;
+      var k = j.bidang + "\u0001" + j.seksi;
+      (by[k] = by[k] || { b: j.bidang, g: j.seksi, jab: [], pr: 9999 }).jab.push(j.nama);
+      by[k].pr = Math.min(by[k].pr, rankOf(ORDER.peran, j.peran));
+    });
+    Object.keys(by).forEach(function (k) {
+      var a = by[k];
+      alias.push({ nama: d.nama, jab: a.jab, t: d.t, w: d.w, x: d.x, b: a.b, g: a.g, br: rankOf(ORDER.bidang, a.b), sr: rankOf(ORDER.seksi, a.g), rr: a.pr, i: d.i, alias: true,
+        utama: d.g, jabUtama: d.pl.filter(function (j) { return j.bidang === d.b && j.seksi === d.g; }).map(function (j) { return j.nama; }) });
+    });
+  });
+  ALIAS = alias;
   DATA = rows;
   GROUPS = [];
-  rows.forEach(function (d) { if (!GROUPS.some(function (g) { return g.seksi === d.g && g.bidang === d.b; })) GROUPS.push({ bidang: d.b, seksi: d.g }); });
+  rows.concat(alias).forEach(function (d) { if (!GROUPS.some(function (g) { return g.seksi === d.g && g.bidang === d.b; })) GROUPS.push({ bidang: d.b, seksi: d.g }); });
   computeStats();
   renderBagan();
 }
 function computeStats() {
   posisi = DATA.length;
   terisi = DATA.filter(function (d) { return d.nama; });
-  var persT = {}, persW = {};
+  var persT = {}, persW = {}, persX = {};
   terisi.forEach(function (d) {
+    if (d.x) persX[d.nama] = 1;
     (persT[d.nama] = persT[d.nama] || {})[d.t] = 1;
     if (!persW[d.nama] || persW[d.nama] === "-") persW[d.nama] = d.w;
   });
   var names = Object.keys(persT);
   jmlOrang = names.length; kosong = posisi - terisi.length;
-  var nInti = 0, nHarian = 0, nKerja = 0, nPleno = 0, nKota = 0, nLuar = 0;
+  var nInti = 0, nHarian = 0, nKerja = 0, nKerjaAll = 0, nPleno = 0, nKota = 0, nLuar = 0;
   names.forEach(function (n) {
     var s = persT[n];
     if (s.I) nInti++;
     if (s.I || s.H) nHarian++;      /* Tim Inti otomatis anggota Grup Harian */
     if (s.K) nKerja++;
+    if (s.K || persX[n]) nKerjaAll++;
     if (s.P) nPleno++;
     if (persW[n] === "K") nKota++;
     if (persW[n] === "L") nLuar++;
@@ -671,7 +698,7 @@ function computeStats() {
   var segs = [
     { label: "Tim Inti Koordinator", n: nInti, color: "var(--t-inti)", note: "" },
     { label: "Grup Harian", n: nHarian, color: "var(--t-harian)", note: "termasuk " + nInti + " Tim Inti" },
-    { label: "Tim Kerja", n: nKerja, color: "var(--t-kerja)", note: "" },
+    { label: "Tim Kerja", n: nKerjaAll, color: "var(--t-kerja)", note: nKerjaAll > nKerja ? "termasuk " + (nKerjaAll - nKerja) + " yang juga di Grup Harian" : "" },
     { label: "Pleno", n: nPleno, color: "var(--t-pleno)", note: "" }
   ];
   /* bar memakai kelompok yang tidak tumpang tindih agar lebarnya sesuai total orang */
@@ -809,17 +836,18 @@ function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").
 function tags(d) {
   if (d.t === "-") return '<span class="tag k0">' + (d.nama ? "Belum ditentukan" : "–") + "</span>";
   if (d.t === "I") return '<span class="tag">Tim Inti</span> <span class="tag alt">Grup Harian</span>';
-  return '<span class="tag">' + TINGKAT[d.t].label + "</span>";
+  return '<span class="tag">' + TINGKAT[d.t].label + "</span>" + (d.x === "K" ? ' <span class="tag alt">Tim Kerja</span>' : "");
 }
 function render() {
   Array.prototype.forEach.call(chipBox.children, function (b) { b.setAttribute("aria-pressed", b.dataset.id === state.f ? "true" : "false"); });
-  var list = DATA.filter(function (d) {
+  var list = DATA.concat(ALIAS).filter(function (d) {
     if (state.f === "kosong" && d.nama) return false;
     if (state.f === "H" && d.t !== "H" && d.t !== "I") return false;   /* Grup Harian mencakup Tim Inti */
-    if (["I", "K", "P"].indexOf(state.f) > -1 && d.t !== state.f) return false;
+    if (["I", "K", "P"].indexOf(state.f) > -1 && d.t !== state.f && !(state.f === "K" && d.x === "K")) return false;
     if (state.q && (d.nama + " " + d.jab.join(" ") + " " + d.g + " " + d.b).toLowerCase().indexOf(state.q) < 0) return false;
     return true;
   });
+  list.sort(function (a, b) { return (a.br - b.br) || (a.sr - b.sr) || (a.rr - b.rr) || (TORDER[a.t] - TORDER[b.t]) || a.nama.localeCompare(b.nama); });
   var html = "", no = 0, lastB = null;
   GROUPS.forEach(function (g) {
     var items = list.filter(function (d) { return d.g === g.seksi && d.b === g.bidang; });
@@ -831,9 +859,11 @@ function render() {
     }
     if (g.seksi !== g.bidang) html += '<tr class="grp2"><td colspan="5">' + esc(g.seksi) + ' <span class="gn">' + items.length + " posisi</span></td></tr>";
     items.forEach(function (d) {
-      no++;
+      if (!d.alias) no++;
       var nm = d.nama ? whoCell(d) : '<td class="nama kosong">Belum terisi</td>';
-      html += '<tr><td class="no">' + no + "</td>" + nm + "<td>" + d.jab.map(function (j) { return '<span class="jab">' + esc(j) + "</span>"; }).join("") + "</td><td>" + tags(d) + "</td><td>" + WIL[d.w] + "</td></tr>";
+      var jb = d.jab.map(function (j) { return '<span class="jab">' + esc(j) + "</span>"; }).join("");
+      if (d.alias) jb += '<span class="note">juga menjabat: ' + esc(d.jabUtama.join("; ")) + " (tampil di " + esc(d.utama) + ")</span>";
+      html += "<tr" + (d.alias ? ' class="alias"' : "") + '><td class="no">' + (d.alias ? "↳" : no) + "</td>" + nm + "<td>" + jb + "</td><td>" + tags(d) + "</td><td>" + WIL[d.w] + "</td></tr>";
     });
   });
   document.getElementById("rows").innerHTML = html;
@@ -842,7 +872,7 @@ function render() {
   else if (roster.state === "error") none.textContent = roster.msg || "Daftar pengurus gagal dimuat.";
   else none.textContent = "Tidak ada pengurus yang cocok dengan pencarian ini.";
   none.hidden = list.length > 0;
-  document.getElementById("count").textContent = roster.state === "ok" ? "Menampilkan " + list.length + " dari " + posisi + " posisi, dikelompokkan menurut bidang dan seksi" : "";
+  document.getElementById("count").textContent = roster.state === "ok" ? "Menampilkan " + list.filter(function (d) { return !d.alias; }).length + " dari " + posisi + " posisi, dikelompokkan menurut bidang dan seksi" + (list.some(function (d) { return d.alias; }) ? ". Baris bertanda ↳ = jabatan ganda, tidak dihitung dua kali" : "") : "";
 }
 /* ---------- Airtable (lewat konektor milik pemilik halaman) ---------- */
 var SRV = "Airtable", BASE = "appIGR8Duhj3Vsz48", T_PENGURUS = "tbluIlEgPdHeodJHK", T_UMAT = "tblwRNtXSVzgzVXuk";
@@ -889,14 +919,14 @@ function call(tool, input) { return mcp.callTool(SRV, tool, input, { cache: fals
 
 var T_JABATAN = "tblrfilR2eNUOiFMa";
 var F_JAB = { nama: "fld7SUdwimYBrCRTC", bidang: "fldCCi0hV9yTL091P", seksi: "fldAAyRg1kko5YgrK", peran: "fldI8J3VXZDyjWa3f", sub: "fld323LjkUlUTmCoB", urut: "fldM7jl2Zp3LCblV8" };
-var F_PNG_JAB = "fldwW6zQoxhbTWLDv", F_PNG_TINGKAT = "fldKCj7r6YV6JLLcX", F_PNG_WIL = "fldwI15ARE7VL3MmY";
+var F_PNG_GRUP = "fldvU3kzfSrPEfaBK", F_PNG_JAB = "fldwW6zQoxhbTWLDv", F_PNG_TINGKAT = "fldKCj7r6YV6JLLcX", F_PNG_WIL = "fldwI15ARE7VL3MmY";
 function recsOf(res) { var pl = payloadOf(res); return (pl && pl.records) || []; }
 function loadContacts() {
   if (!mcp) return Promise.resolve(false);
   link = { state: "loading", msg: "" }; roster = { state: "loading", msg: "" }; renderLink(); render();
   var pg = call("list_records_for_table", {
     baseId: BASE, tableId: T_PENGURUS, pageSize: 500,
-    fieldIds: [F_PNG_NAMA, F_PNG_WA, F_PNG_JAB, F_PNG_TINGKAT, F_PNG_WIL],
+    fieldIds: [F_PNG_NAMA, F_PNG_WA, F_PNG_JAB, F_PNG_TINGKAT, F_PNG_WIL, F_PNG_GRUP],
     filters: { operands: [{ operator: "contains", operands: [F_PNG_PERIODE, "2026-2031"] }] }
   });
   var jb = call("list_records_for_table", { baseId: BASE, tableId: T_JABATAN, pageSize: 500, fieldIds: [F_JAB.nama, F_JAB.bidang, F_JAB.seksi, F_JAB.peran, F_JAB.sub, F_JAB.urut] });
