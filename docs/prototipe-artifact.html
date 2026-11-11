@@ -5,6 +5,7 @@
 /* Layout: one summary band (big count + breakdown bars), then a searchable directory table. */
 :root {
   --bg: #f5f6f8;
+  --page: linear-gradient(180deg, #e3f0fb 0%, #eef5fc 38%, #f5f6f8 100%);
   --surface: #ffffff;
   --fg: #16202a;
   --muted: #5d6b79;
@@ -28,7 +29,7 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #11171d; --surface: #19212a; --fg: #e6ebf0; --muted: #98a6b4; --line: #2a3541;
+    --bg: #11171d; --page: linear-gradient(180deg, #14283d 0%, #121d2a 40%, #11171d 100%); --surface: #19212a; --fg: #e6ebf0; --muted: #98a6b4; --line: #2a3541;
     --accent: #5cc0c8; --accent-soft: #1d3a3e; --warn: #f0b45a; --warn-soft: #3a2c12;
     --t-inti: #5cc0c8; --t-harian: #6f9bd6; --t-kerja: #6c7b8d; --t-pleno: #3f4b59;
     --wa: #5fd3a2; --wa-soft: #17382c; --danger: #ff8a80;
@@ -37,7 +38,7 @@
   }
 }
 :root[data-theme="dark"] {
-  --bg: #11171d; --surface: #19212a; --fg: #e6ebf0; --muted: #98a6b4; --line: #2a3541;
+  --bg: #11171d; --page: linear-gradient(180deg, #14283d 0%, #121d2a 40%, #11171d 100%); --surface: #19212a; --fg: #e6ebf0; --muted: #98a6b4; --line: #2a3541;
   --accent: #5cc0c8; --accent-soft: #1d3a3e; --warn: #f0b45a; --warn-soft: #3a2c12;
   --t-inti: #5cc0c8; --t-harian: #6f9bd6; --t-kerja: #6c7b8d; --t-pleno: #3f4b59;
   --wa: #5fd3a2; --wa-soft: #17382c; --danger: #ff8a80;
@@ -46,7 +47,7 @@
 }
 * { box-sizing: border-box; }
 body {
-  background: var(--bg); color: var(--fg);
+  background: var(--bg); background-image: var(--page); background-attachment: fixed; min-height: 100vh; color: var(--fg);
   font-family: var(--font-body); font-size: 15px; line-height: 1.5;
   padding-block: 28px 48px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
