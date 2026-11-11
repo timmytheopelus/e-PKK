@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export const metadata = { title: "BPKPKK Bandung", robots: { index: false, follow: false } };
+export const metadata = { title: "BPKPKK Bandung", robots: { index: false, follow: false }, icons: { icon: "/favicon.png" } };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

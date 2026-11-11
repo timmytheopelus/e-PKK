@@ -8,7 +8,8 @@ function swap(a, b) { if (!h.includes(a)) throw new Error("pola tidak ditemukan:
 
 swap("<title>Pengurus BPKPKK Bandung</title>", "<title>BPKPKK Bandung</title>");
 swap('<meta name="claude:viewport-fit-sides" content="cover">', '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">');
-swap("  <header>", '  <header>\n    <div id="me" class="meta"></div>');
+swap('    <div>\n      <h1>BPKPKK Bandung</h1>', '    <div>\n      <div id="me" class="meta"></div>\n      <h1>BPKPKK Bandung</h1>');
+swap('viewport-fit=cover">', 'viewport-fit=cover">\n<link rel="icon" type="image/png" href="/favicon.png">');
 swap('function showTab(name) {\n  if (TABS.indexOf(name) < 0) name = "beranda";',
   'function showTab(name) {\n  if (TABS.indexOf(name) < 0) name = "beranda";\n  if (window.__ME__ && window.__ME__.tabs.indexOf(name) < 0) name = window.__ME__.tabs[0] || "beranda";');
 swap("renderLink();\nrender();\nrefreshViews();\nshowTab(", "applyMe();\nrenderLink();\nrender();\nrefreshViews();\nshowTab(");
