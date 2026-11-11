@@ -55,9 +55,9 @@ body {
 .wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 20px; }
 header h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.7rem, 4vw, 2.3rem); line-height: 1.1; margin: 0 0 6px; text-wrap: balance; letter-spacing: -0.01em; }
 header p { margin: 0; color: var(--muted); }
-header.brand { display: flex; align-items: center; gap: 14px; }
-header.brand .logo { width: 64px; height: 64px; flex: none; }
-@media (max-width: 480px) { header.brand .logo { width: 48px; height: 48px; } }
+header.brand { display: flex; align-items: center; gap: 18px; }
+header.brand .logo { width: 92px; height: 92px; flex: none; }
+@media (max-width: 480px) { header.brand { gap: 12px; } header.brand .logo { width: 64px; height: 64px; } }
 .badge { display: inline-block; font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); padding: 3px 9px; border-radius: 4px; margin-bottom: 10px; }
 
 .summary { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 22px; display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 28px; align-items: center; }
@@ -313,7 +313,7 @@ footer { color: var(--muted); font-size: 13px; }
 
 <div class="wrap">
   <header class="brand">
-    <img class="logo" src="/logo.png" alt="Logo BPK Keuskupan Bandung" width="64" height="64">
+    <img class="logo" src="/logo.png" alt="Logo BPK Keuskupan Bandung" width="92" height="92">
     <div>
       <h1>BPKPKK Bandung</h1>
       <p>Data pengurus dan kalender kegiatan, dibaca dari Airtable BPK Bandung.</p>
