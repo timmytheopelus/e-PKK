@@ -1,5 +1,5 @@
 // Menerjemahkan panggilan gaya konektor (list/update/create) menjadi REST Airtable, dengan pemeriksaan izin.
-import { Access, HttpError, INV, JAB, T, TABLES, checkRead, checkWrite } from "./policy";
+import { Access, HttpError, INV, JAB, KEU, REK, T, TABLES, checkRead, checkWrite } from "./policy";
 import { notifyOwner } from "./mail";
 import { at, clearCaches, getSchema, listPage, listUntil, resolveLinks, Rec } from "./airtable";
 import { evalFilter } from "./filters";
@@ -141,6 +141,7 @@ async function list(base: string, table: string, input: any) {
     next = r.offset;
   }
   records = shapeLookups(records, li.lk, extraAll);
+  if (table === T.mutasi) await labelRekening(base, records);
   const v = { records: records.map(toOut), nextCursor: next, metadata: { totalRecordCount: records.length } };
   if (cache.size > 60) cache.clear();
   cache.set(key, { at: Date.now(), v });
@@ -152,3 +153,31 @@ async function selectNames(base: string, table: string, fresh: boolean) {
   const names = (id: string): string[] => ((sch?.fields[id] as any)?.options?.choices || []).map((c: any) => String(c.name));
   return { lokasi: names(INV.lokasi), status: names(INV.status) };
 }
+
+/** Nama relasi Rekening di Mutasi adalah nomor rekening bank (field utama). Diganti "Nama (Bank)" supaya nomor tidak sampai ke browser. */
+let rekCache: { at: number; v: Promise<Map<string, string>> } | null = null;
+async function rekeningLabels(base: string) {
+  if (rekCache && Date.now() - rekCache.at < 300_000) return rekCache.v;
+  const v = (async () => {
+    const m = new Map<string, string>();
+    const { records } = await listUntil(base, T.rekeningKeu, { fieldIds: [REK.nama, REK.bank], want: Infinity, maxPages: 10 });
+    for (const r of records) {
+      const nama = String(r.fields[REK.nama] ?? "").trim(), b = r.fields[REK.bank];
+      const bank = String(typeof b === "object" && b ? b.name ?? "" : b ?? "").trim();
+      m.set(r.id, nama && bank && !nama.toLowerCase().includes(bank.toLowerCase()) ? nama + " (" + bank + ")" : nama || bank || "Rekening");
+    }
+    return m;
+  })();
+  rekCache = { at: Date.now(), v };
+  v.catch(() => { rekCache = null; });
+  return v;
+}
+async function labelRekening(base: string, records: Rec[]) {
+  if (!records.some((r) => Array.isArray(r.fields[KEU.rekening]))) return;
+  const m = await rekeningLabels(base);
+  for (const r of records) {
+    const v = r.fields[KEU.rekening];
+    if (Array.isArray(v)) r.fields[KEU.rekening] = v.map((x: any) => ({ id: x?.id ?? x, name: m.get(x?.id ?? x) ?? "Rekening" }));
+  }
+}
+export function clearRekeningCache() { rekCache = null; }

@@ -10,12 +10,15 @@ export const TAB_IDS: Record<string, string> = {
   Event: "event",
   KEP: "kep",
   Inventaris: "inventaris",
+  Keuangan: "keuangan",
   Administrasi: "admin",
 };
 export const ALL_TABS = Object.keys(TAB_IDS);
 
 export const BASE_BPK = "appIGR8Duhj3Vsz48";
 export const BASE_SMP = "appK4oGjawCjLHV0w";
+/** Base "Bendahara BPK Bandung": diisi bendahara, dashboard hanya membaca. */
+export const BASE_BEN = "appD9GktbF32FT0uB";
 export const T = {
   pengurus: "tbluIlEgPdHeodJHK",
   umat: "tblwRNtXSVzgzVXuk",
@@ -33,6 +36,8 @@ export const T = {
   pendaftarSep: "tbllhFlsiFLaZzHkG",
   inventaris: "tblkbpgHrJ2ZW8WzL",
   logPinjam: "tblDjNGHbh9yE4vUS",
+  mutasi: "tbl0l00NTvFoNCMpj",
+  rekeningKeu: "tblzIl6hHQF4RX5Pw",
 };
 
 /** Pewarta BPK (base SMP): field yang boleh diubah dari tab Pewarta (status, kategori, status pengajar, modul, link YouTube). */
@@ -68,6 +73,12 @@ export const LOG_READ = Object.values(LOG);
 /** Status peminjaman diubah lewat Persetujuan Sarpras dan Cancel (kolom Status sendiri formula). */
 export const LOG_UPDATE = [LOG.setuju, LOG.alasanTolak, LOG.cancel, LOG.alasanCancel];
 
+/** Mutasi keuangan (base Bendahara): hanya baca, tab Keuangan. Lampiran, email pengisi, dan formula tidak ikut dibaca. */
+export const KEU = { jenis: "fldTTm47NgkHZkaNs", tgl: "fldcwLolD55bxAVrd", nominal: "fldlulESHSCxybfET", ket: "fldbrWHosZ9QCI84G", account: "fldtoZchCQ8RA3QnW", rekening: "fldzyhgmDtlAF9VPJ", bidang: "fldjEP7hSGMnyX3dF", event: "fldj3EnmRXMpV6iAS", penerima: "fldwGbIqXr3aOdzkv", hapus: "fld9nzDRIQgTg1Mtz" };
+export const KEU_READ = Object.values(KEU);
+/** Tabel Rekening: nomor rekening tidak pernah dikirim ke browser; hanya nama dan bank. */
+export const REK = { nomor: "fldoEgwBTWwY3n4us", nama: "fldXVyONQ0XV0h0WO", bank: "flddoVHr85euaEuj5" };
+
 const PERSON = ["fldIpQTSkFB9sU0lo", "fld469PYR80nAUNIF", "fldzY1Z2QvIIEkYXR", "fldAaQ3zmiLBhp4z9", "fldcQFzBtr9EELTtV"];
 
 export const TABLES: Record<string, Spec> = {
@@ -91,6 +102,7 @@ export const TABLES: Record<string, Spec> = {
   [T.pendaftarSep]: { base: BASE_BPK, read: ["KEP"], readFields: ["fld4aXu6UhTUyu2a8", "fldJjgxA4mESGeOYG", "fldVwYghE0cSodecK", "fldBap2tEPX9R4LtD", "fldTj9n5kTQiquymW", "fldU3sCQfDmubXeBZ", "fld4dVr7hIV4xqAg7", "fldnQxpE9QVt0o9JH"] },
   [T.inventaris]: { base: BASE_BPK, read: ["Inventaris"], readFields: INV_READ, update: { tabs: ["Inventaris"], fields: INV_UPDATE }, create: { tabs: ["Inventaris"], fields: INV_CREATE } },
   [T.logPinjam]: { base: BASE_BPK, read: ["Inventaris"], readFields: LOG_READ, update: { tabs: ["Inventaris"], fields: LOG_UPDATE } },
+  [T.mutasi]: { base: BASE_BEN, read: ["Keuangan"], readFields: KEU_READ },
   [T.pewartaBpk]: { base: BASE_SMP, read: ["Pewarta", "Pewarta luar kota", "Dashboard"], update: { tabs: ["Pewarta"], fields: PWB_EDIT } },
 };
 
