@@ -181,7 +181,88 @@ export const ADMIN_JS = String.raw`
       data.umat = r[0]; data.users = r[1]; holder.textContent = ""; holder.appendChild(q); holder.appendChild(box); draw();
     }, function (e) { holder.textContent = e.message; });
   }
-  window.EPK_RINGKAS = ringkas;
+
+  function aksesMenu() {
+    var holder = EPK.el("div", {}, [EPK.el("p", { text: "Memuat…" })]);
+    show("Akses per menu", holder, "admRingkas");
+    var menu = "Pengurus", q = "", chg = {}, newU = {}, data = { umat: [], users: [] };
+    var bar = EPK.el("div", { class: "epk-savebar" }), msg = msgBox(), box = EPK.el("div", {}), chips = EPK.el("div", { class: "epk-chips" });
+    var search = EPK.el("input", { type: "search", placeholder: "Cari nama, email, jabatan, PD", autocomplete: "off", "aria-label": "Cari" });
+    search.addEventListener("input", function () { q = search.value.trim().toLowerCase(); draw(); });
+    function m(t) { return !q || t.toLowerCase().indexOf(q) >= 0; }
+    function has(u) { return u.level === "Superadmin" || u.tabs.indexOf(menu) >= 0; }
+    function locked(u) { return u.level === "Superadmin" || (u.email.toLowerCase() === ME.email.toLowerCase() && menu === "Administrasi"); }
+    function count() { return Object.keys(chg).length + Object.keys(newU).length; }
+    function tog(map, k) { if (map[k]) delete map[k]; else map[k] = 1; msg.say(""); draw(); }
+    function row(label, sub, cls, onclick, dis) {
+      return EPK.el("button", { type: "button", class: "epk-pickrow " + cls, disabled: dis ? "" : null, onclick: onclick }, [EPK.el("b", { text: label }), EPK.el("small", { text: sub })]);
+    }
+    function draw() {
+      chips.textContent = "";
+      ALLT.forEach(function (t) {
+        chips.appendChild(EPK.el("button", { type: "button", class: "epk-chip" + (t === menu ? " on" : ""), text: t, onclick: function () {
+          if (t === menu) return; if (count() && !confirm("Ada perubahan yang belum disimpan. Pindah menu dan buang perubahan?")) return;
+          menu = t; chg = {}; newU = {}; msg.say(""); draw();
+        } }));
+      });
+      box.textContent = "";
+      var ada = data.users.filter(function (u) { return u.status === "Disetujui" && has(u) && m([u.nama, u.email, u.jabatan, u.level].join(" ")); });
+      var tanpa = data.users.filter(function (u) { return u.status === "Disetujui" && !has(u) && m([u.nama, u.email, u.jabatan, u.level].join(" ")); });
+      var belum = data.umat.filter(function (u) { return u.jab && !u.terdaftar && m([u.nama, u.pgl, u.jab, u.pd.join(" ")].join(" ")); });
+      box.appendChild(EPK.el("h3", { class: "epk-sec", text: "Punya akses ke " + menu + " (" + ada.length + ")" }));
+      box.appendChild(EPK.el("p", { class: "sub", text: "Klik nama untuk melepas akses, lalu tekan Simpan." }));
+      ada.forEach(function (u) {
+        var off = !!chg[u.id], lk = locked(u);
+        box.appendChild(row(u.nama || u.email, [u.jabatan, u.level].filter(Boolean).join(" · ") + (lk ? " · tidak bisa dilepas" : off ? " · AKAN DILEPAS" : ""), off ? "epk-off" : "", function () { tog(chg, u.id); }, lk));
+      });
+      if (!ada.length) box.appendChild(EPK.el("p", { class: "sub", text: "Belum ada." }));
+      box.appendChild(EPK.el("h3", { class: "epk-sec", text: "Belum punya akses (" + (tanpa.length + belum.length) + ")" }));
+      box.appendChild(EPK.el("p", { class: "sub", text: "Klik nama untuk memberi akses " + menu + " (bisa banyak sekaligus), lalu tekan Simpan." }));
+      tanpa.forEach(function (u) {
+        var on = !!chg[u.id];
+        box.appendChild(row(u.nama || u.email, [u.jabatan, u.level].filter(Boolean).join(" · ") + (on ? " · AKAN DITAMBAH" : ""), on ? "epk-on" : "", function () { tog(chg, u.id); }));
+      });
+      belum.forEach(function (u) {
+        var on = !!newU[u.id];
+        box.appendChild(row(u.nama, [u.jab, u.pd.join(", ")].filter(Boolean).join(" · ") + (u.hasEmail ? " · belum punya akun" : " · belum punya akun, email belum ada") + (on ? " · AKAN DITAMBAH (View)" : ""), on ? "epk-on" : "", function () { tog(newU, u.id); }, !u.hasEmail));
+      });
+      if (!tanpa.length && !belum.length) box.appendChild(EPK.el("p", { class: "sub", text: "Tidak ada." }));
+      bar.textContent = "";
+      var n = count();
+      bar.appendChild(EPK.el("span", { text: n ? n + " perubahan belum disimpan" : "Belum ada perubahan" }));
+      bar.appendChild(EPK.el("button", { type: "button", class: "epk-btn sec", text: "Batal", disabled: n ? null : "", onclick: function () { chg = {}; newU = {}; msg.say(""); draw(); } }));
+      bar.appendChild(EPK.el("button", { type: "button", class: "epk-btn", text: "Simpan", disabled: n ? null : "", onclick: save }));
+    }
+    function save() {
+      var jobs = [];
+      Object.keys(chg).forEach(function (id) {
+        var u = data.users.filter(function (x) { return x.id === id; })[0]; if (!u) return;
+        var tabs = has(u) ? u.tabs.filter(function (t) { return t !== menu; }) : u.tabs.concat([menu]);
+        jobs.push({ label: (u.nama || u.email), run: function () { return api("update", { id: u.id, level: u.level, tabs: tabs }); } });
+      });
+      Object.keys(newU).forEach(function (id) {
+        var u = data.umat.filter(function (x) { return x.id === id; })[0]; if (!u) return;
+        jobs.push({ label: u.nama, run: function () { return api("add", { umatId: u.id, level: "View", tabs: [menu] }); } });
+      });
+      msg.say("Menyimpan…"); var fail = [], i = 0;
+      (function next() {
+        if (i >= jobs.length) {
+          chg = {}; newU = {};
+          umatCache = null;
+          Promise.all([api("umat").then(function (j) { return j.umat; }), load()]).then(function (r) { data.umat = r[0]; data.users = r[1]; draw(); msg.say(fail.length ? "Sebagian gagal: " + fail.join("; ") : "Tersimpan.", !!fail.length); });
+          return;
+        }
+        var j = jobs[i++];
+        j.run().then(next, function (e) { fail.push(j.label + " (" + e.message + ")"); next(); });
+      })();
+    }
+    Promise.all([api("umat").then(function (j) { return j.umat; }), load()]).then(function (r) {
+      data.umat = r[0]; data.users = r[1]; holder.textContent = "";
+      holder.appendChild(EPK.el("p", { class: "sub", text: "Pilih menu, lihat siapa yang punya akses, lalu tambah atau lepas dengan klik nama." }));
+      holder.appendChild(chips); holder.appendChild(search); holder.appendChild(bar); holder.appendChild(msg); holder.appendChild(box); draw();
+    }, function (e) { holder.textContent = e.message; });
+  }
+  window.EPK_RINGKAS = IS_SUPER ? aksesMenu : ringkas;
   function viewAsPicker() {
     var holder = EPK.el("div", {}, [EPK.el("p", { text: "Memuat pengguna…" })]);
     EPK.modal("Lihat sebagai", holder);

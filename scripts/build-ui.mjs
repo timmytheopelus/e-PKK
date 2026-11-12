@@ -74,6 +74,14 @@ const shim = `<style>
 .epk-picklist { display: grid; gap: 4px; max-height: 280px; overflow-y: auto; margin: 6px 0 10px; }
 .epk-pickrow { font: inherit; text-align: left; display: grid; gap: 1px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--fg); cursor: pointer; }
 .epk-pickrow small { color: var(--muted); }
+.epk-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.epk-chip { font: inherit; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--fg); cursor: pointer; }
+.epk-chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.epk-savebar { position: sticky; top: 0; z-index: 40; display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap; padding: 8px 0; background: var(--bg, var(--surface)); }
+.epk-savebar span { margin-right: auto; color: var(--muted); font-size: 13px; }
+.epk-pickrow { width: 100%; margin-bottom: 6px; }
+.epk-pickrow.epk-on { border-color: #2f855a; background: #e6f4ea; }
+.epk-pickrow.epk-off { border-color: #a31621; background: #fdeaea; text-decoration: line-through; }
 .epk-pickrow:hover:not(:disabled) { border-color: var(--accent); }
 .epk-pickrow:disabled { opacity: .55; cursor: not-allowed; }
 .meta { gap: 8px 12px; }
