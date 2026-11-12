@@ -23,3 +23,10 @@ describe("SEP", () => {
     expect(rows[0][0]).toMatch(/Nama/);
   });
 });
+
+import { validatePendaftar as vp } from "../src/lib/sep";
+describe("usia minimal 12", () => {
+  const base = { nama: "Maria Anna", alamat: "Jl A", paroki: "Paroki X", jk: "Wanita", email: "a@b.co", wa: "081234567890" };
+  it("menolak usia < 12", () => { const y = new Date().getUTCFullYear() - 11; expect(vp({ ...base, lahir: `${y}-01-01` }).error).toMatch(/12 tahun/); });
+  it("menerima usia >= 12", () => { const y = new Date().getUTCFullYear() - 13; expect(vp({ ...base, lahir: `${y}-01-01` }).fields).toBeTruthy(); });
+});

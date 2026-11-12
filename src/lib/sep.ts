@@ -2,7 +2,7 @@
 import crypto from "node:crypto";
 import * as XLSX from "xlsx";
 import { Access, BASE_BPK, HttpError, T } from "./policy";
-import { at, listPage } from "./airtable";
+import { at, listPage, listUntil } from "./airtable";
 import { clearProxyCache } from "./proxy";
 
 const TK = { judul: "fldYqmy7odEnwqbrh", event: "fldxM5KAH4txJsC4s", paroki: "fldfHUZK6u2zkI7Yu", token: "flddxcs0pEaEZlXL1", status: "fldidtKcy6zhf1owX", oleh: "fldfMsKP2X4j6WGXM", selesaiOleh: "fld83uibtfzWzpN0G" };
@@ -52,6 +52,8 @@ export function validatePendaftar(r: any): { fields?: Record<string, any>; error
   const email = clean(r.email, 120).toLowerCase(), wa = normWa(r.wa);
   if (nama.length < 2) return { error: "Nama wajib diisi." };
   if (!lahir) return { error: "Tanggal lahir tidak valid (format YYYY-MM-DD)." };
+  const mx = new Date(); mx.setUTCFullYear(mx.getUTCFullYear() - 12);
+  if (new Date(lahir + "T00:00:00Z") > mx) return { error: "Usia peserta minimal 12 tahun." };
   if (!alamat) return { error: "Alamat wajib diisi." };
   if (!paroki) return { error: "Paroki domisili wajib diisi." };
   if (!jk) return { error: "Jenis kelamin harus Pria atau Wanita." };
@@ -130,7 +132,83 @@ export async function sepCall(action: string, i: any, a: Access) {
     console.log(JSON.stringify({ audit: "sep.import", who: a.email, kegiatan: k.id, ok: ok.length, gagal: errors.length }));
     return { masuk: ok.length, errors: errors.slice(0, 30), totalError: errors.length };
   }
+  if (action === "riwayat") {
+    const ids: string[] = Array.isArray(i?.ids) ? i.ids.slice(0, 100) : [];
+    if (!ids.every((x) => REC.test(x))) throw new HttpError(400, "Pilihan tidak valid.");
+    return { riwayat: await riwayatPendaftar(ids, a, p) };
+  }
   throw new HttpError(400, "Perintah tidak dikenal.");
+}
+
+// ---- Riwayat: apakah pendaftar pernah ikut KEP/SEP (sistem ini + data umat lama) ----
+const UM = { nama: "fldIpQTSkFB9sU0lo", email: "fldAaQ3zmiLBhp4z9", wa: "fldzY1Z2QvIIEkYXR", lahir: "fldXGHvqnezzKZSCp", angkatan: "fldGCWtXn82g7kKKD", camp: "fld8wFTduClZ9Y5Al", hadir: "fldkAZDkCZMt8W0R8" };
+const PD_ = { event: "fldwO5buB8AN5VSrj", tgl: "fldRxAKNG8PU2BkBI", status: "fldNGGEcwHqIsQPct" };
+const nk = (n: any) => String(n ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+const sel = (v: any) => (v && typeof v === "object" && !Array.isArray(v) ? String(v.name || "") : String(v || ""));
+const tglId = (t: string) => { if (!t) return ""; const d = new Date(t.slice(0, 10) + "T00:00:00Z"); return isNaN(+d) ? t : d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }); };
+
+async function riwayatPendaftar(ids: string[], a: Access, p: Peran): Promise<Record<string, string[]>> {
+  const out: Record<string, string[]> = {};
+  if (!ids.length) return out;
+  const cur: any[] = [];
+  for (const id of ids) {
+    const r = await at(`/v0/${BASE_BPK}/${T.pendaftarSep}/${id}?returnFieldsByFieldId=true`);
+    const kid = (r.fields[PS.keg] || [])[0]; if (!kid) continue;
+    scope(a, p, await getKeg(kid));
+    cur.push(r);
+  }
+  const key = (f: any) => ({ em: String(f.em || "").toLowerCase(), wa: normWa(f.wa), nl: nk(f.nama) + "|" + String(f.lahir || "").slice(0, 10) });
+  const same = (x: ReturnType<typeof key>, y: ReturnType<typeof key>) => (x.em && x.em === y.em) || (x.wa.length >= 8 && x.wa === y.wa) || (x.nl.length > 8 && x.nl.split("|")[0] && x.nl === y.nl);
+  const me = cur.map((r) => ({ id: r.id, k: key({ em: r.fields[PS.email], wa: r.fields[PS.wa], nama: r.fields[PS.nama], lahir: r.fields[PS.lahir] }) }));
+
+  // A. Pendaftar lain di sistem ini (sudah disetujui) -> nama & tanggal kegiatan
+  const ps = await listUntil(BASE_BPK, T.pendaftarSep, { fieldIds: Object.values(PS), want: Infinity, maxPages: 100 });
+  const kg = await listUntil(BASE_BPK, T.sepKegiatan, { fieldIds: [TK.judul, TK.event], want: Infinity, maxPages: 50 });
+  const evIds = [...new Set(kg.records.map((k) => (k.fields[TK.event] || [])[0]).filter(Boolean))] as string[];
+  const evTgl = new Map<string, string>();
+  for (let n = 0; n < evIds.length; n += 40) {
+    const f = "OR(" + evIds.slice(n, n + 40).map((e) => `RECORD_ID()="${e}"`).join(",") + ")";
+    const r = await listUntil(BASE_BPK, T.events, { fieldIds: [EV.tgl], want: Infinity, formula: f, maxPages: 5 });
+    r.records.forEach((e) => evTgl.set(e.id, String(e.fields[EV.tgl] || "").slice(0, 10)));
+  }
+  const kgBy = new Map(kg.records.map((k) => [k.id, { judul: String(k.fields[TK.judul] || ""), tgl: evTgl.get((k.fields[TK.event] || [])[0]) || "" }]));
+  const others = ps.records.filter((r) => sel(r.fields[PS.status]) === "Disetujui").map((r) => ({ r, k: key({ em: r.fields[PS.email], wa: r.fields[PS.wa], nama: r.fields[PS.nama], lahir: r.fields[PS.lahir] }) }));
+
+  // B. Data umat lama
+  const um = await listUntil(BASE_BPK, T.umat, { fieldIds: Object.values(UM), want: Infinity, maxPages: 200 });
+  const umK = um.records.map((r) => ({ r, k: key({ em: r.fields[UM.email], wa: r.fields[UM.wa], nama: r.fields[UM.nama], lahir: r.fields[UM.lahir] }) }));
+  const hadirCache = new Map<string, string[]>();
+  async function hadirKepSep(u: any): Promise<string[]> {
+    const links: string[] = (u.r.fields[UM.hadir] || []).slice(0, 60); const res: string[] = [];
+    for (let n = 0; n < links.length; n += 40) {
+      const f = "OR(" + links.slice(n, n + 40).map((e) => `RECORD_ID()="${e}"`).join(",") + ")";
+      const r = await listUntil(BASE_BPK, T.pendaftaran, { fieldIds: [PD_.event, PD_.tgl, PD_.status], want: Infinity, formula: f, maxPages: 3 });
+      for (const x of r.records) {
+        const nm = String((x.fields[PD_.event] || [])[0] || x.fields[PD_.event] || ""); if (!/\b(KEP|SEP)\b/i.test(nm)) continue;
+        if (/batal/i.test(sel(x.fields[PD_.status]))) continue;
+        res.push(`${nm.replace(/^\d{6}-/, "")}${(x.fields[PD_.tgl] || [])[0] ? ", " + tglId(String((x.fields[PD_.tgl] || [])[0])) : ""}`);
+      }
+    }
+    return res;
+  }
+  for (const m of me) {
+    const lines: string[] = [];
+    for (const o of others) {
+      if (o.r.id === m.id || !same(m.k, o.k)) continue;
+      const kid = (o.r.fields[PS.keg] || [])[0], kk = kgBy.get(kid);
+      lines.push(`Pernah ikut ${kk ? kk.judul : "kegiatan lain"}${kk?.tgl ? ", " + tglId(kk.tgl) : ""}`);
+    }
+    for (const u of umK) {
+      if (!same(m.k, u.k)) continue;
+      const ang = sel(u.r.fields[UM.angkatan]), camp = (u.r.fields[UM.camp] || []).map(sel).filter((c: string) => /KEP|SEP/i.test(c));
+      if (ang && /KEP|SEP/i.test(ang)) lines.push(`Data umat lama: ${ang}`);
+      for (const c of camp) lines.push(`Data umat lama: ${c}`);
+      let h = hadirCache.get(u.r.id); if (!h) { h = await hadirKepSep(u); hadirCache.set(u.r.id, h); }
+      h.forEach((x) => lines.push(`Hadir: ${x}`));
+    }
+    if (lines.length) out[m.id] = [...new Set(lines)].slice(0, 6);
+  }
+  return out;
 }
 
 export function templateXlsx(): Buffer {
@@ -141,11 +219,25 @@ export function templateXlsx(): Buffer {
 }
 
 // ---- Publik (tanpa login) ----
+const PAR = { nama: "fldskPQJ7WQgCVODZ", kus: "fldTx78aUdQXrpSMY" };
+let parCache: { at: number; v: string[] } | null = null;
+/** Daftar paroki Keuskupan Bandung dari tabel Paroki (cache 10 menit). */
+export async function parokiKeuskupan(): Promise<string[]> {
+  if (parCache && Date.now() - parCache.at < 600_000) return parCache.v;
+  const r = await listUntil(BASE_BPK, T.paroki, { fieldIds: [PAR.nama, PAR.kus], want: Infinity, maxPages: 20 });
+  const v = [...new Set(r.records.filter((x) => /bandung/i.test(String(x.fields[PAR.kus] || "")) && !/luar/i.test(String(x.fields[PAR.kus] || ""))).map((x) => String(x.fields[PAR.nama] || "").replace(/\s+/g, " ").trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "id", { numeric: true }));
+  parCache = { at: Date.now(), v }; return v;
+}
 export async function kegByToken(token: string) {
   if (!/^[A-Za-z0-9_-]{8,40}$/.test(token)) return null;
-  const { records } = await listPage(BASE_BPK, T.sepKegiatan, { fieldIds: [TK.judul, TK.status, TK.token], pageSize: 1, formula: `{Token}="${token}"` });
+  const { records } = await listPage(BASE_BPK, T.sepKegiatan, { fieldIds: [TK.judul, TK.status, TK.token, TK.event, TK.paroki], pageSize: 1, formula: `{Token}="${token}"` });
   const r = records[0]; if (!r || r.fields[TK.token] !== token) return null;
-  return { id: r.id, judul: String(r.fields[TK.judul] || ""), selesai: r.fields[TK.status] === "Selesai" };
+  let tgl = "", lokasi = "", paroki = "";
+  const eid = (r.fields[TK.event] || [])[0], pid = (r.fields[TK.paroki] || [])[0];
+  if (eid && REC.test(eid)) { try { const e = await at(`/v0/${BASE_BPK}/${T.events}/${eid}?returnFieldsByFieldId=true`); tgl = String(e.fields[EV.tgl] || "").slice(0, 10); lokasi = String(e.fields[EV.lokasi] || ""); } catch {} }
+  if (pid && REC.test(pid)) { try { const e = await at(`/v0/${BASE_BPK}/${T.paroki}/${pid}?returnFieldsByFieldId=true`); paroki = String(e.fields[PAR.nama] || ""); } catch {} }
+  return { id: r.id, judul: String(r.fields[TK.judul] || ""), selesai: r.fields[TK.status] === "Selesai", tgl, lokasi, paroki };
 }
 const hits = new Map<string, number[]>();
 export function rateOk(ip: string) {
@@ -158,6 +250,8 @@ export async function submitPublic(token: string, body: any, ip: string) {
   const k = await kegByToken(token); if (!k) throw new HttpError(404, "Link pendaftaran tidak valid.");
   if (k.selesai) throw new HttpError(400, "Pendaftaran untuk kegiatan ini sudah ditutup.");
   const v = validatePendaftar(body); if (!v.fields) throw new HttpError(400, v.error!);
+  if (!(await parokiKeuskupan()).includes(String(v.fields[PS.paroki]))) throw new HttpError(400, "Pilih paroki dari daftar.");
+  if (!Array.isArray(body?.setuju) || body.setuju.length !== 5 || !body.setuju.every((x: any) => x === true)) throw new HttpError(400, "Semua pernyataan harus disetujui.");
   await createPendaftar(k.id, [v.fields], "Form");
   return { ok: true };
 }
