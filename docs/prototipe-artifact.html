@@ -2915,7 +2915,7 @@ function kpApprHtml(all) {
   if (!wait.length) return h + '<p class="note">Tidak ada pendaftar yang menunggu persetujuan.</p>';
   h += '<div class="tw"><table class="tbl"><thead><tr><th><input type="checkbox" id="apAll" aria-label="Pilih semua"></th><th>Nama</th><th>Kegiatan</th><th>Usia</th><th>Paroki domisili</th></tr></thead><tbody>' + wait.map(function (p) {
     var k = byKeg[p.keg], x = k && evBy[k.ev];
-    return '<tr><td><input type="checkbox" class="apCk" value="' + esc(p.id) + '"></td><td>' + esc(p.nama) + "<br><small>" + esc(p.jk) + " · " + esc(p.alamat) + '</small><div class="rw" data-rw="' + esc(p.id) + '"></div></td><td>" + esc(x ? x.nama : k.judul) + "</td><td>" + esc(ageGroup(p.lahir) || "-") + "</td><td>" + esc(p.paroki) + "</td></tr>";
+    return '<tr><td><input type="checkbox" class="apCk" value="' + esc(p.id) + '"></td><td>' + esc(p.nama) + "<br><small>" + esc(p.jk) + " · " + esc(p.alamat) + '</small><div class="rw" data-rw="' + esc(p.id) + '"></div></td><td>' + esc(x ? x.nama : k.judul) + "</td><td>" + esc(ageGroup(p.lahir) || "-") + "</td><td>" + esc(p.paroki) + "</td></tr>";
   }).join("") + '</tbody></table></div><div class="epk-row"><button type="button" class="chip" id="apOk">Simpan: setujui yang dicentang</button><button type="button" class="chip" id="apNo">Tolak yang dicentang</button></div><div id="apMsg" class="note"></div>';
   setTimeout(function () { kpLoadRw(wait.slice(0, 100).map(function (p) { return p.id; })); }, 0);
   return h;
