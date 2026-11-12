@@ -121,6 +121,9 @@ td.nama { font-weight: 600; }
 .oc-col > ul, .oc-col > .oc-stack { display: none; }
 .oc-h.tg { cursor: pointer; user-select: none; }
 .oc-cnt { font-weight: 400; opacity: .85; font-size: 12px; }
+.oc-memtg { font: inherit; font-size: 12.5px; background: none; border: 1px dashed var(--line); border-radius: 6px; padding: 3px 8px; color: var(--muted); cursor: pointer; }
+.oc-mem { display: grid; gap: 3px; padding-top: 4px; }
+.oc-mem[hidden] { display: none; }
 .oc-v0 { color: var(--warn); }
 .oc-stack { display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 14px; position: relative; }
 .oc-stack::before { content: ""; position: absolute; top: 0; left: 50%; height: 100%; border-left: 2px solid var(--line); }
@@ -791,6 +794,8 @@ var TORDER = { I: 0, H: 1, K: 2, P: 3, "-": 4 };
 /* Roster pengurus dimuat langsung dari Airtable (Pengurus BPK + MasterJabatanBPK).
    Pengelompokan memakai kolom Bidang, Seksi / Unit, dan Peran di MasterJabatanBPK; urutan mengikuti urutan opsi select di Airtable. */
 var ORDER = { bidang: [], seksi: [], peran: [] };
+var BIDANG_ALIAS = { "Unit Staf": "Kesekretariatan" };
+function bAlias(b) { return BIDANG_ALIAS[b] || b; }
 var DATA = [], ALIAS = [], GROUPS = [], posisi = 0, terisi = [], jmlOrang = null, kosong = 0;
 var roster = { state: "loading", msg: "" };
 var UNGROUPED = "Belum dikelompokkan";
@@ -968,6 +973,12 @@ function sortKids(n) {
   n.kids.forEach(sortKids);
 }
 var OC_COLD = 1;
+function ocPeople(n, set) {
+  set = set || {};
+  n.persons.forEach(function (p) { if (p.d && p.d.nama) set[p.d.i] = 1; });
+  n.kids.forEach(function (k) { ocPeople(k, set); });
+  return set;
+}
 var KLBL = { bidang: "Koord. Bidang", seksi: "Koord. Seksi", sub: "Koord. Sub seksi" };
 var KPRE = { bidang: "Bidang", seksi: "Seksi", sub: "Subseksi" };
 function ocTitle(n, kind) {
@@ -978,14 +989,19 @@ function ocTitle(n, kind) {
 }
 function ocCard(n, color, kind, col) {
   var hasK = n.kids && n.kids.length;
-  var h = '<div class="oc-card" style="--cc:' + color + '"><div class="oc-h' + (hasK ? " tg" : "") + '"' + (hasK ? ' role="button" tabindex="0" aria-expanded="' + (col ? "false" : "true") + '"' : "") + ">" + (hasK ? '<span class="oc-chev" aria-hidden="true">' + (col ? "▸" : "▾") + "</span> " : "") + esc(ocTitle(n, kind)) + (hasK ? ' <span class="oc-cnt">(' + n.kids.length + ")</span>" : "") + "</div>";
+  var h = '<div class="oc-card" style="--cc:' + color + '"><div class="oc-h' + (hasK ? " tg" : "") + '"' + (hasK ? ' role="button" tabindex="0" aria-expanded="' + (col ? "false" : "true") + '"' : "") + ">" + (hasK ? '<span class="oc-chev" aria-hidden="true">' + (col ? "▸" : "▾") + "</span> " : "") + esc(ocTitle(n, kind)) + (hasK ? ' <span class="oc-cnt">(' + Object.keys(ocPeople(n)).length + " orang)</span>" : "") + "</div>";
   if (n.persons.length) {
-    h += '<div class="oc-b">' + n.persons.map(function (p) {
+    var one = function (p) {
       var lbl = PERAN_LABEL[p.peran] ? "<small>" + esc(p.peran) + "</small>" : "";
       if (!p.d.nama) return '<span class="oc-v0">Belum terisi</span>';
       if (p.lead) return '<span class="oc-ketua k-' + (kind || "seksi") + '"><button type="button" class="oc-n" data-act="view" data-i="' + p.d.i + '">' + esc(p.d.nama) + "</button><small>" + (p.peran === "Pimpinan" ? "Koordinator" : (kind === "sub" && /^(Kepala|Koordinator)\b/i.test(p.jn || "") ? p.jn : KLBL[kind] || "Ketua")) + "</small></span>";
       return '<span><button type="button" class="oc-n" data-act="view" data-i="' + p.d.i + '">' + esc(p.d.nama) + "</button>" + lbl + "</span>";
-    }).join("") + "</div>";
+    };
+    var mem = n.persons.filter(function (p) { return p.peran === "Anggota" && !p.lead && p.d.nama; });
+    var top = mem.length && mem.length < n.persons.length ? n.persons.filter(function (p) { return mem.indexOf(p) < 0; }) : n.persons;
+    h += '<div class="oc-b">' + top.map(one).join("");
+    if (top !== n.persons) h += '<button type="button" class="oc-memtg" aria-expanded="false">▸ ' + mem.length + ' anggota</button><div class="oc-mem" hidden>' + mem.map(one).join("") + "</div>";
+    h += "</div>";
   }
   return h + "</div>";
 }
@@ -1000,6 +1016,11 @@ function ocTree(n, depth, ci) {
   if (depth === 1) {
     var pk = n.kids.filter(function (k) { return /^pimpinan\s/i.test(k.title); })[0];
     if (pk) { n = { title: n.title, ci: n.ci, urut: n.urut, persons: pk.persons.concat(n.persons), kids: n.kids.filter(function (k) { return k !== pk; }) }; }
+  }
+  if (depth === 1 && /^kesekretariatan$/i.test(n.title)) {
+    var cp = [];
+    n.kids.forEach(function (k) { k.persons.forEach(function (p) { if (p.lead && /^ketua sekretariat$/i.test(p.jn || "")) cp.push({ d: p.d, pr: -1, peran: p.peran, lead: true, jn: p.jn }); }); });
+    if (cp.length) n = { title: n.title, ci: n.ci, urut: n.urut, persons: cp.concat(n.persons), kids: n.kids };
   }
   var kind = depth === 1 ? "bidang" : depth === 2 ? "seksi" : "sub";
   if (n.kids.length) {
@@ -1057,6 +1078,7 @@ document.getElementById("baganSec").addEventListener("click", function (e) {
   var t = e.target, g = t.closest && t.closest("#baganLeadBtn"); if (g) { baganLeadList(g); return; }
   if (t.closest && t.closest("#baganOpen")) { Array.prototype.forEach.call(document.querySelectorAll("#baganBox .oc-col"), function (x) { ocToggle(x, false); }); return; }
   if (t.closest && t.closest("#baganShut")) { Array.prototype.forEach.call(document.querySelectorAll("#baganBox li, #baganBox .oc-sub"), function (x) { var h = x.querySelector(":scope > .oc-card > .oc-h.tg"); if (h && !(x.parentNode && x.parentNode.parentNode === document.getElementById("baganBox") )) ocToggle(x, true); }); return; }
+  var mt = t.closest && t.closest(".oc-memtg"); if (mt) { var ml = mt.nextElementSibling, op = ml.hidden; ml.hidden = !op; mt.setAttribute("aria-expanded", op ? "true" : "false"); mt.textContent = (op ? "▾ " : "▸ ") + ml.children.length + " anggota"; return; }
   var hd = t.closest && t.closest(".oc-h.tg"); if (hd) { var c = hd.closest("li, .oc-sub"); if (c) ocToggle(c, !c.classList.contains("oc-col")); }
 });
 document.getElementById("baganBox").addEventListener("keydown", function (e) { if ((e.key === "Enter" || e.key === " ") && e.target.classList && e.target.classList.contains("tg")) { e.preventDefault(); e.target.click(); } });
@@ -1203,10 +1225,10 @@ function loadContacts() {
   var od = call("get_select_order", { baseId: BASE, tableId: T_JABATAN });
   return Promise.all([pg, jb, od]).then(function (rs) {
     var recs = recsOf(rs[0]), map = {}, jabMap = {}, ord = payloadOf(rs[2]) || {};
-    ORDER = { bidang: ord.bidang || [], seksi: ord.seksi || [], peran: ord.peran || [] };
+    ORDER = { bidang: (ord.bidang || []).map(bAlias), seksi: ord.seksi || [], peran: ord.peran || [] };
     recsOf(rs[1]).forEach(function (r) {
       var v = r.cellValuesByFieldId || {};
-      jabMap[r.id] = { nama: cellFirst(v[F_JAB.nama]), bidang: selName(v[F_JAB.bidang]), seksi: selName(v[F_JAB.seksi]), peran: selName(v[F_JAB.peran]), sub: cellFirst(v[F_JAB.sub]), urut: typeof v[F_JAB.urut] === "number" ? v[F_JAB.urut] : 999 };
+      jabMap[r.id] = { nama: cellFirst(v[F_JAB.nama]), bidang: bAlias(selName(v[F_JAB.bidang])), seksi: selName(v[F_JAB.seksi]), peran: selName(v[F_JAB.peran]), sub: cellFirst(v[F_JAB.sub]), urut: typeof v[F_JAB.urut] === "number" ? v[F_JAB.urut] : 999 };
     });
     recs.forEach(function (r) {
       var v = r.cellValuesByFieldId || {}, nameCell = v[F_PNG_NAMA];
