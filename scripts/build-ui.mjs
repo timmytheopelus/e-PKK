@@ -60,7 +60,7 @@ const shim = `<style>
 .epk-btn.sec { background: #fff; color: var(--accent); } .epk-btn.bad { border-color: var(--danger); background: #fff; color: var(--danger); }
 .epk-msg { margin: 8px 0 0; font-size: 13px; color: var(--accent); } .epk-msg.bad { color: var(--danger); }
 .epk-lvl { color: var(--muted); }
-.epk-asbar { position: sticky; top: 0; z-index: 90; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: center; background: #8a4b00; color: #fff; padding: 8px 12px; margin: -28px -16px 16px; font-size: 14px; }
+.epk-asbar { position: sticky; top: 0; z-index: 50; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: center; background: #8a4b00; color: #fff; padding: 8px 12px; margin: -28px -16px 16px; font-size: 14px; }
 .epk-asbar .epk-btn { background: #fff; color: #8a4b00; border-color: #fff; padding: 4px 12px; }
 .epk-picklist { display: grid; gap: 4px; max-height: 280px; overflow-y: auto; margin: 6px 0 10px; }
 .epk-pickrow { font: inherit; text-align: left; display: grid; gap: 1px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--fg); cursor: pointer; }

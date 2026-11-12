@@ -2680,7 +2680,7 @@ function openPd(id, opener, note) {
     drow("Persekutuan", esc([p.jadwal, p.tempat].filter(Boolean).join(" · "))) + drow("Frekuensi", esc(p.frek)) + drow("Doa syafaat", esc([p.syafaat, p.tempatSyafaat].filter(Boolean).join(" · "))) +
     drow("Berdiri sejak", esc(p.berdiri ? fmtKey(p.berdiri, { day: "numeric", month: "long", year: "numeric" }) : "")) +
     drow("PIC Doa", '<span class="note">belum ada di Airtable</span>') + drow("PIC Pujian", '<span class="note">belum ada di Airtable</span>') + drow("PIC Multimedia", '<span class="note">belum ada di Airtable</span>') + drow("PIC Sound", '<span class="note">belum ada di Airtable</span>') + "</dl>" +
-    '<h3 style="font-family:var(--font-display);font-size:1rem;margin:14px 0 6px">Umat terdata (' + p.mem.length + ")</h3>" + (p.mem.length ? '<div class="scrollbox">' + p.mem.map(function (m) { return '<div><button type="button" class="linkbtn" data-go="mem:' + m.id + '" data-name="' + esc(m.name) + '">' + esc(m.name) + "</button></div>"; }).join("") + "</div>" : '<p class="hint">Belum ada umat yang terhubung ke PD ini.</p>');
+    '';
   openInfo(p.nama, [p.dekanat, p.koor ? "Koord. " + p.koor : ""].filter(Boolean).join(" · "), html, opener, p.koorFoto, initials(p.koor || p.nama));
 }
 var kst = null;

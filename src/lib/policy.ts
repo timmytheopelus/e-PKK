@@ -80,7 +80,7 @@ export const TABLES: Record<string, Spec> = {
     create: { tabs: ["PD"], fields: [PERSON[0], PERSON[2], "fldrHJ6q3HZvApccl"] },
   },
   [T.events]: { base: BASE_BPK, read: ["Kalender", "Dashboard", "Event", "KEP"], create: { tabs: ["Kalender"], fields: EF } },
-  [T.pd]: { base: BASE_BPK, read: ["PD", "Dashboard", "Event", "KEP"], update: { tabs: ["PD"], fields: ["fldagyoKQyhfenB7u"] } },
+  [T.pd]: { base: BASE_BPK, read: ALL_TABS, update: { tabs: ["PD"], fields: ["fldagyoKQyhfenB7u"] } },
   [T.smpEvents]: { base: BASE_SMP, read: ["Dashboard", "Pewarta luar kota"] },
   [T.smpKui]: { base: BASE_SMP, read: ["Dashboard"] },
   [T.pendaftaran]: { base: BASE_BPK, read: ["Event", "KEP"], readFields: PEND_READ },
