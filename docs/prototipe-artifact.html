@@ -948,7 +948,7 @@ function buildTree(only) {
       var jn = j.nama || "", lead = j.peran === "Ketua" || (j.seksi === "Pimpinan Inti" && /^koordinator$/i.test(jn));
       var ex = n.persons.filter(function (x) { return x.d === d; })[0];
       if (ex) { if (lead && !ex.lead) { ex.lead = true; ex.peran = j.peran; ex.pr = -1; } return; }
-      n.persons.push({ d: d, pr: lead ? -1 : rankOf(ORDER.peran, j.peran), peran: j.peran, lead: lead });
+      n.persons.push({ d: d, pr: lead ? -1 : rankOf(ORDER.peran, j.peran), peran: j.peran, lead: lead, jn: jn });
     });
   });
   Object.keys(by).sort(function (a, b) { return rankOf(ORDER.bidang, a) - rankOf(ORDER.bidang, b); }).forEach(function (b, i) { by[b].ci = i; root.kids.push(by[b]); });
@@ -964,13 +964,20 @@ function sortKids(n) {
   n.kids.forEach(sortKids);
 }
 var KLBL = { bidang: "Koord. Bidang", seksi: "Koord. Seksi", sub: "Koord. Sub seksi" };
+var KPRE = { bidang: "Bidang", seksi: "Seksi", sub: "Subseksi" };
+function ocTitle(n, kind) {
+  var t = n.title || "";
+  if (!kind || /^(Sie|Subsie|Seksi|Subseksi|Bidang|Tim|Dekanat|Pimpinan|Penasihat|Koordinator|BPKPKK)\b/i.test(t)) return t;
+  if (kind === "sub" && /^(Sekolah|Forkom)\b/i.test(t)) return t;
+  return KPRE[kind] + " " + t;
+}
 function ocCard(n, color, kind) {
-  var h = '<div class="oc-card" style="--cc:' + color + '"><div class="oc-h">' + esc(n.title) + "</div>";
+  var h = '<div class="oc-card" style="--cc:' + color + '"><div class="oc-h">' + esc(ocTitle(n, kind)) + "</div>";
   if (n.persons.length) {
     h += '<div class="oc-b">' + n.persons.map(function (p) {
       var lbl = PERAN_LABEL[p.peran] ? "<small>" + esc(p.peran) + "</small>" : "";
       if (!p.d.nama) return '<span class="oc-v0">Belum terisi</span>';
-      if (p.lead) return '<span class="oc-ketua k-' + (kind || "seksi") + '"><button type="button" class="oc-n" data-act="view" data-i="' + p.d.i + '">' + esc(p.d.nama) + "</button><small>" + (p.peran === "Pimpinan" ? "Koordinator" : KLBL[kind] || "Ketua") + "</small></span>";
+      if (p.lead) return '<span class="oc-ketua k-' + (kind || "seksi") + '"><button type="button" class="oc-n" data-act="view" data-i="' + p.d.i + '">' + esc(p.d.nama) + "</button><small>" + (p.peran === "Pimpinan" ? "Koordinator" : (kind === "sub" && /^(Kepala|Koordinator)\b/i.test(p.jn || "") ? p.jn : KLBL[kind] || "Ketua")) + "</small></span>";
       return '<span><button type="button" class="oc-n" data-act="view" data-i="' + p.d.i + '">' + esc(p.d.nama) + "</button>" + lbl + "</span>";
     }).join("") + "</div>";
   }
