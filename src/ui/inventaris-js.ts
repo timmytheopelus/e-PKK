@@ -81,7 +81,8 @@ export const INVENTARIS_JS = String.raw`
     root.appendChild(EPK.el("p", { class: "hint", text: "Memuat inventaris…" }));
     var fi = Object.keys(I).map(function (k) { return I[k]; });
     var fl = Object.keys(L).map(function (k) { return L[k]; });
-    return Promise.all([listAll(C.inv, fi, [{ fieldId: I.nama, direction: "asc" }]), listAll(C.log, fl, [{ fieldId: L.tglAjuan, direction: "desc" }])]).then(function (res) {
+    var opts = api("get_select_options", { baseId: C.base, tableId: C.inv }).then(function (o) { if (o.lokasi && o.lokasi.length) LOKASI = o.lokasi; if (o.status && o.status.length) STATUS = o.status; }, function () {});
+    return Promise.all([listAll(C.inv, fi, [{ fieldId: I.nama, direction: "asc" }]), listAll(C.log, fl, [{ fieldId: L.tglAjuan, direction: "desc" }]), opts]).then(function (res) {
       items = res[0].map(mapItem); logs = res[1].map(mapLog); loaded = true; loading = false; draw();
     }, function (e) {
       loading = false; root.textContent = "";
@@ -95,6 +96,19 @@ export const INVENTARIS_JS = String.raw`
   function sel(opts, val, blank) {
     var o = (blank ? [[ "", blank ]] : []).concat(opts.map(function (x) { return [x, x]; }));
     var s = EPK.el("select", {}, o.map(function (x) { return EPK.el("option", { value: x[0], text: x[1] }); })); s.value = val || ""; return s;
+  }
+  function lokasiPicker(cur, blank) {
+    var s = sel(lokasiOpts(), cur, blank), t = EPK.el("input", { type: "text", placeholder: "Nama lokasi baru", maxlength: "40", "aria-label": "Nama lokasi baru" }), isNew = false;
+    t.hidden = true;
+    var btn = EPK.el("button", { type: "button", class: "btn", text: "＋ Lokasi baru" });
+    var wrap = EPK.el("div", { class: "inv-pick" }, [s, t, btn]);
+    btn.addEventListener("click", function () { isNew = !isNew; s.hidden = isNew; t.hidden = !isNew; btn.textContent = isNew ? "Pilih dari daftar" : "＋ Lokasi baru"; if (isNew) t.focus(); });
+    wrap.get = function () { return isNew ? { value: t.value.replace(/\s+/g, " ").trim(), isNew: true } : { value: s.value, isNew: false }; };
+    return wrap;
+  }
+  function doneMsg(res, base) {
+    if (res && res.newLokasi) return base + " Lokasi baru \"" + res.newLokasi + "\" ditambahkan." + (res.emailed ? " Laporan sudah diemail ke pemilik." : " PERHATIAN: email laporan ke pemilik belum terkirim (SMTP belum diatur). Mohon kabari timmy.theopelus@gmail.com.");
+    return base;
   }
   function stat(label, value, sub) {
     return EPK.el("div", { class: "inv-stat" }, [EPK.el("div", { class: "inv-n", text: value }), EPK.el("div", { class: "inv-l", text: label }), sub ? EPK.el("div", { class: "inv-s", text: sub }) : null]);
@@ -110,6 +124,7 @@ export const INVENTARIS_JS = String.raw`
       + ".inv-stat{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface)}.inv-n{font-size:22px;font-weight:700}.inv-l{color:var(--muted);font-size:13px}.inv-s{color:var(--muted);font-size:12px}"
       + ".inv-tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin:10px 0}.inv-tw table{min-width:760px}.inv-tw tr.clk{cursor:pointer}.inv-tw tr.clk:hover td{background:var(--bg)}"
       + ".inv-foto{width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--line);display:block}.inv-nofoto{width:48px;height:48px;border-radius:8px;border:1px dashed var(--line);color:var(--muted);font-size:10px;display:flex;align-items:center;justify-content:center;text-align:center}.inv-foto-big{max-width:100%;max-height:340px;object-fit:contain;border-radius:10px;border:1px solid var(--line);display:block;margin:0 auto 6px}.inv-gal{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}.inv-gal img{width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--line);cursor:pointer}"
+      + ".inv-pick{display:flex;flex-wrap:wrap;gap:6px}.inv-pick select,.inv-pick input{flex:1 1 160px}.inv-pick .btn{padding:6px 10px;font-size:13px}.inv-g1 td{background:var(--accent-soft);font-weight:700;cursor:pointer;border-top:2px solid var(--line)}.inv-g2 td{background:var(--bg);font-weight:600;cursor:pointer;padding-left:28px}.inv-gh{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline}.inv-gh small{font-weight:400;color:var(--muted)}.inv-ar{display:inline-block;width:1.1em}"
       + ".inv-badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12.5px;border:1px solid var(--line);white-space:nowrap}.inv-ok{background:#e4f5e7;color:#1d6b2f;border-color:#b9e0c1}.inv-bad{background:#fde8e8;color:#9b1c1c;border-color:#f3c0c0}.inv-warn{background:#fff3dc;color:#8a5a00;border-color:#f0d9a6}.inv-mute{background:var(--bg);color:var(--muted)}"
       + ".inv-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}.inv-bar .grow{flex:1 1 220px}.inv-h{margin:22px 0 4px;font-size:17px}.inv-form{display:grid;grid-template-columns:150px 1fr;gap:8px 12px;align-items:center}.inv-form input,.inv-form select,.inv-form textarea{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:6px;min-width:0;width:100%;box-sizing:border-box}@media(max-width:560px){.inv-form{grid-template-columns:1fr}}";
     document.head.appendChild(st);
@@ -125,16 +140,42 @@ export const INVENTARIS_JS = String.raw`
       stat("Sedang dipinjam", String(dipinjam)), stat("Menunggu persetujuan", String(tunggu))]);
   }
 
-  function itemTable() {
+  var collapsed = {};
+  function yearOf(x) { var y = x.tahun ? String(x.tahun).slice(0, 4) : ""; return /^\d{4}$/.test(y) ? y : ""; }
+  function lokOf(x) { return x.lokasi || "(Tanpa lokasi)"; }
+  function itemRow(x) {
+    return EPK.el("tr", { class: "clk", tabindex: "0", onclick: function () { detail(x.id); }, onkeydown: function (e) { if (e.key === "Enter") detail(x.id); } }, [
+      EPK.el("td", {}, [thumb(x, false)]), EPK.el("td", { text: x.kode || "-" }), EPK.el("td", { class: "nama", text: x.nama || "-" }), EPK.el("td", { text: x.lokasi || "-" }), EPK.el("td", {}, [badge(x.status)]),
+      EPK.el("td", { text: String(x.jumlah) }), EPK.el("td", { text: rp(x.harga) }), EPK.el("td", { text: rp(x.total) }), EPK.el("td", { text: yearOf(x) || "-" }), EPK.el("td", { text: x.pj || "-" })]);
+  }
+  function sumOf(arr) { var u = 0, n = 0; arr.forEach(function (x) { u += x.jumlah; n += x.total; }); return arr.length + " barang · " + u.toLocaleString("id-ID") + " unit · " + rp(n); }
+  function groupRow(key, label, summary, cls, open, redraw) {
+    function toggle() { collapsed[key] = open; redraw(); }
+    return EPK.el("tr", { class: cls, tabindex: "0", role: "button", "aria-expanded": open ? "true" : "false", onclick: toggle, onkeydown: function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } } },
+      [EPK.el("td", { colspan: "10" }, [EPK.el("div", { class: "inv-gh" }, [EPK.el("span", {}, [EPK.el("span", { class: "inv-ar", text: open ? "▾" : "▸" }), label]), EPK.el("small", { text: summary })])])]);
+  }
+  function filteredItems() {
     var q = filt.q.toLowerCase();
-    var rows = items.filter(function (x) {
+    return items.filter(function (x) {
       return (!filt.status || x.status === filt.status) && (!filt.lokasi || x.lokasi === filt.lokasi) && (!q || [x.kode, x.nama, x.pj, x.lokasi, x.notes].join(" ").toLowerCase().indexOf(q) >= 0);
     });
+  }
+  function lastSort(a, b, desc) { var ap = a.charAt(0) === "(", bp = b.charAt(0) === "("; if (ap !== bp) return ap ? 1 : -1; return desc ? (a < b ? 1 : a > b ? -1 : 0) : a.localeCompare(b, "id"); }
+  function itemTable(redraw) {
+    var rows = filteredItems(), byLok = {};
+    rows.forEach(function (x) { (byLok[lokOf(x)] = byLok[lokOf(x)] || []).push(x); });
     var head = EPK.el("tr", {}, ["Foto", "Kode", "Nama barang", "Lokasi", "Status", "Jumlah", "Harga satuan", "Total", "Tahun", "Penanggung jawab"].map(function (h) { return EPK.el("th", { text: h }); }));
-    var body = rows.map(function (x) {
-      return EPK.el("tr", { class: "clk", tabindex: "0", onclick: function () { detail(x.id); }, onkeydown: function (e) { if (e.key === "Enter") detail(x.id); } }, [
-        EPK.el("td", {}, [thumb(x, false)]), EPK.el("td", { text: x.kode || "-" }), EPK.el("td", { class: "nama", text: x.nama || "-" }), EPK.el("td", { text: x.lokasi || "-" }), EPK.el("td", {}, [badge(x.status)]),
-        EPK.el("td", { text: String(x.jumlah) }), EPK.el("td", { text: rp(x.harga) }), EPK.el("td", { text: rp(x.total) }), EPK.el("td", { text: x.tahun ? String(x.tahun).slice(0, 4) : "-" }), EPK.el("td", { text: x.pj || "-" })]);
+    var body = [];
+    Object.keys(byLok).sort(function (a, b) { return lastSort(a, b, false); }).forEach(function (lk) {
+      var arr = byLok[lk], kL = "L|" + lk, openL = !collapsed[kL];
+      body.push(groupRow(kL, lk, sumOf(arr), "inv-g1", openL, redraw));
+      if (!openL) return;
+      var byY = {}; arr.forEach(function (x) { var y = yearOf(x) || "(Tanpa tahun)"; (byY[y] = byY[y] || []).push(x); });
+      Object.keys(byY).sort(function (a, b) { return lastSort(a, b, true); }).forEach(function (y) {
+        var kY = kL + "|" + y, openY = !collapsed[kY];
+        body.push(groupRow(kY, "Tahun perolehan " + y, sumOf(byY[y]), "inv-g2", openY, redraw));
+        if (openY) byY[y].forEach(function (x) { body.push(itemRow(x)); });
+      });
     });
     if (!body.length) body.push(EPK.el("tr", {}, [EPK.el("td", { colspan: "10", text: "Tidak ada barang yang cocok." })]));
     return { count: rows.length, el: EPK.el("div", { class: "inv-tw" }, [EPK.el("table", {}, [EPK.el("thead", {}, [head]), EPK.el("tbody", {}, body)])]) };
@@ -169,13 +210,15 @@ export const INVENTARIS_JS = String.raw`
     var q = EPK.el("input", { type: "search", class: "grow", placeholder: "Cari kode, nama, penanggung jawab", autocomplete: "off", "aria-label": "Cari barang" }); q.value = filt.q;
     var st = sel(statusOpts(), filt.status, "Semua status"), lk = sel(lokasiOpts(), filt.lokasi, "Semua lokasi");
     var tblBox = EPK.el("div"), cnt = EPK.el("p", { class: "count" });
-    function redraw() { var t = itemTable(); cnt.textContent = t.count + " dari " + items.length + " barang"; tblBox.textContent = ""; tblBox.appendChild(t.el); }
+    function redraw() { var t = itemTable(redraw); cnt.textContent = t.count + " dari " + items.length + " barang"; tblBox.textContent = ""; tblBox.appendChild(t.el); }
     q.addEventListener("input", function () { filt.q = q.value.trim(); redraw(); });
     st.addEventListener("change", function () { filt.status = st.value; redraw(); });
     lk.addEventListener("change", function () { filt.lokasi = lk.value; redraw(); });
     var bar = [q, st, lk, EPK.el("button", { type: "button", class: "btn", text: "↻ Muat ulang", onclick: function () { load(true); } })];
+    bar.push(EPK.el("button", { type: "button", class: "btn", text: "Tutup semua grup", onclick: function () { items.forEach(function (x) { collapsed["L|" + lokOf(x)] = true; }); redraw(); } }));
+    bar.push(EPK.el("button", { type: "button", class: "btn", text: "Buka semua grup", onclick: function () { collapsed = {}; redraw(); } }));
     if (canEdit) bar.push(EPK.el("button", { type: "button", class: "btn primary", text: "＋ Tambah barang", onclick: addItem }));
-    root.appendChild(EPK.el("h3", { class: "inv-h", text: "Daftar barang" }));
+    root.appendChild(EPK.el("h3", { class: "inv-h", text: "Daftar barang (dikelompokkan per lokasi, lalu tahun perolehan)" }));
     root.appendChild(EPK.el("div", { class: "inv-bar" }, bar)); root.appendChild(cnt); root.appendChild(tblBox); redraw();
 
     var lq = EPK.el("input", { type: "search", class: "grow", placeholder: "Cari peminjam, barang, keperluan", autocomplete: "off", "aria-label": "Cari peminjaman" }); lq.value = filt.logq;
@@ -210,15 +253,17 @@ export const INVENTARIS_JS = String.raw`
     }
     box.appendChild(dl);
     if (canEdit) {
-      var s = sel(statusOpts(), x.status), lk = sel(lokasiOpts(), x.lokasi, "(tidak diubah)"), nt = EPK.el("textarea", { rows: "3" }); nt.value = x.notes; var m = msgBox();
+      var s = sel(statusOpts(), x.status), lk = lokasiPicker(x.lokasi, "(tidak diubah)"), nt = EPK.el("textarea", { rows: "3" }); nt.value = x.notes; var m = msgBox();
       var form = EPK.el("div", { class: "inv-form" }, [].concat(field("Status barang", s), field("Pindah lokasi", lk), field("Catatan", nt)));
       var save = EPK.el("button", { type: "button", class: "epk-btn", text: "Simpan perubahan", onclick: function () {
-        var f = {}; if (s.value && s.value !== x.status) f[I.status] = s.value; if (lk.value && lk.value !== x.lokasi) f[I.lokasi] = lk.value; if (nt.value !== x.notes) f[I.notes] = nt.value;
+        var f = {}; if (s.value && s.value !== x.status) f[I.status] = s.value; var lg = lk.get(); if (lg.isNew && lg.value.length < 2) { m.say("Isi nama lokasi baru (minimal 2 huruf).", true); return; } if (lg.value && lg.value !== x.lokasi) f[I.lokasi] = lg.value; if (nt.value !== x.notes) f[I.notes] = nt.value;
         if (!Object.keys(f).length) { m.say("Tidak ada perubahan.", true); return; }
         save.disabled = true; m.say("Menyimpan…");
-        api("update_records_for_table", { baseId: C.base, tableId: C.inv, records: [{ id: x.id, fields: f }] }).then(function () {
+        var req = { baseId: C.base, tableId: C.inv, records: [{ id: x.id, fields: f }] }; if (lg.isNew && f[I.lokasi]) req.newLokasi = f[I.lokasi];
+        api("update_records_for_table", req).then(function (res) {
+          if (res.newLokasi && LOKASI.indexOf(res.newLokasi) < 0) LOKASI.push(res.newLokasi);
           if (f[I.status]) x.status = f[I.status]; if (f[I.lokasi]) x.lokasi = f[I.lokasi]; if (I.notes in f) x.notes = f[I.notes];
-          m.say("Tersimpan."); draw(); setTimeout(function () { var mm = document.getElementById("epkModal"); if (mm) mm.remove(); }, 700);
+          m.say(doneMsg(res, "Tersimpan.")); draw(); setTimeout(function () { var mm = document.getElementById("epkModal"); if (mm) mm.remove(); }, res.newLokasi && !res.emailed ? 6000 : 900);
         }, function (e) { save.disabled = false; m.say(e.message, true); });
       } });
       box.appendChild(EPK.el("h3", { class: "epk-sec", text: "Ubah status barang" })); box.appendChild(form); box.appendChild(EPK.el("div", { class: "epk-row" }, [save])); box.appendChild(m);
@@ -236,7 +281,7 @@ export const INVENTARIS_JS = String.raw`
 
   function addItem() {
     var kode = inp("text", ""), nama = inp("text", ""), jml = inp("number", "1", { min: "0", step: "1" }), hrg = inp("number", "0", { min: "0", step: "1" }),
-      thn = inp("date", ""), pj = inp("text", ""), st = sel(statusOpts(), "Bisa Dipinjam"), lk = sel(lokasiOpts(), "", "(pilih lokasi)"), nt = EPK.el("textarea", { rows: "3" }), m = msgBox();
+      thn = inp("date", ""), pj = inp("text", ""), st = sel(statusOpts(), "Bisa Dipinjam"), lk = lokasiPicker("", "(pilih lokasi)"), nt = EPK.el("textarea", { rows: "3" }), m = msgBox();
     var form = EPK.el("div", { class: "inv-form" }, [].concat(field("Kode inventaris", kode), field("Nama barang *", nama), field("Jumlah", jml), field("Harga satuan (Rp)", hrg), field("Tahun perolehan", thn),
       field("Penanggung jawab", pj), field("Lokasi", lk), field("Status", st), field("Catatan", nt)));
     var save = EPK.el("button", { type: "button", class: "epk-btn", text: "Simpan barang baru", onclick: function () {
@@ -247,13 +292,15 @@ export const INVENTARIS_JS = String.raw`
       if (hrg.value !== "") f[I.harga] = Number(hrg.value);
       if (thn.value) f[I.tahun] = thn.value;
       if (pj.value.trim()) f[I.pj] = pj.value.trim();
-      if (lk.value) f[I.lokasi] = lk.value;
+      var lg = lk.get(); if (lg.isNew && lg.value.length < 2) { m.say("Isi nama lokasi baru (minimal 2 huruf).", true); return; }
+      if (lg.value) f[I.lokasi] = lg.value;
       if (st.value) f[I.status] = st.value;
       if (nt.value.trim()) f[I.notes] = nt.value.trim();
       f[I.petugas] = window.__ME__.nama || window.__ME__.email;
       save.disabled = true; m.say("Menyimpan…");
-      api("create_records_for_table", { baseId: C.base, tableId: C.inv, records: [{ fields: f }] }).then(function () {
-        m.say("Barang ditambahkan."); loaded = false; setTimeout(function () { var mm = document.getElementById("epkModal"); if (mm) mm.remove(); load(true); }, 700);
+      var req = { baseId: C.base, tableId: C.inv, records: [{ fields: f }] }; if (lg.isNew) req.newLokasi = lg.value;
+      api("create_records_for_table", req).then(function (res) {
+        m.say(doneMsg(res, "Barang ditambahkan.")); loaded = false; setTimeout(function () { var mm = document.getElementById("epkModal"); if (mm) mm.remove(); load(true); }, res.newLokasi && !res.emailed ? 6000 : 900);
       }, function (e) { save.disabled = false; m.say(e.message, true); });
     } });
     EPK.modal("Tambah barang inventaris", EPK.el("div", {}, [form, EPK.el("div", { class: "epk-row" }, [save]), m]));

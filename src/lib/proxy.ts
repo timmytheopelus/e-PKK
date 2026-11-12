@@ -1,5 +1,6 @@
 // Menerjemahkan panggilan gaya konektor (list/update/create) menjadi REST Airtable, dengan pemeriksaan izin.
-import { Access, HttpError, JAB, T, TABLES, checkRead, checkWrite } from "./policy";
+import { Access, HttpError, INV, JAB, T, TABLES, checkRead, checkWrite } from "./policy";
+import { notifyOwner } from "./mail";
 import { at, clearCaches, getSchema, listPage, listUntil, resolveLinks, Rec } from "./airtable";
 import { evalFilter } from "./filters";
 
@@ -27,6 +28,11 @@ export async function handleCall(tool: string, input: any, acc: Access) {
     const names = (id: string): string[] => ((sch?.fields[id] as any)?.options?.choices || []).map((c: any) => String(c.name));
     return { bidang: names(JAB.bidang), seksi: names(JAB.seksi), peran: names(JAB.peran) };
   }
+  if (tool === "get_select_options") {
+    if (table !== T.inventaris) throw new HttpError(400, "Perintah tidak dikenal.");
+    checkRead(spec, table, { fieldIds: [INV.lokasi, INV.status] }, acc);
+    return selectNames(base, table, true);
+  }
   if (tool === "update_records_for_table" || tool === "create_records_for_table") {
     const kind = tool === "update_records_for_table" ? "update" : "create";
     const records = input.records;
@@ -36,14 +42,34 @@ export async function handleCall(tool: string, input: any, acc: Access) {
       if (!r.fields || typeof r.fields !== "object") throw new HttpError(400, "fields tidak valid");
     }
     checkWrite(spec, kind, records, acc);
+    // Lokasi baru: Airtable membuat opsi select baru lewat typecast. Dibatasi ketat agar field lain tidak ikut membuat opsi.
+    let typecast = false, newLokasi = "";
+    if (input.newLokasi !== undefined) {
+      if (table !== T.inventaris) throw new HttpError(400, "Lokasi baru hanya untuk Inventaris.");
+      newLokasi = String(input.newLokasi).replace(/\s+/g, " ").trim();
+      if (newLokasi.length < 2 || newLokasi.length > 40 || /[\u0000-\u001f,]/.test(newLokasi)) throw new HttpError(400, "Nama lokasi 2 sampai 40 karakter, tanpa koma.");
+      const cur = await selectNames(base, table, true);
+      if (cur.lokasi.some((n) => n.toLowerCase() === newLokasi.toLowerCase())) throw new HttpError(409, "Lokasi \"" + newLokasi + "\" sudah ada. Pilih dari daftar.");
+      for (const r of records) {
+        if (r.fields[INV.lokasi] !== newLokasi) throw new HttpError(400, "Lokasi pada data tidak sesuai dengan lokasi baru.");
+        if (r.fields[INV.status] != null && !cur.status.includes(r.fields[INV.status])) throw new HttpError(400, "Status barang tidak dikenal.");
+      }
+      typecast = true;
+    }
     console.log(JSON.stringify({ audit: kind, who: acc.email, table, ids: records.map((r: any) => r.id).filter(Boolean), fields: Object.keys(records[0].fields) }));
     const out: Rec[] = [];
     for (let i = 0; i < records.length; i += 10) {
       const chunk = records.slice(i, i + 10).map((r: any) => (kind === "update" ? { id: r.id, fields: r.fields } : { fields: r.fields }));
-      const j = await at(`/v0/${base}/${table}`, { method: kind === "update" ? "PATCH" : "POST", body: JSON.stringify({ records: chunk, typecast: false, returnFieldsByFieldId: true }) });
+      const j = await at(`/v0/${base}/${table}`, { method: kind === "update" ? "PATCH" : "POST", body: JSON.stringify({ records: chunk, typecast, returnFieldsByFieldId: true }) });
       out.push(...(j.records || []));
     }
     cache.clear(); clearCaches();
+    if (newLokasi) {
+      console.log(JSON.stringify({ audit: "lokasi-baru", who: acc.email, lokasi: newLokasi }));
+      const emailed = await notifyOwner('[e-PKK] Opsi Lokasi baru di Airtable: "' + newLokasi + '"',
+        'Opsi baru "' + newLokasi + '" ditambahkan ke field Lokasi (select) di tabel Inventaris, base BPK Bandung.\nOleh: ' + (acc.nama || acc.email) + " <" + acc.email + ">\nLewat: menu Inventaris e-PKK.\nTidak ada tabel atau field baru.");
+      return { records: out.map(toOut), newLokasi, emailed };
+    }
     return { records: out.map(toOut) };
   }
   throw new HttpError(400, "Perintah tidak dikenal.");
@@ -119,4 +145,10 @@ async function list(base: string, table: string, input: any) {
   if (cache.size > 60) cache.clear();
   cache.set(key, { at: Date.now(), v });
   return v;
+}
+
+async function selectNames(base: string, table: string, fresh: boolean) {
+  const sch = (await getSchema(base, fresh))[table];
+  const names = (id: string): string[] => ((sch?.fields[id] as any)?.options?.choices || []).map((c: any) => String(c.name));
+  return { lokasi: names(INV.lokasi), status: names(INV.status) };
 }

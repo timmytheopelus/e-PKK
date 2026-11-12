@@ -53,9 +53,9 @@ export async function listUntil(base: string, table: string, o: { fieldIds?: str
 /* ---------- skema (untuk menerjemahkan relasi ID -> nama) ---------- */
 type TableSchema = { id: string; primaryFieldId: string; fields: Record<string, any> };
 const schemaCache = new Map<string, { at: number; v: Record<string, TableSchema> }>();
-export async function getSchema(base: string): Promise<Record<string, TableSchema>> {
+export async function getSchema(base: string, fresh = false): Promise<Record<string, TableSchema>> {
   const c = schemaCache.get(base);
-  if (c && Date.now() - c.at < 3600_000) return c.v;
+  if (!fresh && c && Date.now() - c.at < 3600_000) return c.v;
   const j = await at(`/v0/meta/bases/${base}/tables`);
   const v: Record<string, TableSchema> = {};
   for (const t of j.tables || []) {

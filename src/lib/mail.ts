@@ -45,3 +45,14 @@ export async function sendWelcome(o: { nama: string; email: string; level: strin
   await tr.sendMail({ from: process.env.MAIL_FROM || `e-PKK BPKPKK Bandung <${SMTP_USER}>`, to: o.email, subject: "Akses e-PKK BPKPKK Bandung", text: `Shalom ${o.nama}, Anda sudah diberi akses ke e-PKK: ${url}. Login dengan Gmail ${o.email}.`, html: welcomeHtml({ ...o, url }) });
   return true;
 }
+
+/** Laporan perubahan ke pemilik (mis. opsi Lokasi baru di Airtable). Mengembalikan false bila SMTP belum diatur atau gagal. */
+export async function notifyOwner(subject: string, text: string): Promise<boolean> {
+  const { SMTP_USER, SMTP_PASS } = process.env;
+  if (!SMTP_USER || !SMTP_PASS) { console.log("SMTP belum diatur; laporan ke pemilik dilewati: " + subject); return false; }
+  try {
+    const tr = nodemailer.createTransport({ host: process.env.SMTP_HOST || "smtp.gmail.com", port: Number(process.env.SMTP_PORT) || 465, secure: (Number(process.env.SMTP_PORT) || 465) === 465, auth: { user: SMTP_USER, pass: SMTP_PASS } });
+    await tr.sendMail({ from: process.env.MAIL_FROM || `e-PKK BPKPKK Bandung <${SMTP_USER}>`, to: process.env.OWNER_EMAIL || "timmy.theopelus@gmail.com", subject, text });
+    return true;
+  } catch (e) { console.error("email ke pemilik gagal", e); return false; }
+}

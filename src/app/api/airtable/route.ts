@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     const { acc } = await effectiveAccess(email, (await cookies()).get(AS_COOKIE)?.value);
     if (!acc || acc.status !== "Disetujui") throw new HttpError(403, "Akun belum disetujui.");
     const body = await req.json();
-    if (acc.viewAs && /^(update|create)_/.test(String(body?.tool))) throw new HttpError(403, "Mode Lihat sebagai hanya pratinjau: data tidak bisa diubah.");
+    if (acc.viewAs && /^(update|create|add)_/.test(String(body?.tool))) throw new HttpError(403, "Mode Lihat sebagai hanya pratinjau: data tidak bisa diubah.");
     const out = await handleCall(String(body?.tool), body?.input, acc);
     return NextResponse.json(out);
   } catch (e: any) {
