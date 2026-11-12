@@ -88,7 +88,7 @@ export const ADMIN_JS = String.raw`
       var only = EPK.el("input", { type: "checkbox" });
       var hits = {}, hitT = null;
       var box = EPK.el("div", { class: "epk-picklist" }), cnt = EPK.el("p", { class: "sub" });
-      var form = EPK.el("div", {});
+      var form = EPK.el("div", {}), listWrap = EPK.el("div", {});
       var allowedTabs = IS_SUPER ? ALLT : ALLT.filter(function (t) { return (ME.tabsOwned || []).indexOf(t) >= 0; });
       function draw() {
         var t = q.value.trim().toLowerCase();
@@ -109,6 +109,7 @@ export const ADMIN_JS = String.raw`
       }
       function choose(u) {
         form.textContent = "";
+        listWrap.hidden = true;
         var em = EPK.el("input", { type: "email", placeholder: u.hasEmail ? "kosongkan untuk memakai email umat (" + u.mail + ")" : "email Google (wajib)", autocomplete: "off" });
         var lv = IS_SUPER ? select([["View", "Hanya lihat"], ["Edit", "Edit"]], "View") : EPK.el("b", { text: "Hanya lihat (View)" });
         var tb = tabBoxes(["Dashboard"].filter(function (t) { return allowedTabs.indexOf(t) >= 0; }));
@@ -122,11 +123,12 @@ export const ADMIN_JS = String.raw`
           }, function (e) { go.disabled = false; msg.say(e.message, true); });
         } });
         form.appendChild(EPK.el("div", { class: "epk-card" }, [
+          EPK.el("button", { type: "button", class: "epk-btn sec", text: "← Pilih umat lain", onclick: function () { form.textContent = ""; listWrap.hidden = false; } }),
           EPK.el("h4", { text: u.nama }), EPK.el("div", { class: "sub", text: [u.pd, u.jab].filter(Boolean).join(" · ") }),
           EPK.el("div", { class: "epk-row" }, [EPK.el("label", {}, ["Email login ", em])]),
           EPK.el("div", { class: "epk-row" }, [EPK.el("label", {}, ["Hak akses ", lv]), tb]),
           EPK.el("div", { class: "epk-row" }, [go]), msg]));
-        form.scrollIntoView && form.scrollIntoView({ block: "nearest" });
+        holder.scrollTop = 0;
       }
       [q, fj, fp].forEach(function (x) { x.addEventListener(x === q ? "input" : "change", draw); });
       q.addEventListener("input", function () {
@@ -135,8 +137,9 @@ export const ADMIN_JS = String.raw`
         hitT = setTimeout(function () { api("umat", { q: t }).then(function (j) { hits = {}; (j.hits || []).forEach(function (id) { hits[id] = 1; }); draw(); }, function () {}); }, 350);
       });
       only.addEventListener("change", draw);
-      holder.appendChild(EPK.el("div", { class: "epk-row" }, [q, fj, fp, EPK.el("label", {}, [only, "Hanya yang punya jabatan BPK"])]));
-      holder.appendChild(cnt); holder.appendChild(box); holder.appendChild(form);
+      listWrap.appendChild(EPK.el("div", { class: "epk-row" }, [q, fj, fp, EPK.el("label", {}, [only, "Hanya yang punya jabatan BPK"])]));
+      listWrap.appendChild(cnt); listWrap.appendChild(box);
+      holder.appendChild(listWrap); holder.appendChild(form);
       draw();
     }
     (umatCache ? Promise.resolve(umatCache) : api("umat").then(function (j) { umatCache = j.umat; return umatCache; })).then(ready, function (e) { holder.textContent = e.message; });
