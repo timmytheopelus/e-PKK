@@ -125,6 +125,7 @@ td.nama { font-weight: 600; }
 .oc-mem { display: grid; gap: 3px; padding-top: 4px; }
 .oc-mem[hidden] { display: none; }
 .oc-v0 { color: var(--warn); }
+.pd-chip { display: inline-block; font-size: 11px; line-height: 1.5; padding: 0 7px; border-radius: 999px; margin-left: 4px; background: hsl(var(--h) 70% 92%); color: hsl(var(--h) 55% 28%); border: 1px solid hsl(var(--h) 55% 70%); vertical-align: middle; }
 .oc-stack { display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 14px; position: relative; }
 .oc-stack::before { content: ""; position: absolute; top: 0; left: 50%; height: 100%; border-left: 2px solid var(--line); }
 .oc-stack > .oc-card, .oc-stack > .oc-sub > .oc-card { position: relative; }
@@ -434,18 +435,19 @@ body.sep img.logo { width: 120px; height: 120px; object-fit: contain; } @media (
   </section>
 
   <div class="vchips" id="viewChips" role="group" aria-label="Tampilan pengurus">
-    <button type="button" class="chip" data-v="tabel" aria-pressed="true">Tabel</button>
-    <button type="button" class="chip" data-v="bagan" aria-pressed="false">Bagan</button>
+    <button type="button" class="chip" data-v="bagan" aria-pressed="true">Bagan</button>
+    <button type="button" class="chip" data-v="tabel" aria-pressed="false">Tabel</button>
   </div>
+  <div class="chips" id="leadBar"></div>
 
-  <section id="baganSec" style="display:grid;gap:12px" aria-label="Bagan struktur" hidden>
+  <section id="baganSec" style="display:grid;gap:12px" aria-label="Bagan struktur">
     <div class="chips" id="baganChips"></div>
     <div class="chips" id="baganSum"></div>
     <p class="sub" style="margin:0">Geser ke samping untuk melihat seluruh bagan. Klik nama untuk melihat detail.</p>
     <div class="ocwrap"><div class="oc" id="baganBox"></div></div>
   </section>
 
-  <section id="listSec" style="display:grid;gap:12px" aria-label="Daftar pengurus">
+  <section id="listSec" style="display:grid;gap:12px" aria-label="Daftar pengurus" hidden>
     <div class="tools">
       <input type="search" id="q" placeholder="Cari nama atau jabatan" autocomplete="off">
       <div class="chips" id="chips"></div>
@@ -944,12 +946,34 @@ function ocKid(n, title, urut) {
   if (urut < k.urut) k.urut = urut;
   return k;
 }
+var LEAD_ONLY = false, PDMAP = {};
+function isLeadJ(j) { return j.peran === "Ketua" || j.peran === "Pimpinan" || (j.seksi === "Pimpinan Inti" && /^koordinator$/i.test(j.nama || "")); }
+function pdColor(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; }
+function pdChip(p) {
+  var n = p.dek && p.d && PDMAP[p.d.i]; if (!n) return "";
+  return ' <span class="pd-chip" style="--h:' + pdColor(n) + '">' + esc(n) + "</span>";
+}
+function loadPD() {
+  if (!mcp) return;
+  var ids = [], seen = {}, owner = {};
+  DATA.forEach(function (d) {
+    if (!d.nama || !(d.pl || []).some(function (j) { return /dekanat/i.test(j.bidang || ""); })) return;
+    var c = contacts[keyOf(d.nama)]; if (c && c.id && !seen[c.id]) { seen[c.id] = 1; ids.push(c.id); owner[c.id] = d.i; }
+  });
+  var jobs = [];
+  for (var k = 0; k < ids.length; k += 50) jobs.push(call("list_records_for_table", { baseId: BASE, tableId: T_UMAT, recordIds: ids.slice(k, k + 50), fieldIds: ["fldOovF470MdN2fMg"] }));
+  Promise.all(jobs).then(function (rs) {
+    rs.forEach(function (r) { recsOf(r).forEach(function (x) { var v = cellFirst((x.cellValuesByFieldId || {})["fldOovF470MdN2fMg"]); if (v && owner[x.id] != null) PDMAP[owner[x.id]] = v; }); });
+    renderBagan();
+  }, function () {});
+}
 function buildTree(only) {
   var root = ocNode("BPKPKK Bandung");
   var by = {};
   DATA.forEach(function (d) {
     (d.pl || []).forEach(function (j) {
       if (only && j.bidang !== only) return;
+      if (LEAD_ONLY && !isLeadJ(j)) return;
       var bn = by[j.bidang] || (by[j.bidang] = ocNode(j.bidang));
       var n = ocKid(bn, j.seksi, 0);
       var path = j.sub ? j.sub.split("›").map(function (s) { return s.trim(); }).filter(Boolean) : [];
@@ -957,7 +981,7 @@ function buildTree(only) {
       var jn = j.nama || "", lead = j.peran === "Ketua" || (j.seksi === "Pimpinan Inti" && /^koordinator$/i.test(jn));
       var ex = n.persons.filter(function (x) { return x.d === d; })[0];
       if (ex) { if (lead && !ex.lead) { ex.lead = true; ex.peran = j.peran; ex.pr = -1; } return; }
-      n.persons.push({ d: d, pr: lead ? -1 : rankOf(ORDER.peran, j.peran), peran: j.peran, lead: lead, jn: jn });
+      n.persons.push({ d: d, pr: lead ? -1 : rankOf(ORDER.peran, j.peran), peran: j.peran, lead: lead, jn: jn, dek: /dekanat/i.test(j.bidang || "") });
     });
   });
   Object.keys(by).sort(function (a, b) { return rankOf(ORDER.bidang, a) - rankOf(ORDER.bidang, b); }).forEach(function (b, i) { by[b].ci = i; root.kids.push(by[b]); });
@@ -994,8 +1018,8 @@ function ocCard(n, color, kind, col) {
     var one = function (p) {
       var lbl = PERAN_LABEL[p.peran] ? "<small>" + esc(p.peran) + "</small>" : "";
       if (!p.d.nama) return '<span class="oc-v0">Belum terisi</span>';
-      if (p.lead) return '<span class="oc-ketua k-' + (kind || "seksi") + '"><button type="button" class="oc-n" data-act="view" data-i="' + p.d.i + '">' + esc(p.d.nama) + "</button><small>" + (p.peran === "Pimpinan" ? "Koordinator" : (kind === "sub" && /^(Kepala|Koordinator)\b/i.test(p.jn || "") ? p.jn : KLBL[kind] || "Ketua")) + "</small></span>";
-      return '<span><button type="button" class="oc-n" data-act="view" data-i="' + p.d.i + '">' + esc(p.d.nama) + "</button>" + lbl + "</span>";
+      if (p.lead) return '<span class="oc-ketua k-' + (kind || "seksi") + '"><button type="button" class="oc-n" data-act="view" data-i="' + p.d.i + '">' + esc(p.d.nama) + "</button>" + pdChip(p) + "<small>" + (p.peran === "Pimpinan" ? "Koordinator" : (kind === "sub" && /^(Kepala|Koordinator)\b/i.test(p.jn || "") ? p.jn : KLBL[kind] || "Ketua")) + "</small></span>";
+      return '<span><button type="button" class="oc-n" data-act="view" data-i="' + p.d.i + '">' + esc(p.d.nama) + "</button>" + pdChip(p) + lbl + "</span>";
     };
     var mem = n.persons.filter(function (p) { return p.peran === "Anggota" && !p.lead && p.d.nama; });
     var top = mem.length && mem.length < n.persons.length ? n.persons.filter(function (p) { return mem.indexOf(p) < 0; }) : n.persons;
@@ -1056,26 +1080,23 @@ function renderBagan() {
 function baganLeads() {
   var out = [];
   DATA.forEach(function (d) {
-    var js = (d.pl || []).filter(function (j) { return j.peran === "Ketua" && !/^pimpinan\s/i.test(j.seksi || ""); });
+    var js = (d.pl || []).filter(isLeadJ);
     if (d.nama && js.length) out.push({ d: d, js: js });
   });
   return out.sort(function (a, b) { return a.d.nama.localeCompare(b.d.nama); });
 }
+function leadSet() { var o = {}; baganLeads().forEach(function (x) { o[x.d.i] = 1; }); return o; }
 function baganSummary() {
-  var el = document.getElementById("baganSum"); if (!el) return;
-  var l = baganLeads();
-  el.innerHTML = '<button type="button" class="chip" id="baganLeadBtn">👥 ' + l.length + ' orang tim kerja berperan sebagai ketua/koordinator seksi hingga ketua subseksi · klik untuk melihat</button> <button type="button" class="chip" id="baganOpen">Buka semua</button> <button type="button" class="chip" id="baganShut">Tutup semua</button>';
+  var el = document.getElementById("baganSum"), lb = document.getElementById("leadBar");
+  if (el) el.innerHTML = '<button type="button" class="chip" id="baganOpen">Buka semua</button> <button type="button" class="chip" id="baganShut">Tutup semua</button>';
+  if (lb) lb.innerHTML = '<button type="button" class="chip" id="baganLeadBtn" aria-pressed="' + (LEAD_ONLY ? "true" : "false") + '">👥 ' + baganLeads().length + " ketua/koordinator (bidang hingga subseksi)" + (LEAD_ONLY ? " · tampil: hanya ketua ✕" : " · klik untuk menyaring") + "</button>";
 }
-function baganLeadList(opener) {
-  var l = baganLeads(), by = {};
-  l.forEach(function (x) { x.js.forEach(function (j) { (by[j.bidang] = by[j.bidang] || []).push({ nama: x.d.nama, jab: (j.nama || "Ketua") + (j.sub ? " (" + j.sub.replace(/›/g, "›") + ")" : j.seksi ? " (" + j.seksi + ")" : "") }); }); });
-  var h = Object.keys(by).sort(function (a, b) { return rankOf(ORDER.bidang, a) - rankOf(ORDER.bidang, b); }).map(function (b) {
-    return "<h4>" + esc(b) + "</h4><ul>" + by[b].map(function (x) { return "<li><b>" + esc(x.nama) + "</b><br><small>" + esc(x.jab) + "</small></li>"; }).join("") + "</ul>";
-  }).join("");
-  openInfo("Ketua seksi hingga ketua subseksi", l.length + " orang tim kerja.", h || '<p class="sub">Belum ada data.</p>', opener);
-}
+document.getElementById("leadBar").addEventListener("click", function (e) {
+  if (!(e.target.closest && e.target.closest("#baganLeadBtn"))) return;
+  LEAD_ONLY = !LEAD_ONLY; baganSummary(); renderBagan(); render();
+});
 document.getElementById("baganSec").addEventListener("click", function (e) {
-  var t = e.target, g = t.closest && t.closest("#baganLeadBtn"); if (g) { baganLeadList(g); return; }
+  var t = e.target;
   if (t.closest && t.closest("#baganOpen")) { Array.prototype.forEach.call(document.querySelectorAll("#baganBox .oc-col"), function (x) { ocToggle(x, false); }); return; }
   if (t.closest && t.closest("#baganShut")) { Array.prototype.forEach.call(document.querySelectorAll("#baganBox li, #baganBox .oc-sub"), function (x) { var h = x.querySelector(":scope > .oc-card > .oc-h.tg"); if (h && !(x.parentNode && x.parentNode.parentNode === document.getElementById("baganBox") )) ocToggle(x, true); }); return; }
   var mt = t.closest && t.closest(".oc-memtg"); if (mt) { var ml = mt.nextElementSibling, op = ml.hidden; ml.hidden = !op; mt.setAttribute("aria-expanded", op ? "true" : "false"); mt.textContent = (op ? "▾ " : "▸ ") + ml.children.length + " anggota"; return; }
@@ -1132,7 +1153,9 @@ function tags(d) {
 }
 function render() {
   Array.prototype.forEach.call(chipBox.children, function (b) { b.setAttribute("aria-pressed", b.dataset.id === state.f ? "true" : "false"); });
+  var LS = LEAD_ONLY ? leadSet() : {};
   var list = DATA.concat(ALIAS).filter(function (d) {
+    if (LEAD_ONLY && !LS[d.i]) return false;
     if (state.f === "kosong" && d.nama) return false;
     if (state.f === "H" && d.t !== "H" && d.t !== "I") return false;   /* Grup Harian mencakup Tim Inti */
     if (["I", "K", "P"].indexOf(state.f) > -1 && d.t !== state.f && !(state.f === "K" && d.x === "K")) return false;
@@ -1240,7 +1263,7 @@ function loadContacts() {
     buildRoster(recs, jabMap);
     roster = { state: "ok", msg: "" };
     link = { state: "ok", msg: "" };
-    renderLink(); render(); refreshViews();
+    renderLink(); render(); refreshViews(); renderBagan(); loadPD();
     return true;
   }, function (e) {
     var i = errInfo(e);
