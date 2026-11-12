@@ -33,7 +33,7 @@ const PWB_YT = "fldJGTPgfN00lAdMo";
 /** MasterJabatanBPK: kolom pengelompokan (urutan opsi select = urutan tampil di dashboard). */
 export const JAB = { bidang: "fldCCi0hV9yTL091P", seksi: "fldAAyRg1kko5YgrK", peran: "fldI8J3VXZDyjWa3f" };
 
-export type Access = { email: string; nama: string; status: string; level: string; tabs: string[]; jabatan?: string; login?: string };
+export type Access = { email: string; nama: string; status: string; level: string; tabs: string[]; jabatan?: string; login?: string; viewAs?: string };
 export const canEdit = (a: Access) => a.level === "Edit" || a.level === "Superadmin";
 
 type Spec = {

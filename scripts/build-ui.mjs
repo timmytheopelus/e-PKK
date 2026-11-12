@@ -52,6 +52,8 @@ const shim = `<style>
 .epk-btn.sec { background: #fff; color: var(--accent); } .epk-btn.bad { border-color: var(--danger); background: #fff; color: var(--danger); }
 .epk-msg { margin: 8px 0 0; font-size: 13px; color: var(--accent); } .epk-msg.bad { color: var(--danger); }
 .epk-lvl { color: var(--muted); }
+.epk-asbar { position: sticky; top: 0; z-index: 90; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: center; background: #8a4b00; color: #fff; padding: 8px 12px; margin: -28px -16px 16px; font-size: 14px; }
+.epk-asbar .epk-btn { background: #fff; color: #8a4b00; border-color: #fff; padding: 4px 12px; }
 .epk-picklist { display: grid; gap: 4px; max-height: 280px; overflow-y: auto; margin: 6px 0 10px; }
 .epk-pickrow { font: inherit; text-align: left; display: grid; gap: 1px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--fg); cursor: pointer; }
 .epk-pickrow small { color: var(--muted); }
@@ -106,19 +108,28 @@ function applyMe() {
   var el = document.getElementById("me"); if (!el) return;
   var menu = EPK.el("div", { class: "epk-pop", hidden: "" }, [
     EPK.el("button", { type: "button", text: "Profil saya", onclick: function () { EPK.menuClose(); EPK.profile(); } }),
-    me.level === "Superadmin" || me.level === "Admin" ? EPK.el("button", { type: "button", text: "Tambah pengguna", onclick: function () { EPK.menuClose(); if (window.EPK_TAMBAH) window.EPK_TAMBAH(); } }) : null,
-    me.level === "Superadmin" ? EPK.el("button", { type: "button", text: "Kelola Pengguna", onclick: function () { EPK.menuClose(); if (window.EPK_KELOLA) window.EPK_KELOLA(); } }) : null,
+    me.level === "Superadmin" && !me.viewAs ? EPK.el("button", { type: "button", text: "Lihat sebagai…", onclick: function () { EPK.menuClose(); if (window.EPK_LIHATSEBAGAI) window.EPK_LIHATSEBAGAI(); } }) : null,
+    (me.level === "Superadmin" || me.level === "Admin") && !me.viewAs ? EPK.el("button", { type: "button", text: "Tambah pengguna", onclick: function () { EPK.menuClose(); if (window.EPK_TAMBAH) window.EPK_TAMBAH(); } }) : null,
+    me.level === "Superadmin" && !me.viewAs ? EPK.el("button", { type: "button", text: "Kelola Pengguna", onclick: function () { EPK.menuClose(); if (window.EPK_KELOLA) window.EPK_KELOLA(); } }) : null,
     EPK.el("a", { href: "/keluar", text: "Keluar" })]);
   var who = EPK.el("button", { type: "button", class: "epk-who", "aria-haspopup": "true", onclick: function (e) { e.stopPropagation(); var h = menu.hidden; EPK.menuClose(); menu.hidden = !h; } },
     [(me.nama || me.email) + " ▾"]);
   el.textContent = "";
-  if (me.level === "Superadmin") {
+  if (me.level === "Superadmin" && !me.viewAs) {
     var bell = EPK.el("button", { type: "button", class: "epk-bell", id: "epkBell", "aria-label": "Notifikasi", onclick: function (e) { e.stopPropagation(); var h = bellMenu.hidden; EPK.menuClose(); bellMenu.hidden = !h; } }, ["🔔", EPK.el("span", { class: "epk-badge", id: "epkBadge", hidden: "" })]);
     var bellMenu = EPK.el("div", { class: "epk-pop epk-bellpop", id: "epkBellMenu", hidden: "" }, [EPK.el("p", { class: "epk-empty", text: "Tidak ada tugas." })]);
     el.appendChild(EPK.el("span", { class: "epk-wrap" }, [bell, bellMenu]));
   }
   el.appendChild(EPK.el("span", { class: "epk-wrap" }, [who, menu]));
   el.appendChild(EPK.el("span", { class: "epk-lvl", text: me.level === "Superadmin" ? "Superadmin" : me.level === "Admin" ? "Admin" : me.level === "Edit" ? "Akses edit" : "Hanya lihat" }));
+  if (me.viewAs) {
+    var bar = EPK.el("div", { class: "epk-asbar", role: "status" }, [
+      EPK.el("span", { text: "Mode Lihat sebagai: Anda melihat tampilan " + (me.nama || me.email) + " (" + me.level + "). Pratinjau saja, data tidak bisa diubah." }),
+      EPK.el("button", { type: "button", class: "epk-btn", text: "Kembali ke akun saya", onclick: function () {
+        fetch("/api/viewas", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: "" }) }).then(function () { location.href = "/dashboard"; });
+      } })]);
+    document.body.insertBefore(bar, document.body.firstChild);
+  }
   document.addEventListener("click", EPK.menuClose);
   if (window.EPK_ADMIN_BOOT) window.EPK_ADMIN_BOOT();
 }

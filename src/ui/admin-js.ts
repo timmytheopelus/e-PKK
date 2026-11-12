@@ -142,6 +142,29 @@ export const ADMIN_JS = String.raw`
     (umatCache ? Promise.resolve(umatCache) : api("umat").then(function (j) { umatCache = j.umat; return umatCache; })).then(ready, function (e) { holder.textContent = e.message; });
   }
   window.EPK_TAMBAH = pick;
+  function viewAsPicker() {
+    var holder = EPK.el("div", {}, [EPK.el("p", { text: "Memuat pengguna…" })]);
+    EPK.modal("Lihat sebagai", holder);
+    api("list").then(function (j) {
+      holder.textContent = "";
+      holder.appendChild(EPK.el("p", { class: "sub", text: "Pilih pengguna untuk melihat tampilan dan hak aksesnya. Ini hanya pratinjau: data tidak bisa diubah selama mode ini aktif." }));
+      var q = EPK.el("input", { type: "search", placeholder: "Cari nama, email, atau jabatan", autocomplete: "off" }), box = EPK.el("div", { class: "epk-picklist" });
+      function draw() {
+        var t = q.value.trim().toLowerCase(); box.textContent = "";
+        j.users.filter(function (u) { return u.status === "Disetujui" && u.email.toLowerCase() !== ME.email.toLowerCase() && (!t || (u.nama + " " + u.email + " " + u.jabatan).toLowerCase().indexOf(t) >= 0); })
+          .sort(function (a, b) { return (a.nama || a.email).localeCompare(b.nama || b.email, "id"); }).forEach(function (u) {
+            box.appendChild(EPK.el("button", { type: "button", class: "epk-pickrow", onclick: function () {
+              fetch("/api/viewas", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: u.email }) })
+                .then(function (r) { return r.json().then(function (b) { if (!r.ok) throw new Error(b.message || "Gagal."); location.href = "/dashboard"; }); }, function () {})
+                .catch(function (e) { alert(e.message); });
+            } }, [EPK.el("b", { text: u.nama || u.email }), EPK.el("small", { text: [u.level, u.jabatan, u.tabs.length + " menu"].filter(Boolean).join(" · ") })]));
+          });
+        if (!box.firstChild) box.appendChild(EPK.el("p", { class: "sub", text: "Tidak ada pengguna." }));
+      }
+      q.addEventListener("input", draw); holder.appendChild(q); holder.appendChild(box); draw();
+    }, function (e) { holder.textContent = e.message; });
+  }
+  window.EPK_LIHATSEBAGAI = viewAsPicker;
   function kelola() {
     var holder = EPK.el("div", {}, [EPK.el("p", { text: "Memuat…" })]);
     EPK.modal("Kelola Pengguna", holder);
