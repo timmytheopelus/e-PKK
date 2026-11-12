@@ -56,8 +56,8 @@ type Spec = {
 const EF = ["fld0d9tIyi4nyTZsM", "fldoIkx9wLMaKOa38", "fldMO46zH4SDzIypy", "fld4i5iQ6zTY8UTSm", "fldrYLgd8LCDjwmLZ", "fldhgv2WlvqytF6zA", "fldCGnuPOkqzb5jx2", "fldROaJ8rPAZQPTED", "fld4qestIo5EjWAvk", "fldY0qw1v0a4fK9Sp", "fldSNUErmbrKEOCcf", "fldG7mLTlU3TDeXoF", "fldCFtFJH9S16bjl3"];
 /** Pendaftaran Events: hanya kolom demografis. Tanpa kontak, riwayat penyakit, kontak darurat, dll. */
 export const PEND_READ = ["flduf15moMpZSklGL", "fld9ucFxEU0cUSHWw", "fldMBf67dQxv51kY1", "fldAZzqERt3oFHRRx", "fldylW3JpqB1DJ0Fh", "fldArgqtlZOnnRIvX", "fldmecbafGeLtqCSd", "fldIgnkqdrDPz8gCV", "fldNGGEcwHqIsQPct", "fldqB6h9rzzC5VhKI", "fldCqIqQmVnFXqrOU", "fldcpfpO2QvPGmgd7"];
-/** Inventaris BPK: field yang boleh dibaca (tanpa foto) dan ditulis dari tab Inventaris. */
-export const INV = { kode: "fldoCY9qSEXNBMegx", nama: "fld1BFGhqPuYraTQW", pj: "fldd1gRb1sYkG2ITD", tahun: "fldQ2bE16Y0R5nF4K", lokasi: "fldPmKThge9ns76Uv", status: "fldKqnNoXp9p8tbe5", jumlah: "fldQSpa4WFFDNUUSk", harga: "fldJkMiPpeju2JB06", total: "fldaAN3xasXHhumYP", notes: "fldscpFwbj5cDg1mp", dibuat: "fldcbCVXSCmSLAN7s", log: "fldK7PyRMfH27qvZY", booking: "fld68eSRGzSohJwWJ", petugas: "fldM32Ja2Z3gUeA3E" };
+/** Inventaris BPK: field yang boleh dibaca (termasuk Foto Barang, hanya baca) dan ditulis dari tab Inventaris. */
+export const INV = { kode: "fldoCY9qSEXNBMegx", nama: "fld1BFGhqPuYraTQW", pj: "fldd1gRb1sYkG2ITD", tahun: "fldQ2bE16Y0R5nF4K", lokasi: "fldPmKThge9ns76Uv", status: "fldKqnNoXp9p8tbe5", jumlah: "fldQSpa4WFFDNUUSk", harga: "fldJkMiPpeju2JB06", total: "fldaAN3xasXHhumYP", notes: "fldscpFwbj5cDg1mp", foto: "fldxfDpPt6Qc0bGIa", dibuat: "fldcbCVXSCmSLAN7s", log: "fldK7PyRMfH27qvZY", booking: "fld68eSRGzSohJwWJ", petugas: "fldM32Ja2Z3gUeA3E" };
 export const INV_READ = Object.values(INV);
 /** Edit status barang + data dasar. Tambah barang: semua kolom isian (bukan formula). */
 export const INV_UPDATE = [INV.status, INV.lokasi, INV.notes, INV.pj, INV.jumlah];

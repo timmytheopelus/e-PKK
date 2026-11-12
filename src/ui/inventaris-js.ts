@@ -48,11 +48,23 @@ export const INVENTARIS_JS = String.raw`
   }
   function uniq(a) { var s = {}, o = []; a.forEach(function (x) { if (x && !s[x]) { s[x] = 1; o.push(x); } }); return o; }
 
+  function safeUrl(u) { return typeof u === "string" && /^https:\/\//i.test(u) ? u : ""; }
+  function photos(a) {
+    return (Array.isArray(a) ? a : []).filter(function (p) { return p && /^image\//.test(p.type || "") && safeUrl(p.url); }).map(function (p) {
+      var t = p.thumbnails || {};
+      return { small: safeUrl(t.small && t.small.url) || safeUrl(p.url), large: safeUrl(t.large && t.large.url) || safeUrl(p.url), name: p.filename || "" };
+    });
+  }
+  function thumb(x, big) {
+    var p = x.fotos && x.fotos[0];
+    if (!p) return EPK.el("div", { class: "inv-nofoto", "aria-hidden": "true", text: "Tanpa foto" });
+    return EPK.el("img", { class: big ? "inv-foto-big" : "inv-foto", src: big ? p.large : p.small, alt: "Foto " + (x.nama || "barang"), loading: "lazy", referrerpolicy: "no-referrer" });
+  }
   function mapItem(r) {
     var f = r.cellValuesByFieldId || {};
     return { id: r.id, kode: txt(f[I.kode]), nama: txt(f[I.nama]), pj: txt(f[I.pj]), tahun: f[I.tahun] || "", lokasi: txt(v(f[I.lokasi])), status: txt(v(f[I.status])),
       jumlah: num(f[I.jumlah]), harga: num(f[I.harga]), total: f[I.total] != null ? num(f[I.total]) : num(f[I.jumlah]) * num(f[I.harga]), notes: txt(f[I.notes]), dibuat: f[I.dibuat] || "",
-      booking: txt(f[I.booking]), logIds: (f[I.log] || []).map(function (x) { return x && x.id ? x.id : x; }) };
+      booking: txt(f[I.booking]), fotos: photos(f[I.foto]), logIds: (f[I.log] || []).map(function (x) { return x && x.id ? x.id : x; }) };
   }
   function mapLog(r) {
     var f = r.cellValuesByFieldId || {};
@@ -97,6 +109,7 @@ export const INVENTARIS_JS = String.raw`
     st.textContent = ".inv-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}"
       + ".inv-stat{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface)}.inv-n{font-size:22px;font-weight:700}.inv-l{color:var(--muted);font-size:13px}.inv-s{color:var(--muted);font-size:12px}"
       + ".inv-tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin:10px 0}.inv-tw table{min-width:760px}.inv-tw tr.clk{cursor:pointer}.inv-tw tr.clk:hover td{background:var(--bg)}"
+      + ".inv-foto{width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--line);display:block}.inv-nofoto{width:48px;height:48px;border-radius:8px;border:1px dashed var(--line);color:var(--muted);font-size:10px;display:flex;align-items:center;justify-content:center;text-align:center}.inv-foto-big{max-width:100%;max-height:340px;object-fit:contain;border-radius:10px;border:1px solid var(--line);display:block;margin:0 auto 6px}.inv-gal{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}.inv-gal img{width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--line);cursor:pointer}"
       + ".inv-badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12.5px;border:1px solid var(--line);white-space:nowrap}.inv-ok{background:#e4f5e7;color:#1d6b2f;border-color:#b9e0c1}.inv-bad{background:#fde8e8;color:#9b1c1c;border-color:#f3c0c0}.inv-warn{background:#fff3dc;color:#8a5a00;border-color:#f0d9a6}.inv-mute{background:var(--bg);color:var(--muted)}"
       + ".inv-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}.inv-bar .grow{flex:1 1 220px}.inv-h{margin:22px 0 4px;font-size:17px}.inv-form{display:grid;grid-template-columns:150px 1fr;gap:8px 12px;align-items:center}.inv-form input,.inv-form select,.inv-form textarea{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:6px;min-width:0;width:100%;box-sizing:border-box}@media(max-width:560px){.inv-form{grid-template-columns:1fr}}";
     document.head.appendChild(st);
@@ -117,13 +130,13 @@ export const INVENTARIS_JS = String.raw`
     var rows = items.filter(function (x) {
       return (!filt.status || x.status === filt.status) && (!filt.lokasi || x.lokasi === filt.lokasi) && (!q || [x.kode, x.nama, x.pj, x.lokasi, x.notes].join(" ").toLowerCase().indexOf(q) >= 0);
     });
-    var head = EPK.el("tr", {}, ["Kode", "Nama barang", "Lokasi", "Status", "Jumlah", "Harga satuan", "Total", "Tahun", "Penanggung jawab"].map(function (h) { return EPK.el("th", { text: h }); }));
+    var head = EPK.el("tr", {}, ["Foto", "Kode", "Nama barang", "Lokasi", "Status", "Jumlah", "Harga satuan", "Total", "Tahun", "Penanggung jawab"].map(function (h) { return EPK.el("th", { text: h }); }));
     var body = rows.map(function (x) {
       return EPK.el("tr", { class: "clk", tabindex: "0", onclick: function () { detail(x.id); }, onkeydown: function (e) { if (e.key === "Enter") detail(x.id); } }, [
-        EPK.el("td", { text: x.kode || "-" }), EPK.el("td", { class: "nama", text: x.nama || "-" }), EPK.el("td", { text: x.lokasi || "-" }), EPK.el("td", {}, [badge(x.status)]),
+        EPK.el("td", {}, [thumb(x, false)]), EPK.el("td", { text: x.kode || "-" }), EPK.el("td", { class: "nama", text: x.nama || "-" }), EPK.el("td", { text: x.lokasi || "-" }), EPK.el("td", {}, [badge(x.status)]),
         EPK.el("td", { text: String(x.jumlah) }), EPK.el("td", { text: rp(x.harga) }), EPK.el("td", { text: rp(x.total) }), EPK.el("td", { text: x.tahun ? String(x.tahun).slice(0, 4) : "-" }), EPK.el("td", { text: x.pj || "-" })]);
     });
-    if (!body.length) body.push(EPK.el("tr", {}, [EPK.el("td", { colspan: "9", text: "Tidak ada barang yang cocok." })]));
+    if (!body.length) body.push(EPK.el("tr", {}, [EPK.el("td", { colspan: "10", text: "Tidak ada barang yang cocok." })]));
     return { count: rows.length, el: EPK.el("div", { class: "inv-tw" }, [EPK.el("table", {}, [EPK.el("thead", {}, [head]), EPK.el("tbody", {}, body)])]) };
   }
 
@@ -186,7 +199,16 @@ export const INVENTARIS_JS = String.raw`
     var dl = EPK.el("dl", { class: "epk-dl" });
     dl.appendChild(EPK.el("dt", { text: "Status" })); dl.appendChild(EPK.el("dd", {}, [badge(x.status)]));
     rows.forEach(function (r) { dl.appendChild(EPK.el("dt", { text: r[0] })); dl.appendChild(EPK.el("dd", { text: r[1] || "-" })); });
-    var box = EPK.el("div", {}, [dl]);
+    var box = EPK.el("div", {}, []);
+    if (x.fotos.length) {
+      var main = thumb(x, true); box.appendChild(main);
+      if (x.fotos.length > 1) {
+        var gal = EPK.el("div", { class: "inv-gal" });
+        x.fotos.forEach(function (p) { gal.appendChild(EPK.el("img", { src: p.small, alt: p.name || "Foto barang", loading: "lazy", referrerpolicy: "no-referrer", onclick: function () { main.src = p.large; } })); });
+        box.appendChild(gal);
+      }
+    }
+    box.appendChild(dl);
     if (canEdit) {
       var s = sel(statusOpts(), x.status), lk = sel(lokasiOpts(), x.lokasi, "(tidak diubah)"), nt = EPK.el("textarea", { rows: "3" }); nt.value = x.notes; var m = msgBox();
       var form = EPK.el("div", { class: "inv-form" }, [].concat(field("Status barang", s), field("Pindah lokasi", lk), field("Catatan", nt)));

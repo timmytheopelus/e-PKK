@@ -65,8 +65,9 @@ describe("inventaris", () => {
   it("tanpa tab Inventaris tidak boleh membaca", () => {
     expect(() => checkRead(inv, T.inventaris, { fieldIds: ["fldKqnNoXp9p8tbe5"] }, base)).toThrow(HttpError);
   });
-  it("foto barang, telepon, selfie tidak boleh dibaca", () => {
-    expect(() => checkRead(inv, T.inventaris, { fieldIds: ["fldxfDpPt6Qc0bGIa"] }, ed)).toThrow(HttpError);
+  it("foto barang boleh dibaca tapi tidak diubah; telepon dan selfie tidak boleh dibaca", () => {
+    expect(() => checkRead(inv, T.inventaris, { fieldIds: ["fldxfDpPt6Qc0bGIa"] }, ed)).not.toThrow();
+    expect(() => checkWrite(inv, "update", [{ id: "rec1", fields: { fldxfDpPt6Qc0bGIa: [{ url: "https://x.y/z.jpg" }] } }], ed)).toThrow(HttpError);
     expect(() => checkRead(log, T.logPinjam, { fieldIds: ["fldiGyKXKXpxPrfKG"] }, ed)).toThrow(HttpError);
     expect(() => checkRead(log, T.logPinjam, { fieldIds: ["fldoFtkzmv5yzHWvb"] }, ed)).toThrow(HttpError);
   });
