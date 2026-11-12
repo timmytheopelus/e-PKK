@@ -118,6 +118,9 @@ td.nama { font-weight: 600; }
 .oc-ketua.k-sub { background: transparent; border: 1.5px solid var(--cc, var(--accent)); }
 .oc-ketua.k-sub .oc-n { color: var(--cc, var(--accent)); }
 .oc-ketua.k-sub small, .oc-b .oc-ketua.k-sub small { color: var(--cc, var(--accent)); }
+.oc-col > ul, .oc-col > .oc-stack { display: none; }
+.oc-h.tg { cursor: pointer; user-select: none; }
+.oc-cnt { font-weight: 400; opacity: .85; font-size: 12px; }
 .oc-v0 { color: var(--warn); }
 .oc-stack { display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 14px; position: relative; }
 .oc-stack::before { content: ""; position: absolute; top: 0; left: 50%; height: 100%; border-left: 2px solid var(--line); }
@@ -434,6 +437,7 @@ body.sep img.logo { width: 120px; height: 120px; object-fit: contain; } @media (
 
   <section id="baganSec" style="display:grid;gap:12px" aria-label="Bagan struktur" hidden>
     <div class="chips" id="baganChips"></div>
+    <div class="chips" id="baganSum"></div>
     <p class="sub" style="margin:0">Geser ke samping untuk melihat seluruh bagan. Klik nama untuk melihat detail.</p>
     <div class="ocwrap"><div class="oc" id="baganBox"></div></div>
   </section>
@@ -963,6 +967,7 @@ function sortKids(n) {
   n.persons.sort(function (a, b) { return (a.pr - b.pr) || a.d.nama.localeCompare(b.d.nama); });
   n.kids.forEach(sortKids);
 }
+var OC_COLD = 1;
 var KLBL = { bidang: "Koord. Bidang", seksi: "Koord. Seksi", sub: "Koord. Sub seksi" };
 var KPRE = { bidang: "Bidang", seksi: "Seksi", sub: "Subseksi" };
 function ocTitle(n, kind) {
@@ -971,8 +976,9 @@ function ocTitle(n, kind) {
   if (kind === "sub" && /^(Sekolah|Forkom)\b/i.test(t)) return t;
   return KPRE[kind] + " " + t;
 }
-function ocCard(n, color, kind) {
-  var h = '<div class="oc-card" style="--cc:' + color + '"><div class="oc-h">' + esc(ocTitle(n, kind)) + "</div>";
+function ocCard(n, color, kind, col) {
+  var hasK = n.kids && n.kids.length;
+  var h = '<div class="oc-card" style="--cc:' + color + '"><div class="oc-h' + (hasK ? " tg" : "") + '"' + (hasK ? ' role="button" tabindex="0" aria-expanded="' + (col ? "false" : "true") + '"' : "") + ">" + (hasK ? '<span class="oc-chev" aria-hidden="true">' + (col ? "▸" : "▾") + "</span> " : "") + esc(ocTitle(n, kind)) + (hasK ? ' <span class="oc-cnt">(' + n.kids.length + ")</span>" : "") + "</div>";
   if (n.persons.length) {
     h += '<div class="oc-b">' + n.persons.map(function (p) {
       var lbl = PERAN_LABEL[p.peran] ? "<small>" + esc(p.peran) + "</small>" : "";
@@ -984,7 +990,8 @@ function ocCard(n, color, kind) {
   return h + "</div>";
 }
 function ocStack(n, color, kind) {
-  return '<div class="oc-sub">' + ocCard(n, color, kind || "sub") + (n.kids.length ? '<div class="oc-stack">' + n.kids.map(function (k) { return ocStack(k, color); }).join("") + "</div>" : "") + "</div>";
+  var col = n.kids.length > 0;
+  return '<div class="oc-sub' + (col ? " oc-col" : "") + '">' + ocCard(n, color, kind || "sub", col) + (n.kids.length ? '<div class="oc-stack">' + n.kids.map(function (k) { return ocStack(k, color); }).join("") + "</div>" : "") + "</div>";
 }
 function ocTree(n, depth, ci) {
   var color = OC_COLORS[(ci == null ? 6 : ci) % OC_COLORS.length];
@@ -999,7 +1006,8 @@ function ocTree(n, depth, ci) {
     if (depth >= 3) kids = '<div class="oc-stack">' + n.kids.map(function (k) { return ocStack(k, color); }).join("") + "</div>";
     else kids = "<ul>" + n.kids.map(function (k) { return ocTree(k, depth + 1, ci); }).join("") + "</ul>";
   }
-  return "<li>" + ocCard(n, color, kind) + kids + "</li>";
+  var col = n.kids.length > 0 && depth >= OC_COLD;
+  return "<li" + (col ? ' class="oc-col"' : "") + ">" + ocCard(n, color, kind, col) + kids + "</li>";
 }
 function renderBagan() {
   var chips = document.getElementById("baganChips"), box = document.getElementById("baganBox");
@@ -1018,8 +1026,45 @@ function renderBagan() {
   });
   if (!DATA.length) { box.innerHTML = '<p class="sub">' + esc(roster.state === "loading" ? "Memuat bagan…" : (roster.msg || "Bagan belum tersedia.")) + "</p>"; return; }
   var tree = buildTree(baganSel === "all" ? null : baganSel);
+  OC_COLD = baganSel === "all" ? 1 : 2;
+  baganSummary();
   if (baganSel === "all") { box.innerHTML = "<ul>" + ocTop(tree) + "</ul>"; return; }
   box.innerHTML = "<ul>" + ocTree(tree, 1, tree.ci) + "</ul>";
+}
+/* ringkasan: jumlah orang yang menjadi ketua seksi sampai ketua subseksi */
+function baganLeads() {
+  var out = [];
+  DATA.forEach(function (d) {
+    var js = (d.pl || []).filter(function (j) { return j.peran === "Ketua" && !/^pimpinan\s/i.test(j.seksi || ""); });
+    if (d.nama && js.length) out.push({ d: d, js: js });
+  });
+  return out.sort(function (a, b) { return a.d.nama.localeCompare(b.d.nama); });
+}
+function baganSummary() {
+  var el = document.getElementById("baganSum"); if (!el) return;
+  var l = baganLeads();
+  el.innerHTML = '<button type="button" class="chip" id="baganLeadBtn">👥 ' + l.length + ' orang tim kerja berperan sebagai ketua/koordinator seksi hingga ketua subseksi · klik untuk melihat</button> <button type="button" class="chip" id="baganOpen">Buka semua</button> <button type="button" class="chip" id="baganShut">Tutup semua</button>';
+}
+function baganLeadList(opener) {
+  var l = baganLeads(), by = {};
+  l.forEach(function (x) { x.js.forEach(function (j) { (by[j.bidang] = by[j.bidang] || []).push({ nama: x.d.nama, jab: (j.nama || "Ketua") + (j.sub ? " (" + j.sub.replace(/›/g, "›") + ")" : j.seksi ? " (" + j.seksi + ")" : "") }); }); });
+  var h = Object.keys(by).sort(function (a, b) { return rankOf(ORDER.bidang, a) - rankOf(ORDER.bidang, b); }).map(function (b) {
+    return "<h4>" + esc(b) + "</h4><ul>" + by[b].map(function (x) { return "<li><b>" + esc(x.nama) + "</b><br><small>" + esc(x.jab) + "</small></li>"; }).join("") + "</ul>";
+  }).join("");
+  openInfo("Ketua seksi hingga ketua subseksi", l.length + " orang tim kerja.", h || '<p class="sub">Belum ada data.</p>', opener);
+}
+document.getElementById("baganSec").addEventListener("click", function (e) {
+  var t = e.target, g = t.closest && t.closest("#baganLeadBtn"); if (g) { baganLeadList(g); return; }
+  if (t.closest && t.closest("#baganOpen")) { Array.prototype.forEach.call(document.querySelectorAll("#baganBox .oc-col"), function (x) { ocToggle(x, false); }); return; }
+  if (t.closest && t.closest("#baganShut")) { Array.prototype.forEach.call(document.querySelectorAll("#baganBox li, #baganBox .oc-sub"), function (x) { var h = x.querySelector(":scope > .oc-card > .oc-h.tg"); if (h && !(x.parentNode && x.parentNode.parentNode === document.getElementById("baganBox") )) ocToggle(x, true); }); return; }
+  var hd = t.closest && t.closest(".oc-h.tg"); if (hd) { var c = hd.closest("li, .oc-sub"); if (c) ocToggle(c, !c.classList.contains("oc-col")); }
+});
+document.getElementById("baganBox").addEventListener("keydown", function (e) { if ((e.key === "Enter" || e.key === " ") && e.target.classList && e.target.classList.contains("tg")) { e.preventDefault(); e.target.click(); } });
+function ocToggle(c, shut) {
+  c.classList.toggle("oc-col", !!shut);
+  var h = c.querySelector(":scope > .oc-card > .oc-h.tg"); if (!h) return;
+  h.setAttribute("aria-expanded", shut ? "false" : "true");
+  var ch = h.querySelector(".oc-chev"); if (ch) ch.textContent = shut ? "▸" : "▾";
 }
 /* Seluruh organisasi: Pimpinan di atas (Penasihat di sampingnya), bidang lain di bawah Pimpinan */
 function ocTop(root) {
@@ -1031,7 +1076,7 @@ function ocTop(root) {
   var seks = pim.kids.slice().sort(function (a, b) { return side(a) - side(b); });
   var row = '<div class="oc-toprow">' + seks.map(function (k) { return ocStack(k, color, "seksi"); }).join("") + "</div>";
   var kids = others.length ? "<ul>" + others.map(function (k) { return ocTree(k, 1, k.ci); }).join("") + "</ul>" : "";
-  return "<li>" + ocCard(pim, color) + row + kids + "</li>";
+  return "<li>" + ocCard({ title: pim.title, persons: pim.persons, kids: [] }, color) + row + kids + "</li>";
 }
 document.getElementById("viewChips").addEventListener("click", function (e) {
   var b = e.target.closest && e.target.closest("[data-v]"); if (!b) return;
