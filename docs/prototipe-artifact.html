@@ -2858,7 +2858,7 @@ var KP = { v: "home", yr: "", pk: "", st: "", q: "", sel: "", ps: "", mo: "", di
 var KDIM = { jk: ["Jenis kelamin", function (p) { return p.jk || "Belum diisi"; }], usia: ["Kelompok usia", function (p) { return ageLbl(p.usia); }], nikah: ["Status pernikahan", function (p) { return p.nikah || "Belum diisi"; }] };
 function loadKpar() {
   return fetchAll(BASE, T_PAR, ["fldskPQJ7WQgCVODZ", "fldm9LChbMMxzwAU6", "fldTx78aUdQXrpSMY"]).then(function (recs) {
-    D.kpar = recs.map(function (r) { var v = r.cellValuesByFieldId || {}; return { nama: one(v.fldskPQJ7WQgCVODZ).trim(), dek: one(v.fldm9LChbMMxzwAU6), kus: one(v.fldTx78aUdQXrpSMY) }; }).filter(function (p) { return p.nama; });
+    D.kpar = recs.map(function (r) { var v = r.cellValuesByFieldId || {}; return { id: r.id, nama: one(v.fldskPQJ7WQgCVODZ).trim(), dek: one(v.fldm9LChbMMxzwAU6), kus: one(v.fldTx78aUdQXrpSMY) }; }).filter(function (p) { return p.nama; });
   });
 }
 function loadKpen() {
