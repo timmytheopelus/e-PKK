@@ -1840,6 +1840,7 @@ function nav(spec) {
   else if (k === "pwf") { var kv = v.split("|"); pwFilterGo(kv[0], kv.slice(1).join("|")); }
   else if (k === "cal") { var m = v.split("-"); cal.y = +m[0]; cal.m = +m[1] - 1; goTab("kalender"); }
   else if (k === "evt") { EV.sel = v; EV.waktu = "all"; document.getElementById("evWaktu").value = "all"; EV.open = true; EV.dim = -1; EV.dv = ""; EV.pdf = ""; EV.rq = ""; goTab("event"); renderEvent(); }
+  else if (k === "dash" && v === "appr") openApprAdmin(document.activeElement);
   else if (k === "dash") openDash(v, document.activeElement);
   else if (k === "evd") { goTab("kalender"); openEv(v, null); }
 }
@@ -1961,6 +1962,22 @@ function renderAppr() {
   var n = apprPending().length;
   el.innerHTML = n ? '<div class="note-bar" role="status" style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 14px;margin-bottom:12px;border:1px solid var(--warn);background:var(--warn-soft);border-radius:10px"><span>⏳ <strong>' + n + '</strong> permohonan pewarta luar kota menunggu approval Anda.</span><button type="button" class="btn" data-apprgo="1">Tinjau dan approve</button></div>' : "";
 }
+function isAdminLv() { var m = window.__ME__ || {}; return m.level === "Admin" || m.level === "Superadmin"; }
+function apprAdminTile() {
+  if (!isAdminLv()) return "";
+  var n = D.smp ? apprPending().length : "–";
+  return tile(n, "Permohonan belum di-approve Sekjen", n === 0 ? "semua sudah diputuskan" : "klik untuk lihat dan ingatkan", "dash:appr");
+}
+function openApprAdmin(opener) {
+  var me = window.__ME__ || {}, l = apprPending().sort(function (a, b) { return b.tgl.localeCompare(a.tgl); });
+  var sj = me.sekjen, num = sj ? waNumber(sj.wa) : "";
+  var msg = "Shalom " + (sj ? sj.nama : "Bapak/Ibu Sekjen") + ",\n\nAda " + l.length + " permohonan pewarta luar kota yang menunggu approval Sekretaris Jenderal BPK. Mohon dibuka di e-PKK, lalu tekan 'Tinjau dan approve':\n" + location.origin + "/dashboard\n\nTerima kasih, Tuhan memberkati.\nBPKPKK Bandung";
+  var wa = num ? '<a class="btn" href="https://wa.me/' + num + "?text=" + encodeURIComponent(msg) + '" target="_blank" rel="noopener">' + ICON_WA + " Kirim WA ke Sekjen" + (sj ? " (" + esc(sj.nama) + ")" : "") + "</a>" : '<span class="note">Nomor WA Sekjen belum tersedia di data umat.</span>';
+  openInfo("Permohonan belum di-approve Sekjen", l.length + " permohonan pewarta luar kota. Approval hanya bisa dilakukan Sekretaris Jenderal.",
+    '<p style="margin:0 0 10px">' + wa + '</p><div class="lst">' + (l.map(function (o) {
+      return '<button type="button" class="li w2" data-lk="' + o.id + '"><span><span class="nm">' + esc(o.nama || "Pewarta belum ditentukan") + '</span><span class="mt">' + esc([fmtDate(o.tgl, { day: "numeric", month: "short", year: "numeric" }), o.pd, o.asal || o.bpk].filter(Boolean).join(" · ")) + '</span></span><span class="rt">' + (o.tgl < TODAY ? '<span class="tag alt">lewat</span>' : '<span class="tag">akan datang</span>') + "</span></button>";
+    }).join("") || '<p class="hint">Semua permohonan sudah diputuskan.</p>') + "</div>", opener);
+}
 function apprCard(o) {
   return '<div class="rev" data-apv="' + o.id + '"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><strong>' + esc(o.nama || "Pewarta belum ditentukan") + '</strong><span class="tag alt">' + esc(o.asal || o.bpk || "Luar kota") + "</span></div>" +
     '<div class="note" style="margin:2px 0 6px">' + esc(fmtDate(o.tgl, { weekday: "short", day: "numeric", month: "long", year: "numeric" })) + (o.tgl < TODAY ? " · sudah lewat" : "") + "<br>" + esc([o.pd, o.tema].filter(Boolean).join(" · ")) + "</div>" +
@@ -2007,6 +2024,7 @@ function dashExtraTiles() {
   var st = pdActStat(), ym = monthKey(NOW.getFullYear(), NOW.getMonth());
   var nLk = D.smp ? D.smp.filter(function (o) { return o.luar && o.tgl.slice(0, 7) === ym; }).length : "–";
   return tile(nLk, "Permohonan luar kota bulan ini", "pewarta dari luar Bandung", "pw:lk") +
+    apprAdminTile() +
     tile(st ? st.recent.length : "–", "PD ada kegiatan 30 hari terakhir", st ? "dari " + st.total + " PD aktif" : "", "dash:aktif") +
     tile(st ? st.future.length : "–", "PD punya jadwal ke depan", st ? "ada pewartaan terjadwal" : "", "dash:depan") +
     tile(st ? st.idle.length : "–", "PD tidak terlihat aktif", st ? "tanpa jadwal 30 hari terakhir & ke depan" : "", "dash:idle");

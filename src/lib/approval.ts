@@ -1,7 +1,8 @@
 // Approval (ACC) permohonan pewarta luar kota oleh Sekretaris Jenderal BPK (dan Superadmin).
 // Keputusan disimpan sebagai catatan di tabel ACC (SMP) yang ditautkan ke jadwal; tidak ada tabel atau field baru.
-import { Access, BASE_SMP, HttpError, T } from "./policy";
-import { at, clearCaches } from "./airtable";
+import { Access, BASE_BPK, BASE_SMP, HttpError, T } from "./policy";
+import { at, clearCaches, listPage } from "./airtable";
+import { AF } from "./access";
 import { clearProxyCache } from "./proxy";
 
 const T_ACC = "tblN1c0nqFpHVgike";
@@ -33,4 +34,26 @@ export async function decide(eventId: string, decision: string, acc: Access) {
   });
   clearProxyCache(); clearCaches();
   return { ok: true, status };
+}
+
+/** Kontak Sekretaris Jenderal untuk tombol WA (hanya dikirim ke Admin/Superadmin). Cache 5 menit; gagal = null. */
+let sj: { at: number; v: { nama: string; wa: string } | null } | null = null;
+export async function sekjenContact() {
+  if (sj && Date.now() - sj.at < 300_000) return sj.v;
+  let v: { nama: string; wa: string } | null = null;
+  try {
+    const { records } = await listPage(BASE_BPK, T.pengguna, {
+      fieldIds: [AF.nama, AF.umat, AF.jabLk, AF.status], pageSize: 20,
+      formula: `FIND("Sekretaris Jenderal",ARRAYJOIN({Jabatan BPK (dari Umat)}))`,
+    });
+    const r = records.find((x: any) => x.fields[AF.status] === "Disetujui");
+    const uid = r && Array.isArray(r.fields[AF.umat]) ? (r.fields[AF.umat][0]?.id || r.fields[AF.umat][0]) : "";
+    if (r && /^rec[A-Za-z0-9]{14}$/.test(uid || "")) {
+      const u = await at(`/v0/appIGR8Duhj3Vsz48/${T.umat}/${uid}?returnFieldsByFieldId=true&fields%5B%5D=fldzY1Z2QvIIEkYXR`);
+      const wa = String(u.fields?.fldzY1Z2QvIIEkYXR || "");
+      if (wa) v = { nama: String(r.fields[AF.nama] || "Sekretaris Jenderal"), wa };
+    }
+  } catch (e) { console.error("sekjenContact", e); }
+  sj = { at: Date.now(), v };
+  return v;
 }
