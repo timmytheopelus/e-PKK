@@ -190,14 +190,15 @@ export const ADMIN_JS = String.raw`
     var search = EPK.el("input", { type: "search", placeholder: "Cari nama, email, jabatan, PD", autocomplete: "off", "aria-label": "Cari" });
     search.addEventListener("input", function () { q = search.value.trim().toLowerCase(); draw(); });
     function m(t) { return !q || t.toLowerCase().indexOf(q) >= 0; }
-    function has(u) { return u.level === "Superadmin" || u.tabs.indexOf(menu) >= 0; }
-    function locked(u) { return u.level === "Superadmin" || (u.email.toLowerCase() === ME.email.toLowerCase() && menu === "Administrasi"); }
+    function has(u) { return u.level === "Superadmin" || (u.tabs || []).indexOf(menu) >= 0; }
+    function locked(u) { return u.level === "Superadmin" || (String(u.email || "").toLowerCase() === String(ME.email || "").toLowerCase() && menu === "Administrasi"); }
     function count() { return Object.keys(chg).length + Object.keys(newU).length; }
     function tog(map, k) { if (map[k]) delete map[k]; else map[k] = 1; msg.say(""); draw(); }
     function row(label, sub, cls, onclick, dis) {
       return EPK.el("button", { type: "button", class: "epk-pickrow " + cls, disabled: dis ? "" : null, onclick: onclick }, [EPK.el("b", { text: label }), EPK.el("small", { text: sub })]);
     }
-    function draw() {
+    function draw() { try { drawX(); } catch (e) { console.error("akses per menu", e); box.textContent = ""; box.appendChild(EPK.el("p", { class: "epk-msg bad", text: "Gagal menampilkan daftar: " + (e && e.message ? e.message : e) })); } }
+    function drawX() {
       chips.textContent = "";
       ALLT.forEach(function (t) {
         chips.appendChild(EPK.el("button", { type: "button", class: "epk-chip" + (t === menu ? " on" : ""), text: t, onclick: function () {
@@ -208,7 +209,7 @@ export const ADMIN_JS = String.raw`
       box.textContent = "";
       var ada = data.users.filter(function (u) { return u.status === "Disetujui" && has(u) && m([u.nama, u.email, u.jabatan, u.level].join(" ")); });
       var tanpa = data.users.filter(function (u) { return u.status === "Disetujui" && !has(u) && m([u.nama, u.email, u.jabatan, u.level].join(" ")); });
-      var belum = data.umat.filter(function (u) { return u.jab && !u.terdaftar && m([u.nama, u.pgl, u.jab, u.pd.join(" ")].join(" ")); });
+      var belum = data.umat.filter(function (u) { return u.jab && !u.terdaftar && m([u.nama, u.pgl, u.jab, (u.pd || []).join(" ")].join(" ")); });
       box.appendChild(EPK.el("h3", { class: "epk-sec", text: "Punya akses ke " + menu + " (" + ada.length + ")" }));
       box.appendChild(EPK.el("p", { class: "sub", text: "Klik nama untuk melepas akses, lalu tekan Simpan." }));
       ada.forEach(function (u) {
@@ -224,7 +225,7 @@ export const ADMIN_JS = String.raw`
       });
       belum.forEach(function (u) {
         var on = !!newU[u.id];
-        box.appendChild(row(u.nama, [u.jab, u.pd.join(", ")].filter(Boolean).join(" · ") + (u.hasEmail ? " · belum punya akun" : " · belum punya akun, email belum ada") + (on ? " · AKAN DITAMBAH (View)" : ""), on ? "epk-on" : "", function () { tog(newU, u.id); }, !u.hasEmail));
+        box.appendChild(row(u.nama, [u.jab, (u.pd || []).join(", ")].filter(Boolean).join(" · ") + (u.hasEmail ? " · belum punya akun" : " · belum punya akun, email belum ada") + (on ? " · AKAN DITAMBAH (View)" : ""), on ? "epk-on" : "", function () { tog(newU, u.id); }, !u.hasEmail));
       });
       if (!tanpa.length && !belum.length) box.appendChild(EPK.el("p", { class: "sub", text: "Tidak ada." }));
       bar.textContent = "";
