@@ -22,6 +22,15 @@ swap('  <div id="tab-admin" class="tab"',
 swap('"kalender", "event", "kep", "admin"];', '"kalender", "event", "kep", "inventaris", "admin"];');
 swap('  if (name === "kalender") calOpen();', '  if (name === "inventaris") { if (window.EPK_INV_OPEN) window.EPK_INV_OPEN(); }\n  else if (name === "kalender") calOpen();');
 
+// Menu Keuangan (laporan keuangan dari base Bendahara; isi diisi oleh src/ui/keuangan-js.ts)
+swap('    <button type="button" class="tabbtn" role="tab" id="tabbtn-admin"',
+  '    <button type="button" class="tabbtn" role="tab" id="tabbtn-keuangan" aria-controls="tab-keuangan" aria-selected="false" tabindex="-1" data-tab="keuangan">Keuangan</button>\n    <button type="button" class="tabbtn" role="tab" id="tabbtn-admin"');
+swap('  <div id="tab-admin" class="tab"',
+  '  <div id="tab-keuangan" class="tab" role="tabpanel" aria-labelledby="tabbtn-keuangan" hidden>\n    <div id="keuRoot"><p class="hint">Memuat laporan keuangan…</p></div>\n  </div>\n\n  <div id="tab-admin" class="tab"');
+swap('"kep", "inventaris", "admin"];', '"kep", "inventaris", "keuangan", "admin"];');
+swap('  if (name === "inventaris") { if (window.EPK_INV_OPEN) window.EPK_INV_OPEN(); }',
+  '  if (name === "keuangan") { if (window.EPK_KEU_OPEN) window.EPK_KEU_OPEN(); }\n  else if (name === "inventaris") { if (window.EPK_INV_OPEN) window.EPK_INV_OPEN(); }');
+
 // bagian RAW (daftar pengurus) dipisah supaya bisa dikosongkan untuk pengguna tanpa tab Pengurus
 const i = h.indexOf("var RAW = [") + "var RAW = [".length;
 const j = h.indexOf("\n];", i);
@@ -109,7 +118,7 @@ var EPK = {
 };
 function applyMe() {
   var me = window.__ME__; if (!me) return;
-  ["beranda", "pengurus", "pewarta", "luar", "pd", "umat", "kalender", "event", "kep", "inventaris", "admin"].forEach(function (t) {
+  ["beranda", "pengurus", "pewarta", "luar", "pd", "umat", "kalender", "event", "kep", "inventaris", "keuangan", "admin"].forEach(function (t) {
     var b = document.getElementById("tabbtn-" + t); if (b && me.tabs.indexOf(t) < 0) b.hidden = true;
   });
   var kb = document.getElementById("admKelola"); if (kb && me.level !== "Superadmin") kb.hidden = true;
