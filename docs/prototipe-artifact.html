@@ -685,8 +685,6 @@ body.sep img.logo { width: 120px; height: 120px; object-fit: contain; } @media (
     <input id="f_wa" type="text" inputmode="tel" autocomplete="off" placeholder="08xx atau +62xx" disabled>
     <label for="f_email">Email</label>
     <input id="f_email" type="email" autocomplete="off" disabled>
-    <label for="f_alamat">Alamat tinggal</label>
-    <textarea id="f_alamat" rows="2" disabled></textarea>
     <p class="msg" id="dlgMsg" role="status"></p>
     <div class="row">
       <button type="button" class="btn" id="dlgCancel">Batal</button>
@@ -1191,7 +1189,7 @@ function render() {
 }
 /* ---------- Airtable (lewat konektor milik pemilik halaman) ---------- */
 var SRV = "Airtable", BASE = "appIGR8Duhj3Vsz48", T_PENGURUS = "tbluIlEgPdHeodJHK", T_UMAT = "tblwRNtXSVzgzVXuk";
-var F = { nama: "fldIpQTSkFB9sU0lo", panggilan: "fld469PYR80nAUNIF", wa: "fldzY1Z2QvIIEkYXR", email: "fldAaQ3zmiLBhp4z9", alamat: "fldcQFzBtr9EELTtV" };
+var F = { nama: "fldIpQTSkFB9sU0lo", panggilan: "fld469PYR80nAUNIF", wa: "fldzY1Z2QvIIEkYXR", email: "fldAaQ3zmiLBhp4z9" };
 var F_PNG_NAMA = "fldHK8r2o5q60IDXW", F_PNG_WA = "fldXut0nHbouaznB7", F_PNG_PERIODE = "fldHngi5Klnm5bUmM";
 var mcp = null, contacts = {}, link = { state: "loading", msg: "" }, editing = null, lastFocusI = null;
 
@@ -1307,7 +1305,7 @@ function whoCell(d) {
 
 /* ---------- dialog edit ---------- */
 var scrim = document.getElementById("scrim"), dlgMsg = document.getElementById("dlgMsg"), dlgSave = document.getElementById("dlgSave");
-var FIELDS = [["nama", "f_nama"], ["panggilan", "f_panggilan"], ["wa", "f_wa"], ["email", "f_email"], ["alamat", "f_alamat"]];
+var FIELDS = [["nama", "f_nama"], ["panggilan", "f_panggilan"], ["wa", "f_wa"], ["email", "f_email"]];
 function setMsg(t, bad) { dlgMsg.textContent = t || ""; dlgMsg.className = "msg" + (bad ? " bad" : ""); }
 function setFormEnabled(on) { FIELDS.forEach(function (f) { document.getElementById(f[1]).disabled = !on; }); dlgSave.disabled = !on; }
 function closeDlg() {
@@ -1858,7 +1856,7 @@ var PV = { tgl: "fldXGHvqnezzKZSCp", umur: "fldvwrB2yxUsIPDkC", jk: "fldxpeouH1h
 function viewPerson(id, name, opener) {
   if (!mcp) return;
   openInfo(name, "", '<p class="sub">Memuat data dari Airtable…</p>', opener, undefined);
-  var ids = [F.nama, F.panggilan, F.wa, F.email, F.alamat, UF.sp, UF.kp, UF.sk, UF.kk, UF.sg, UF.kual, UF.pd].concat(Object.keys(PV).map(function (k) { return PV[k]; })).concat(KOMP.map(function (k) { return k[1]; }));
+  var ids = [F.nama, F.panggilan, F.wa, F.email, UF.sp, UF.kp, UF.sk, UF.kk, UF.sg, UF.kual, UF.pd].concat(Object.keys(PV).map(function (k) { return PV[k]; })).concat(KOMP.map(function (k) { return k[1]; }));
   var token = (viewPerson.t = (viewPerson.t || 0) + 1);
   call("list_records_for_table", { baseId: BASE, tableId: T_UMAT, recordIds: [id], fieldIds: ids, pageSize: 1 }).then(function (res) {
     if (token !== viewPerson.t) return;
@@ -1875,7 +1873,7 @@ function viewPerson(id, name, opener) {
       drow("PD / Komunitas", esc(flat(v[UF.pd]).join(", "))) + drow("Jabatan di BPK", esc(one(v[PV.jabBpk]))) + drow("Jabatan di PD", esc(flat(v[PV.jabPd]).join(", "))) +
       drow("Keterlibatan", tagsHtml(flat(v[PV.libat]))) + drow("Kualifikasi", esc(one(v[UF.kual]))) + drow("Peran", esc(peran.join(" · "))) + komp +
       drow("Hubungi", waLink(one(v[F.wa])) + (/^[^@\s]+@[^@\s]+$/.test(one(v[F.email])) ? ' <a class="act" href="mailto:' + esc(one(v[F.email])) + '"><span>Kirim email</span></a>' : "")) +
-      drow("Alamat", esc(one(v[F.alamat]))) + drow("Tanggal lahir", esc(tgl ? fmtKey(tgl, { day: "numeric", month: "long", year: "numeric" }) + (one(v[PV.umur]) ? " (" + esc(one(v[PV.umur])) + " th)" : "") : "")) +
+      drow("Usia", (function () { var u = ageOf(tgl); if (u == null && one(v[PV.umur])) u = one(v[PV.umur]); return u == null || u === "" ? "" : esc(u + " tahun"); })()) +
       drow("Jenis kelamin", esc(one(v[PV.jk]))) + drow("Status pernikahan", esc(one(v[PV.nikah]))) + "</dl>";
     renderInfo(nama, [ph, one(v[UF.kual])].filter(Boolean).join(" · "), html, photoUrl(v[PV.foto]));
   }).catch(function (e) { if (token === viewPerson.t) document.getElementById("infoBody").innerHTML = '<p class="sub">' + esc(errInfo(e).text) + "</p>"; });
@@ -3009,10 +3007,10 @@ function loadSkeg() {
 function loadSpen() {
   return fetchAll(BASE, T_SPEN, ["fld4aXu6UhTUyu2a8", "fldJjgxA4mESGeOYG", "fldVwYghE0cSodecK", "fldBap2tEPX9R4LtD", "fldTj9n5kTQiquymW", "fldU3sCQfDmubXeBZ", "fld4dVr7hIV4xqAg7", "fldnQxpE9QVt0o9JH"]).then(function (recs) {
     var id1 = function (l) { return Array.isArray(l) && l[0] ? (l[0].id || l[0]) : ""; };
-    D.spen = recs.map(function (r) { var v = r.cellValuesByFieldId || {}; return { id: r.id, nama: one(v.fld4aXu6UhTUyu2a8), keg: id1(v.fldJjgxA4mESGeOYG), lahir: one(v.fldVwYghE0cSodecK).slice(0, 10), alamat: one(v.fldBap2tEPX9R4LtD), paroki: one(v.fldTj9n5kTQiquymW), jk: one(v.fldU3sCQfDmubXeBZ), st: one(v.fld4dVr7hIV4xqAg7), sumber: one(v.fldnQxpE9QVt0o9JH) }; });
+    D.spen = recs.map(function (r) { var v = r.cellValuesByFieldId || {}; return { id: r.id, nama: one(v.fld4aXu6UhTUyu2a8), keg: id1(v.fldJjgxA4mESGeOYG), lahir: one(v.fldVwYghE0cSodecK).slice(0, 10), paroki: one(v.fldTj9n5kTQiquymW), jk: one(v.fldU3sCQfDmubXeBZ), st: one(v.fld4dVr7hIV4xqAg7), sumber: one(v.fldnQxpE9QVt0o9JH) }; });
   });
 }
-function ageGroup(lahir) {
+function ageGroupL(lahir) {
   if (!lahir) return "";
   var b = new Date(lahir + "T00:00:00"), n = new Date(), a = n.getFullYear() - b.getFullYear(); if (n < new Date(n.getFullYear(), b.getMonth(), b.getDate())) a--;
   return a < 12 ? "Di bawah 12 Tahun" : a < 18 ? "12-18 Tahun" : a < 35 ? "18-35 Tahun" : a < 50 ? "35-50 Tahun" : a < 70 ? "50-70 Tahun" : "70 Tahun Keatas";
@@ -3044,7 +3042,7 @@ function kpApprHtml(all) {
   if (!wait.length) return h + '<p class="note">Tidak ada pendaftar yang menunggu persetujuan.</p>';
   h += '<div class="tw"><table class="tbl"><thead><tr><th><input type="checkbox" id="apAll" aria-label="Pilih semua"></th><th>Nama</th><th>Kegiatan</th><th>Usia</th><th>Paroki domisili</th></tr></thead><tbody>' + wait.map(function (p) {
     var k = byKeg[p.keg], x = k && evBy[k.ev];
-    return '<tr><td><input type="checkbox" class="apCk" value="' + esc(p.id) + '"></td><td>' + esc(p.nama) + "<br><small>" + esc(p.jk) + " · " + esc(p.alamat) + '</small><div class="rw" data-rw="' + esc(p.id) + '"></div></td><td>' + esc(x ? x.nama : k.judul) + "</td><td>" + esc(ageGroup(p.lahir) || "-") + "</td><td>" + esc(p.paroki) + "</td></tr>";
+    return '<tr><td><input type="checkbox" class="apCk" value="' + esc(p.id) + '"></td><td>' + esc(p.nama) + "<br><small>" + esc(p.jk) + '</small><div class="rw" data-rw="' + esc(p.id) + '"></div></td><td>' + esc(x ? x.nama : k.judul) + "</td><td>" + esc(ageGroupL(p.lahir) || "-") + "</td><td>" + esc(p.paroki) + "</td></tr>";
   }).join("") + '</tbody></table></div><div class="epk-row"><button type="button" class="chip" id="apOk">Simpan: setujui yang dicentang</button><button type="button" class="chip" id="apNo">Tolak yang dicentang</button></div><div id="apMsg" class="note"></div>';
   setTimeout(function () { kpLoadRw(wait.slice(0, 100).map(function (p) { return p.id; })); }, 0);
   return h;
@@ -3088,7 +3086,7 @@ function kpEvs() {
   return kepEvents().map(function (e) {
     var k = kpKey(e), batal = /batal/i.test(e.st), kg = (D.skeg || []).filter(function (g) { return g.ev === e.id; })[0];
     var ps = (by[e.id] || []).slice();
-    if (kg) (D.spen || []).forEach(function (p) { if (p.keg === kg.id && p.st === "Disetujui") ps.push({ id: "s" + p.id, nama: p.nama, jk: p.jk, usia: ageGroup(p.lahir), nikah: "", kat: "", st: "Disetujui", pd: "" }); });
+    if (kg) (D.spen || []).forEach(function (p) { if (p.keg === kg.id && p.st === "Disetujui") ps.push({ id: "s" + p.id, nama: p.nama, jk: p.jk, usia: ageGroupL(p.lahir), nikah: "", kat: "", st: "Disetujui", pd: "" }); });
     var done = !batal && (kg ? kg.status === "Selesai" : (e.tgl < TODAY || /berlalu/i.test(e.st)));
     return { e: e, id: e.id, nama: e.nama.replace(/^\d{6}-/, ""), tgl: e.tgl, yr: e.tgl.slice(0, 4), key: k.key, pk: k.name, batal: batal, done: done, nxt: !batal && !done && e.tgl >= TODAY, keg: kg, ps: ps };
   });
