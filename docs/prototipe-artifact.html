@@ -797,6 +797,7 @@ var ORDER = { bidang: [], seksi: [], peran: [] };
 var BIDANG_ALIAS = { "Unit Staf": "Kesekretariatan" };
 var PROMO = ["Bendahara", "Dana Usaha", "Litbang", "Forkom 1", "Forkom 2"];
 function bAlias(b) { return BIDANG_ALIAS[b] || b; }
+function seksiA(b, sk) { return b === "Kesekretariatan" && sk === "Sekretariat" ? "Kesekretariatan" : sk; }
 function promoB(b, sk) { return b === "Kesekretariatan" && PROMO.indexOf(sk) > -1 ? sk : b; }
 var DATA = [], ALIAS = [], GROUPS = [], posisi = 0, terisi = [], jmlOrang = null, kosong = 0;
 var roster = { state: "loading", msg: "" };
@@ -1046,7 +1047,7 @@ function ocTree(n, depth, ci) {
     var pk = n.kids.filter(function (k) { return /^pimpinan\s/i.test(k.title); })[0];
     if (pk) { n = { title: n.title, ci: n.ci, urut: n.urut, persons: pk.persons.concat(n.persons), kids: n.kids.filter(function (k) { return k !== pk; }) }; }
   }
-  if (depth === 1 && PROMO.indexOf(n.title) > -1) {
+  if (depth === 1) {
     var sk = n.kids.filter(function (k) { return k.title === n.title; })[0];
     if (sk) n = { title: n.title, ci: n.ci, urut: n.urut, persons: sk.persons.concat(n.persons), kids: sk.kids.concat(n.kids.filter(function (k) { return k !== sk; })) };
   }
@@ -1257,11 +1258,11 @@ function loadContacts() {
   var od = call("get_select_order", { baseId: BASE, tableId: T_JABATAN });
   return Promise.all([pg, jb, od]).then(function (rs) {
     var recs = recsOf(rs[0]), map = {}, jabMap = {}, ord = payloadOf(rs[2]) || {};
-    ORDER = { bidang: (ord.bidang || []).map(bAlias), seksi: ord.seksi || [], peran: ord.peran || [] };
+    ORDER = { bidang: (ord.bidang || []).map(bAlias), seksi: (ord.seksi || []).map(function (x) { return x === "Sekretariat" ? "Kesekretariatan" : x; }), peran: ord.peran || [] };
     (function () { var k = ORDER.bidang.indexOf("Kesekretariatan"); if (k < 0) k = ORDER.bidang.length - 1; ORDER.bidang = ORDER.bidang.filter(function (b) { return PROMO.indexOf(b) < 0; }); k = ORDER.bidang.indexOf("Kesekretariatan"); if (k < 0) k = ORDER.bidang.length - 1; Array.prototype.splice.apply(ORDER.bidang, [k + 1, 0].concat(PROMO)); })();
     recsOf(rs[1]).forEach(function (r) {
       var v = r.cellValuesByFieldId || {};
-      jabMap[r.id] = { nama: cellFirst(v[F_JAB.nama]), bidang: promoB(bAlias(selName(v[F_JAB.bidang])), selName(v[F_JAB.seksi])), seksi: selName(v[F_JAB.seksi]), peran: selName(v[F_JAB.peran]), sub: cellFirst(v[F_JAB.sub]), urut: typeof v[F_JAB.urut] === "number" ? v[F_JAB.urut] : 999 };
+      jabMap[r.id] = { nama: cellFirst(v[F_JAB.nama]), bidang: promoB(bAlias(selName(v[F_JAB.bidang])), selName(v[F_JAB.seksi])), seksi: seksiA(bAlias(selName(v[F_JAB.bidang])), selName(v[F_JAB.seksi])), peran: selName(v[F_JAB.peran]), sub: cellFirst(v[F_JAB.sub]), urut: typeof v[F_JAB.urut] === "number" ? v[F_JAB.urut] : 999 };
     });
     recs.forEach(function (r) {
       var v = r.cellValuesByFieldId || {}, nameCell = v[F_PNG_NAMA];
