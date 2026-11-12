@@ -355,7 +355,7 @@ footer { color: var(--muted); font-size: 13px; }
 .pdi .act { border-radius: 999px; padding: 5px 7px; }
 .tile.go { font: inherit; color: inherit; text-align: left; cursor: pointer; width: 100%; } .tile.go:hover, .tile.go:focus-visible { border-color: var(--accent); }
 .bcol[data-nav] { cursor: pointer; } .bcol[data-nav]:hover .bl { color: var(--accent); }
-.hbr.ev { font: inherit; font-size: 13px; }
+.hbr.ev { font: inherit; font-size: 13px; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; padding: 6px 0; cursor: pointer; } .hbr.ev span { flex: 1 1 100%; } .hbr.ev i { flex: 0 0 auto; max-width: calc(100% - 40px); } .hbr.ev:hover span { color: var(--accent); }
 .hbr small { font-size: 11.5px; }
 .row2 { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
 @media (max-width: 480px) {
@@ -436,6 +436,7 @@ footer { color: var(--muted); font-size: 13px; }
 
   <div id="tab-beranda" class="tab" role="tabpanel" aria-labelledby="tabbtn-beranda">
     <div class="link" id="dashStatus" role="status"></div>
+    <div id="dashAppr"></div>
     <div class="tiles" id="dashTiles"></div>
     <div class="dgrid">
       <section class="pan" aria-labelledby="h-agenda"><div class="row2"><h3 id="h-agenda">Agenda terdekat</h3><button type="button" class="btn" data-nav="tab:kalender">Kalender →</button></div><div class="lst" id="dashAgenda"></div></section>
@@ -1858,7 +1859,7 @@ function renderEvDash() {
   var max = Math.max.apply(null, l.map(function (e) { return by[e.id] || 0; }).concat([1]));
   el.innerHTML = l.length ? '<div class="hb">' + l.map(function (e) {
     var n = by[e.id] || 0;
-    return '<button type="button" class="hbr ev" data-nav="evt:' + esc(e.id) + '"><span>' + esc(e.nama.replace(/^\d{6}-/, "")) + '<small class="note"> · ' + esc(fmtDate(e.tgl, { day: "numeric", month: "short" })) + '</small></span><i style="width:' + (n / max * 100).toFixed(1) + '%"></i><em>' + n + "</em></button>";
+    return '<div role="button" tabindex="0" class="hbr ev" data-nav="evt:' + esc(e.id) + '"><span>' + esc(e.nama.replace(/^\d{6}-/, "")) + '<small class="note"> · ' + esc(fmtDate(e.tgl, { day: "numeric", month: "short" })) + '</small></span><i style="width:' + (n / max * 100).toFixed(1) + '%"></i><em>' + n + "</em></div>";
   }).join("") + "</div>" : '<p class="hint">Tidak ada event berjalan.</p>';
 }
 function pbars(title, m, order, key) {
@@ -1878,15 +1879,6 @@ function renderPwRing() {
     '<div class="pan">' + pbars("Pewarta aktif per kelompok usia", ag, AGE_GRP, "usia") + "</div>" +
     '<div class="pan">' + pbars("Pengajar per modul", md, MODUL, "modul") + "</div>" +
     '<div class="pan"><h4 style="margin:0 0 6px">Sebaran PD</h4><p class="hint" style="margin:0"><strong>' + Object.keys(pdn).length + "</strong> PD / komunitas punya pewarta aktif.</p><button type=\"button\" class=\"btn\" style=\"margin-top:8px\" data-pwf=\"pd|x\">Lihat per PD →</button></div>";
-  if (D.smp) {
-    var luar = D.smp.filter(function (o) { return o.luar; }), cols = [];
-    for (var i = -5; i <= 6; i++) {
-      var d0 = new Date(NOW.getFullYear(), NOW.getMonth() + i, 1), key = monthKey(d0.getFullYear(), d0.getMonth());
-      var n = luar.filter(function (o) { return o.tgl.slice(0, 7) === key; }).length;
-      cols.push({ label: monthLabel(d0.getFullYear(), d0.getMonth(), true), short: monthLabel(d0.getFullYear(), d0.getMonth()), total: n, now: i === 0, segs: [{ n: n, cls: "c1", name: "Luar kota" }], nav: "pw:lk" });
-    }
-    h += '<div class="pan full"><h4 style="margin:0 0 6px">Permohonan pewarta luar kota per bulan <small class="note">· klik untuk detail</small></h4>' + mbars(cols, "Permohonan pewarta luar kota per bulan") + "</div>";
-  }
   el.innerHTML = h;
 }
 document.addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-pwf]"); if (!b) return; var kv = b.dataset.pwf.split("|"); pwFilterGo(kv[0], kv.slice(1).join("|")); });
@@ -1956,7 +1948,43 @@ function renderBeranda() {
   }
   renderEvDash();
   renderDashExtra();
+  renderAppr();
 }
+/* ---- approval permohonan pewarta luar kota (Sekretaris Jenderal / Superadmin) ---- */
+function apprPending() {
+  return (D.smp || []).filter(function (o) { return o.luar && !/acc|ditolak/i.test(o.acc || ""); });
+}
+function renderAppr() {
+  var el = document.getElementById("dashAppr"); if (!el) return;
+  var me = window.__ME__ || {};
+  if (!me.approver || !D.smp) { el.innerHTML = ""; return; }
+  var n = apprPending().length;
+  el.innerHTML = n ? '<div class="note-bar" role="status" style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 14px;margin-bottom:12px;border:1px solid var(--warn);background:var(--warn-soft);border-radius:10px"><span>⏳ <strong>' + n + '</strong> permohonan pewarta luar kota menunggu approval Anda.</span><button type="button" class="btn" data-apprgo="1">Tinjau dan approve</button></div>' : "";
+}
+function apprCard(o) {
+  return '<div class="rev" data-apv="' + o.id + '"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><strong>' + esc(o.nama || "Pewarta belum ditentukan") + '</strong><span class="tag alt">' + esc(o.asal || o.bpk || "Luar kota") + "</span></div>" +
+    '<div class="note" style="margin:2px 0 6px">' + esc(fmtDate(o.tgl, { weekday: "short", day: "numeric", month: "long", year: "numeric" })) + (o.tgl < TODAY ? " · sudah lewat" : "") + "<br>" + esc([o.pd, o.tema].filter(Boolean).join(" · ")) + "</div>" +
+    '<div class="apvbtn" style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" data-apv-do="acc" data-id="' + o.id + '">✓ Approve</button><button type="button" class="btn" data-apv-do="tolak" data-id="' + o.id + '">✕ Tolak</button><button type="button" class="btn" data-lk="' + o.id + '">Lihat detail</button></div><p class="note apvmsg" role="status"></p></div>';
+}
+function openAppr(opener) {
+  var l = apprPending().sort(function (a, b) { var fa = a.tgl >= TODAY, fb = b.tgl >= TODAY; return fa !== fb ? (fa ? -1 : 1) : (fa ? a.tgl.localeCompare(b.tgl) : b.tgl.localeCompare(a.tgl)); });
+  openInfo("Approval permohonan pewarta luar kota", l.length + " menunggu keputusan. Yang akan datang tampil lebih dulu.",
+    '<div id="apprList">' + (l.length ? l.map(apprCard).join("") : '<p class="hint">Semua permohonan sudah diputuskan.</p>') + "</div>", opener);
+}
+document.addEventListener("click", function (e) {
+  var g = e.target.closest && e.target.closest("[data-apprgo]"); if (g) { openAppr(g); return; }
+  var b = e.target.closest && e.target.closest("[data-apv-do]"); if (!b) return;
+  var card = b.closest("[data-apv]"), msg = card.querySelector(".apvmsg"), d = b.dataset.apvDo;
+  if (d === "tolak" && !b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "Yakin tolak? Klik lagi"; return; }
+  var btns = card.querySelectorAll("button"); Array.prototype.forEach.call(btns, function (x) { x.disabled = true; }); msg.textContent = "Menyimpan…";
+  fetch("/api/approval", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ eventId: b.dataset.id, decision: d }) })
+    .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.message || "Gagal."); return j; }); })
+    .then(function () {
+      var o = (D.smp || []).filter(function (x) { return x.id === b.dataset.id; })[0]; if (o) o.acc = d === "acc" ? "ACC - Ok" : "Ditolak";
+      card.innerHTML = '<p class="hint" style="margin:0">' + (d === "acc" ? "✓ Disetujui" : "✕ Ditolak") + ": " + esc(o ? o.nama || "" : "") + ".</p>"; renderAppr();
+    }, function (er) { Array.prototype.forEach.call(btns, function (x) { x.disabled = false; }); delete b.dataset.sure; b.textContent = d === "acc" ? "✓ Approve" : "✕ Tolak"; msg.textContent = er.message; });
+});
+document.getElementById("infoScrim").addEventListener("click", function (e) { var l = e.target.closest && e.target.closest("[data-lk]"); if (l) openLk(l.dataset.lk, l); });
 /* ---- ringkasan tambahan Beranda: permohonan luar kota, keaktifan PD, tema, pewarta ---- */
 var DASH = { rng: "6" };
 function pdActStat() {
@@ -2198,7 +2226,7 @@ function renderPewarta() {
   document.getElementById("pwTiles").innerHTML = tile(n(function (o) { return isAktif(o.sp); }), "Pewarta aktif", "BPK Bandung, tanpa pastor", "pwf:status|Aktif") + tile(n(function (o) { return o.calon; }), "Calon pewarta", "belum tetap", "pwf:status|Calon") +
     tile(n(function (o) { return isAktif(o.sg); }), "Pengajar aktif", "lihat per modul", "pwf:modul|x") + tile(n(function (o) { return isAktif(o.sk); }), "Konselor aktif", "BPK Bandung") +
     tile(all ? pwSet("pastor").filter(function (o) { return isAktif(o.sp); }).length : "–", "Pastor & suster aktif", "dipisah dari pewarta", "pwf:pastor|x") +
-    tile(lkN, "Permohonan luar kota", "bulan ini", "pwf:lk|x") + tile(kq ? (kAll ? Math.round(kTot / kAll) : 0) + "/100" : "–", "Skor kuesioner", kq ? kAll + " ulasan" : "", "pwf:kui|x");
+    tile(kq ? (kAll ? Math.round(kTot / kAll) : 0) + "/100" : "–", "Skor kuesioner", kq ? kAll + " ulasan" : "", "pwf:kui|x");
   ["ring", "daftar", "pd", "modul", "pastor", "lk", "kui"].forEach(function (v) { document.getElementById("pwSec" + v.charAt(0).toUpperCase() + v.slice(1)).hidden = pw.view !== v; });
   Array.prototype.forEach.call(document.getElementById("pwViews").children, function (x) { x.setAttribute("aria-pressed", x.dataset.pv === pw.view ? "true" : "false"); });
   if (pw.view === "lk") { renderLk(); renderTema(); return; }

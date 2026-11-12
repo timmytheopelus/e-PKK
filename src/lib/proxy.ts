@@ -10,6 +10,8 @@ const TTL = 60_000;
 
 const toOut = (r: Rec) => ({ id: r.id, createdTime: r.createdTime, cellValuesByFieldId: r.fields });
 
+export function clearProxyCache() { cache.clear(); }
+
 export async function handleCall(tool: string, input: any, acc: Access) {
   const spec = TABLES[input?.tableId];
   if (!spec || spec.base !== input?.baseId) throw new HttpError(403, "Tabel ini tidak tersedia.");
