@@ -33,7 +33,7 @@ export const ADMIN_JS = String.raw`
   function select(opts, val) {
     var s = EPK.el("select", {}, opts.map(function (o) { return EPK.el("option", { value: o[0], text: o[1] }); })); s.value = val; return s;
   }
-  var LV = [["View","Hanya lihat"],["Edit","Edit"],["Superadmin","Superadmin"]];
+  var LV = [["View","Hanya lihat"],["Edit","Edit"],["Admin","Admin (tambah pengguna View)"],["Superadmin","Superadmin"]];
   function msgBox() { var m = EPK.el("p", { class: "epk-msg" }); m.say = function (t, bad) { m.textContent = t; m.className = "epk-msg" + (bad ? " bad" : ""); }; return m; }
   function userCard(u, rerender) {
     var lv = select(LV, u.level), tb = tabBoxes(u.tabs.length || u.status !== "Menunggu" ? u.tabs : ["Dashboard"]), msg = msgBox();
@@ -73,6 +73,75 @@ export const ADMIN_JS = String.raw`
       EPK.el("div", { class: "epk-row" }, [EPK.el("label", {}, ["Level ", lv]), tb]),
       EPK.el("div", { class: "epk-row" }, [btn]), msg]);
   }
+  var ME = window.__ME__, IS_SUPER = ME.level === "Superadmin";
+  var umatCache = null;
+  function pick() {
+    var holder = EPK.el("div", {}, [EPK.el("p", { text: "Memuat daftar umat…" })]);
+    EPK.modal("Tambah pengguna dari daftar umat", holder);
+    function ready(list) {
+      holder.textContent = "";
+      var q = EPK.el("input", { type: "search", placeholder: "Cari nama, panggilan, atau email", autocomplete: "off" });
+      var jabs = {}, pds = {};
+      list.forEach(function (u) { if (u.jab) u.jab.split(", ").forEach(function (j) { jabs[j] = 1; }); if (u.pd) pds[u.pd] = 1; });
+      var fj = select([["", "Semua jabatan BPK"]].concat(Object.keys(jabs).sort().map(function (j) { return [j, j]; })), "");
+      var fp = select([["", "Semua PD"]].concat(Object.keys(pds).sort().map(function (p) { return [p, p]; })), "");
+      var only = EPK.el("input", { type: "checkbox" });
+      var hits = {}, hitT = null;
+      var box = EPK.el("div", { class: "epk-picklist" }), cnt = EPK.el("p", { class: "sub" });
+      var form = EPK.el("div", {});
+      var allowedTabs = IS_SUPER ? ALLT : ALLT.filter(function (t) { return (ME.tabsOwned || []).indexOf(t) >= 0; });
+      function draw() {
+        var t = q.value.trim().toLowerCase();
+        var l = list.filter(function (u) {
+          if (fj.value && (u.jab || "").split(", ").indexOf(fj.value) < 0) return false;
+          if (fp.value && u.pd !== fp.value) return false;
+          if (only.checked && !u.jab) return false;
+          return !t || (u.nama + " " + u.pgl + " " + (u.mail || "")).toLowerCase().indexOf(t) >= 0 || !!hits[u.id];
+        });
+        cnt.textContent = l.length + " umat" + (l.length > 60 ? " (60 pertama ditampilkan, persempit pencarian)" : "");
+        box.textContent = "";
+        l.slice(0, 60).forEach(function (u) {
+          var b = EPK.el("button", { type: "button", class: "epk-pickrow", disabled: u.terdaftar ? "" : null, onclick: function () { choose(u); } }, [
+            EPK.el("b", { text: u.nama }), EPK.el("small", { text: [u.pgl, u.pd, u.jab].filter(Boolean).join(" · ") + (u.terdaftar ? " · sudah jadi pengguna" : "") })]);
+          if (u.terdaftar) b.disabled = true;
+          box.appendChild(b);
+        });
+      }
+      function choose(u) {
+        form.textContent = "";
+        var em = EPK.el("input", { type: "email", placeholder: u.hasEmail ? "kosongkan untuk memakai email umat (" + u.mail + ")" : "email Google (wajib)", autocomplete: "off" });
+        var lv = IS_SUPER ? select([["View", "Hanya lihat"], ["Edit", "Edit"]], "View") : EPK.el("b", { text: "Hanya lihat (View)" });
+        var tb = tabBoxes(["Dashboard"].filter(function (t) { return allowedTabs.indexOf(t) >= 0; }));
+        Array.prototype.forEach.call(tb.querySelectorAll("input"), function (c) { if (allowedTabs.indexOf(c.value) < 0) { c.disabled = true; c.checked = false; c.parentNode.style.display = "none"; } });
+        var msg = msgBox();
+        var go = EPK.el("button", { type: "button", class: "epk-btn", text: "Tambahkan", onclick: function () {
+          msg.say("Menyimpan…"); go.disabled = true;
+          api("add", { umatId: u.id, email: em.value, level: IS_SUPER ? lv.value : "View", tabs: tb.get() }).then(function (j) {
+            umatCache = null; msg.say("Selesai: " + u.nama + " ditambahkan. " + (j.emailed ? "Email sambutan terkirim." : "Email sambutan belum terkirim otomatis (SMTP belum diatur); kirim link aplikasi secara manual."));
+            if (IS_SUPER) load().catch(function () {});
+          }, function (e) { go.disabled = false; msg.say(e.message, true); });
+        } });
+        form.appendChild(EPK.el("div", { class: "epk-card" }, [
+          EPK.el("h4", { text: u.nama }), EPK.el("div", { class: "sub", text: [u.pd, u.jab].filter(Boolean).join(" · ") }),
+          EPK.el("div", { class: "epk-row" }, [EPK.el("label", {}, ["Email login ", em])]),
+          EPK.el("div", { class: "epk-row" }, [EPK.el("label", {}, ["Hak akses ", lv]), tb]),
+          EPK.el("div", { class: "epk-row" }, [go]), msg]));
+        form.scrollIntoView && form.scrollIntoView({ block: "nearest" });
+      }
+      [q, fj, fp].forEach(function (x) { x.addEventListener(x === q ? "input" : "change", draw); });
+      q.addEventListener("input", function () {
+        clearTimeout(hitT); var t = q.value.trim();
+        if (t.length < 3) { hits = {}; return; }
+        hitT = setTimeout(function () { api("umat", { q: t }).then(function (j) { hits = {}; (j.hits || []).forEach(function (id) { hits[id] = 1; }); draw(); }, function () {}); }, 350);
+      });
+      only.addEventListener("change", draw);
+      holder.appendChild(EPK.el("div", { class: "epk-row" }, [q, fj, fp, EPK.el("label", {}, [only, "Hanya yang punya jabatan BPK"])]));
+      holder.appendChild(cnt); holder.appendChild(box); holder.appendChild(form);
+      draw();
+    }
+    (umatCache ? Promise.resolve(umatCache) : api("umat").then(function (j) { umatCache = j.umat; return umatCache; })).then(ready, function (e) { holder.textContent = e.message; });
+  }
+  window.EPK_TAMBAH = pick;
   function kelola() {
     var holder = EPK.el("div", {}, [EPK.el("p", { text: "Memuat…" })]);
     EPK.modal("Kelola Pengguna", holder);
@@ -92,6 +161,7 @@ export const ADMIN_JS = String.raw`
   }
   window.EPK_KELOLA = kelola;
   window.EPK_ADMIN_BOOT = function () {
+    if (!IS_SUPER) return;
     load().then(function () { if (window.__ME__.openKelola) kelola(); }, function () {});
     setInterval(function () { load().catch(function () {}); }, 120000);
   };

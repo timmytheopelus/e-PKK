@@ -3,6 +3,7 @@
 import nodemailer from "nodemailer";
 import { BASE_BPK, T } from "./policy";
 import { listPage } from "./airtable";
+import { welcomeHtml } from "./mail-template";
 
 export function appUrl() {
   if (process.env.APP_URL) return process.env.APP_URL.replace(/\/$/, "");
@@ -33,4 +34,14 @@ export async function notifySuperadmins(email: string, nama: string) {
     text: `${nama || "(tanpa nama)"} <${email}> baru login dan menunggu persetujuan.\\n\\nBuka halaman persetujuan:\\n${link}`,
     html: `<p><b>${esc(nama || "(tanpa nama)")}</b> (${esc(email)}) baru login dan menunggu persetujuan.</p><p><a href="${link}">Buka halaman persetujuan</a></p>`,
   });
+}
+
+/** Email sambutan HTML ke pengguna baru. Mengembalikan false bila SMTP belum diatur. */
+export async function sendWelcome(o: { nama: string; email: string; level: string; tabs: string[] }) {
+  const { SMTP_USER, SMTP_PASS } = process.env;
+  if (!SMTP_USER || !SMTP_PASS) return false;
+  const tr = nodemailer.createTransport({ host: process.env.SMTP_HOST || "smtp.gmail.com", port: Number(process.env.SMTP_PORT) || 465, secure: (Number(process.env.SMTP_PORT) || 465) === 465, auth: { user: SMTP_USER, pass: SMTP_PASS } });
+  const url = appUrl() || "https://e-pkk-one.vercel.app";
+  await tr.sendMail({ from: process.env.MAIL_FROM || `e-PKK BPKPKK Bandung <${SMTP_USER}>`, to: o.email, subject: "Akses e-PKK BPKPKK Bandung", text: `Shalom ${o.nama}, Anda sudah diberi akses ke e-PKK: ${url}. Login dengan Gmail ${o.email}.`, html: welcomeHtml({ ...o, url }) });
+  return true;
 }

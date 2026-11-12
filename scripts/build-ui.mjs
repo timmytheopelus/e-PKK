@@ -52,6 +52,11 @@ const shim = `<style>
 .epk-btn.sec { background: #fff; color: var(--accent); } .epk-btn.bad { border-color: var(--danger); background: #fff; color: var(--danger); }
 .epk-msg { margin: 8px 0 0; font-size: 13px; color: var(--accent); } .epk-msg.bad { color: var(--danger); }
 .epk-lvl { color: var(--muted); }
+.epk-picklist { display: grid; gap: 4px; max-height: 280px; overflow-y: auto; margin: 6px 0 10px; }
+.epk-pickrow { font: inherit; text-align: left; display: grid; gap: 1px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--fg); cursor: pointer; }
+.epk-pickrow small { color: var(--muted); }
+.epk-pickrow:hover:not(:disabled) { border-color: var(--accent); }
+.epk-pickrow:disabled { opacity: .55; cursor: not-allowed; }
 .meta { gap: 8px 12px; }
 body.ro [data-act="edit"], body.ro [data-pw="edit"], body.ro [data-go^="koor"], body.ro #addBtn, body.ro #dayAdd { display: none !important; }
 </style>
@@ -97,10 +102,11 @@ function applyMe() {
   ["beranda", "pengurus", "pewarta", "luar", "pd", "umat", "kalender", "event"].forEach(function (t) {
     var b = document.getElementById("tabbtn-" + t); if (b && me.tabs.indexOf(t) < 0) b.hidden = true;
   });
-  if (me.level === "View") document.body.classList.add("ro");
+  if (me.level !== "Edit" && me.level !== "Superadmin") document.body.classList.add("ro");
   var el = document.getElementById("me"); if (!el) return;
   var menu = EPK.el("div", { class: "epk-pop", hidden: "" }, [
     EPK.el("button", { type: "button", text: "Profil saya", onclick: function () { EPK.menuClose(); EPK.profile(); } }),
+    me.level === "Superadmin" || me.level === "Admin" ? EPK.el("button", { type: "button", text: "Tambah pengguna", onclick: function () { EPK.menuClose(); if (window.EPK_TAMBAH) window.EPK_TAMBAH(); } }) : null,
     me.level === "Superadmin" ? EPK.el("button", { type: "button", text: "Kelola Pengguna", onclick: function () { EPK.menuClose(); if (window.EPK_KELOLA) window.EPK_KELOLA(); } }) : null,
     EPK.el("a", { href: "/keluar", text: "Keluar" })]);
   var who = EPK.el("button", { type: "button", class: "epk-who", "aria-haspopup": "true", onclick: function (e) { e.stopPropagation(); var h = menu.hidden; EPK.menuClose(); menu.hidden = !h; } },
@@ -112,7 +118,7 @@ function applyMe() {
     el.appendChild(EPK.el("span", { class: "epk-wrap" }, [bell, bellMenu]));
   }
   el.appendChild(EPK.el("span", { class: "epk-wrap" }, [who, menu]));
-  el.appendChild(EPK.el("span", { class: "epk-lvl", text: me.level === "Superadmin" ? "Superadmin" : me.level === "Edit" ? "Akses edit" : "Hanya lihat" }));
+  el.appendChild(EPK.el("span", { class: "epk-lvl", text: me.level === "Superadmin" ? "Superadmin" : me.level === "Admin" ? "Admin" : me.level === "Edit" ? "Akses edit" : "Hanya lihat" }));
   document.addEventListener("click", EPK.menuClose);
   if (window.EPK_ADMIN_BOOT) window.EPK_ADMIN_BOOT();
 }

@@ -1,15 +1,20 @@
 // Pengelolaan pengguna (khusus Superadmin). Tabel "Pengguna Dashboard" tidak pernah dihapus barisnya dari sini.
 import { ALL_TABS, BASE_BPK, HttpError, T } from "./policy";
-import { at, listPage } from "./airtable";
-import { AF, invalidateAccess } from "./access";
+import { at, listPage, listUntil, resolveLinks } from "./airtable";
+import { AF, invalidateAccess, jabatanOf } from "./access";
+import { sendWelcome } from "./mail";
 
-const LEVELS = ["View", "Edit", "Superadmin"], STATUS = ["Menunggu", "Disetujui", "Ditolak"];
+export type Actor = { level: string; tabs: string[] };
+const SUPER: Actor = { level: "Superadmin", tabs: ALL_TABS };
+const UF = { nama: "fldIpQTSkFB9sU0lo", pgl: "fld469PYR80nAUNIF", email: "fldAaQ3zmiLBhp4z9", pd: "fldrHJ6q3HZvApccl", jab: "fldT3yUTrEgCuOwbm" };
+
+const LEVELS = ["View", "Edit", "Admin", "Superadmin"], STATUS = ["Menunggu", "Disetujui", "Ditolak"];
 const EMAIL = /^[^@\s,;"<>]+@[^@\s,;"<>]+\.[^@\s,;"<>]+$/;
 const tableUrl = `/v0/${BASE_BPK}/${T.pengguna}`;
 
 const toUser = (r: any) => ({
   id: r.id, email: r.fields[AF.email] || "", nama: r.fields[AF.nama] || "", status: r.fields[AF.status] || "Menunggu",
-  level: r.fields[AF.level] || "View", tabs: r.fields[AF.tabs] || [], jabatan: r.fields[AF.jabatan] || "", login: r.fields[AF.login] || "",
+  level: r.fields[AF.level] || "View", tabs: r.fields[AF.tabs] || [], jabatan: jabatanOf(r.fields), login: r.fields[AF.login] || "",
 });
 
 async function all() {
@@ -35,7 +40,53 @@ function clean(i: any, partial: boolean) {
   return f;
 }
 
-export async function adminCall(action: string, i: any, selfEmail: string) {
+const maskEmail = (e: string) => { const [a, d] = e.split("@"); return a.slice(0, 2) + "***@" + d; };
+let umatCache: { at: number; v: any[] } | null = null;
+async function umatList() {
+  if (umatCache && Date.now() - umatCache.at < 120_000) return umatCache.v;
+  const r = await listUntil(BASE_BPK, T.umat, { fieldIds: Object.values(UF), want: Infinity, maxPages: 200 });
+  const recs = await resolveLinks(BASE_BPK, T.umat, r.records);
+  const v = recs.map((x) => {
+    const f = x.fields, em = String(f[UF.email] || "").trim().toLowerCase();
+    const jab = f[UF.jab]; 
+    return { id: x.id, nama: String(f[UF.nama] || "").replace(/\s+/g, " ").trim(), pgl: String(f[UF.pgl] || "").trim(), pd: (Array.isArray(f[UF.pd]) ? f[UF.pd] : []).map((p: any) => String(p.name || "").replace(/\s+/g, " ").trim()).filter(Boolean).join(", "),
+      jab: (Array.isArray(jab) ? jab.join(", ") : String(jab || "")).trim(), email: em };
+  }).filter((u) => u.nama);
+  umatCache = { at: Date.now(), v };
+  return v;
+}
+
+const mustSuper = (a: Actor) => { if (a.level !== "Superadmin") throw new HttpError(403, "Khusus Superadmin."); };
+
+export async function adminCall(action: string, i: any, selfEmail: string, actor: Actor = SUPER) {
+  if (action === "umat") {
+    const users = await all();
+    const used = new Set(users.map((u) => String(u.email).toLowerCase()));
+    const qq = String(i?.q || "").trim().toLowerCase();
+    if (qq) return { hits: qq.length < 3 ? [] : (await umatList()).filter((u) => u.email && u.email.includes(qq)).map((u) => u.id) };
+    return { umat: (await umatList()).map((u) => ({ id: u.id, nama: u.nama, pgl: u.pgl, pd: u.pd, jab: u.jab, hasEmail: !!u.email, mail: u.email ? maskEmail(u.email) : "", terdaftar: !!u.email && used.has(u.email) })) };
+  }
+  if (action === "add") {
+    const um = (await umatList()).find((u) => u.id === String(i?.umatId || ""));
+    if (!um) throw new HttpError(400, "Umat tidak ditemukan.");
+    const level = String(i?.level || "");
+    if (actor.level === "Admin" ? level !== "View" : !["View", "Edit"].includes(level)) throw new HttpError(403, actor.level === "Admin" ? "Admin hanya boleh memberi hak View." : "Level harus View atau Edit.");
+    const tabs: string[] = Array.isArray(i?.tabs) ? i.tabs : [];
+    if (!tabs.length || !tabs.every((t) => ALL_TABS.includes(t))) throw new HttpError(400, "Pilih minimal satu menu yang valid.");
+    if (actor.level !== "Superadmin" && !tabs.every((t) => actor.tabs.includes(t))) throw new HttpError(403, "Anda hanya bisa memberi menu yang Anda miliki.");
+    const email = String(i?.email || um.email || "").trim().toLowerCase();
+    if (!EMAIL.test(email)) throw new HttpError(400, "Email tidak valid. Isi email Google pengguna ini.");
+    const cur = await all();
+    if (cur.some((u) => String(u.email).toLowerCase() === email)) throw new HttpError(400, "Email ini sudah terdaftar sebagai pengguna.");
+    const fields = { [AF.email]: email, [AF.nama]: um.nama, [AF.status]: "Disetujui", [AF.level]: level, [AF.tabs]: [...new Set(tabs)], [AF.umat]: [um.id] };
+    const j = await at(tableUrl, { method: "POST", body: JSON.stringify({ records: [{ fields }] }) });
+    if (um.email !== email) { await at(`/v0/${BASE_BPK}/${T.umat}`, { method: "PATCH", body: JSON.stringify({ records: [{ id: um.id, fields: { [UF.email]: email } }] }) }); umatCache = null; }
+    invalidateAccess(); console.log("ADMIN add", selfEmail, email, level, tabs.join(","));
+    let emailed = false;
+    try { emailed = await sendWelcome({ nama: um.nama, email, level, tabs }); } catch (e) { console.error("email sambutan gagal", e); }
+    return { user: toUser(j.records[0]), emailed };
+  }
+  mustSuper(actor);
   if (action === "list") return { users: await all() };
   if (action === "create") {
     const email = String(i?.email || "").trim().toLowerCase();

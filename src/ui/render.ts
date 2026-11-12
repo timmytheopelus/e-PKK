@@ -6,11 +6,11 @@ const safeJson = (o: unknown) => JSON.stringify(o).replace(/</g, "\\u003c").repl
 
 export function renderDashboard(acc: Access, openKelola = false) {
   const tabs = acc.tabs.map((t) => TAB_IDS[t]).filter(Boolean);
-  const level = acc.level === "Superadmin" ? "Superadmin" : acc.level === "Edit" ? "Edit" : "View";
-  const me = { email: acc.email, nama: acc.nama, level, tabs, tabNames: acc.tabs, jabatan: acc.jabatan || "", login: acc.login || "", openKelola: level === "Superadmin" && openKelola };
+  const level = ["Superadmin", "Edit", "Admin"].includes(acc.level) ? acc.level : "View";
+  const me = { email: acc.email, nama: acc.nama, level, tabs, tabNames: acc.tabs, jabatan: acc.jabatan || "", login: acc.login || "", openKelola: level === "Superadmin" && openKelola, tabsOwned: acc.tabs };
   // Daftar pengurus hanya dikirim ke pengguna yang punya tab Pengurus.
   const raw = tabs.includes("pengurus") ? RAW : "";
-  const admin = level === "Superadmin" ? "<script>" + ADMIN_JS + "</script>\n" : "";
+  const admin = level === "Superadmin" || level === "Admin" ? "<script>" + ADMIN_JS + "</script>\n" : "";
   const body = (PRE + admin + MAIN_HEAD).replace("__ME_JSON__", safeJson(me)) + raw + TAIL;
   return '<!doctype html><html lang="id"><head><meta charset="utf-8"></head><body>' + body + "</body></html>";
 }

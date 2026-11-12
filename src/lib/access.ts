@@ -3,7 +3,14 @@ import { Access, ALL_TABS, BASE_BPK, T } from "./policy";
 import { at, listPage } from "./airtable";
 import { notifySuperadmins } from "./mail";
 
-export const AF = { email: "fldXCAPjc4bPkTbSq", nama: "fldR7uM68NdmjWJdK", status: "fldRiPREBGEFPsyjW", level: "fldvlRQXDZJdIIcw8", tabs: "fldgMD37Bgpg1ZdW6", jabatan: "fldKD8CpWcra5yaTR", login: "fldhehrsHwvACGhiu" };
+export const AF = { email: "fldXCAPjc4bPkTbSq", nama: "fldR7uM68NdmjWJdK", status: "fldRiPREBGEFPsyjW", level: "fldvlRQXDZJdIIcw8", tabs: "fldgMD37Bgpg1ZdW6", jabatan: "fldKD8CpWcra5yaTR", login: "fldhehrsHwvACGhiu", umat: "fldf0NRl2Ts4kVxKr", jabLk: "fldXkY5f3WwMcB9Yz" };
+
+/** Jabatan BPK diambil dari lookup data umat; kolom Jabatan lama hanya cadangan. */
+export const jabatanOf = (f: Record<string, any>) => {
+  const lk = f[AF.jabLk];
+  const t = (Array.isArray(lk) ? lk : lk ? [lk] : []).map((x: any) => String(x).trim()).filter(Boolean).join(", ");
+  return t || f[AF.jabatan] || "";
+};
 
 const cache = new Map<string, { at: number; v: Access | null; id?: string }>();
 const norm = (e: string) => e.trim().toLowerCase();
@@ -19,7 +26,7 @@ async function fetchUser(email: string) {
   const f = r.fields;
   const level = f[AF.level] || "View";
   const tabs = level === "Superadmin" ? [...ALL_TABS] : ((f[AF.tabs] as string[]) || []).filter((t) => ALL_TABS.includes(t));
-  return { id: r.id, v: { email: norm(email), nama: f[AF.nama] || "", status: f[AF.status] || "Menunggu", level, tabs, jabatan: f[AF.jabatan] || "", login: f[AF.login] || "" } as Access };
+  return { id: r.id, v: { email: norm(email), nama: f[AF.nama] || "", status: f[AF.status] || "Menunggu", level, tabs, jabatan: jabatanOf(f), login: f[AF.login] || "" } as Access };
 }
 
 /** Akses pengguna (cache 30 detik, jadi pencabutan hak berlaku cepat). */
