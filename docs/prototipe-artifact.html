@@ -283,6 +283,11 @@ tr.alias td.nama { font-weight: 500; }
 .bar1 { display: inline-block; width: 70px; height: 7px; border-radius: 4px; background: var(--line); overflow: hidden; vertical-align: middle; margin-right: 6px; }
 .bar1 i { display: block; height: 100%; background: var(--accent); }
 .bar1.mid i { background: var(--warn); } .bar1.bad i { background: var(--danger); }
+img.pic { cursor: zoom-in; }
+.lightbox { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,.88); display: grid; place-items: center; padding: 16px; cursor: zoom-out; }
+.lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; }
+.lightbox button { position: absolute; top: 12px; right: 12px; font: inherit; font-size: 20px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: #fff; color: #000; cursor: pointer; }
+details.more { margin-top: 6px; } details.more summary { cursor: pointer; font-weight: 600; color: var(--accent); padding: 6px 0; }
 .pic { width: 112px; height: 112px; border-radius: 12px; object-fit: cover; background: var(--accent-soft); flex: none; }
 .pic.ph { display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: 2rem; color: var(--accent); }
 .phead { display: flex; gap: 16px; align-items: center; }
@@ -367,7 +372,7 @@ footer { color: var(--muted); font-size: 13px; }
 
 <div class="wrap">
   <header class="brand">
-    <img class="logo" src="/logo.png" alt="Logo BPK Keuskupan Bandung" width="92" height="92">
+    <a href="#beranda" id="logoHome" aria-label="Kembali ke dashboard utama" title="Dashboard utama" style="display:flex;flex:none"><img class="logo" src="/logo.png" alt="Logo BPK Keuskupan Bandung" width="92" height="92"></a>
     <div>
       <h1>BPKPKK Bandung</h1>
       <p>Data pengurus dan kalender kegiatan, dibaca dari Airtable BPK Bandung.</p>
@@ -1825,6 +1830,7 @@ function tile(num, label, sub, nav) {
   return nav ? '<button type="button" class="tile go" data-nav="' + nav + '">' + inner + "</button>" : '<div class="tile">' + inner + "</div>";
 }
 function navOk(t) { var b = document.getElementById("tabbtn-" + t); return !!b && !b.hidden; }
+document.getElementById("logoHome").addEventListener("click", function (e) { e.preventDefault(); goTab(navOk("beranda") ? "beranda" : (TABS.filter(navOk)[0] || "beranda")); });
 function goTab(n) { try { location.hash = "#" + n; } catch (e) {} showTab(n); window.scrollTo(0, 0); }
 function nav(spec) {
   var p = spec.split(":"), k = p[0], v = p.slice(1).join(":");
@@ -2213,7 +2219,7 @@ function renderPewarta() {
   document.getElementById("pwNone").hidden = list.length > 0;
   document.getElementById("pwMore").hidden = list.length <= shown.length;
   document.getElementById("pwBody").innerHTML = shown.map(function (o) {
-    return '<tr><td class="nama"><div class="who"><span class="n">' + esc(o.nama) + '</span><span class="acts">' + pwActs(o) + "</span></div></td><td>" + statusTag(o) + "</td><td>" + ageTag(o) + "</td><td>" + modulTags(o) + "</td><td>" + esc(o.pd || "-") + "</td></tr>";
+    return '<tr><td class="nama"><div class="who"><span class="n"><button type="button" class="linkbtn" data-pw="view" data-id="' + o.id + '">' + esc(o.nama) + '</button></span><span class="acts">' + pwActs(o) + "</span></div></td><td>" + statusTag(o) + "</td><td>" + ageTag(o) + "</td><td>" + modulTags(o) + "</td><td>" + esc(o.pd || "-") + "</td></tr>";
   }).join("");
 }
 function renderPwPd() {
@@ -2248,19 +2254,42 @@ function renderPwPastor() {
   var l = pwSet("pastor").sort(function (a, b) { return cmpId(a.nama, b.nama); });
   document.getElementById("pwPaCount").textContent = l.filter(function (o) { return isAktif(o.sp); }).length + " aktif dari " + l.length + " imam/suster terdata";
   document.getElementById("pwPaBody").innerHTML = l.map(function (o) {
-    return '<tr><td class="nama"><div class="who"><span class="n">' + esc(o.nama) + '</span><span class="acts">' + pwActs(o) + "</span></div></td><td>" + statusTag(o) + ' <span class="tag alt">' + esc(o.kual) + "</span></td><td>" + esc(o.paroki || o.pd || "-") + "</td><td>" + modulTags(o) + "</td></tr>";
+    return '<tr><td class="nama"><div class="who"><span class="n"><button type="button" class="linkbtn" data-pw="view" data-id="' + o.id + '">' + esc(o.nama) + '</button></span><span class="acts">' + pwActs(o) + "</span></div></td><td>" + statusTag(o) + ' <span class="tag alt">' + esc(o.kual) + "</span></td><td>" + esc(o.paroki || o.pd || "-") + "</td><td>" + modulTags(o) + "</td></tr>";
   }).join("");
 }
 function ytId(u) { var m = /(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([A-Za-z0-9_-]{11})/.exec(u || ""); return m ? m[1] : ""; }
+function pwHist(o) { var k = pdKey(o.nama); return k ? (D.smp || []).filter(function (x) { return pdKey(x.nama) === k; }) : []; }
+document.addEventListener("click", function (e) {
+  var b = e.target.closest && e.target.closest("[data-pwhist]"); if (!b) return;
+  var o = (D.pwb || []).filter(function (x) { return x.id === b.dataset.pwhist; })[0]; if (!o) return;
+  var l = pwHist(o), fut = l.filter(function (x) { return x.tgl > TODAY; }).length;
+  openInfo("Riwayat pewartaan: " + o.nama, l.length ? l.length + " jadwal" + (fut ? ", " + fut + " masih terjadwal" : "") : "Belum ada jadwal tercatat",
+    l.length ? evRows(l, false) : '<p class="hint">Belum ada jadwal pewartaan tercatat atas nama ini. Pencocokan memakai kesamaan nama di data jadwal.</p>', b);
+});
+/* foto: klik untuk melihat utuh, tanpa terpotong */
+document.addEventListener("click", function (e) {
+  var im = e.target.closest && e.target.closest("img.pic"); if (!im || !im.src) return;
+  var ov = document.createElement("div"); ov.className = "lightbox"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-label", "Foto utuh");
+  ov.innerHTML = '<img alt="' + esc(im.alt || "Foto") + '" referrerpolicy="no-referrer"><button type="button" aria-label="Tutup foto">✕</button>';
+  ov.querySelector("img").src = im.src;
+  var close = function () { ov.remove(); document.removeEventListener("keydown", onk, true); };
+  var onk = function (ev) { if (ev.key === "Escape") { ev.stopPropagation(); close(); } };
+  ov.addEventListener("click", close); document.addEventListener("keydown", onk, true); document.body.appendChild(ov); ov.querySelector("button").focus();
+});
 function viewPwb(id, opener) {
   var o = (D.pwb || []).filter(function (x) { return x.id === id; })[0]; if (!o) return;
   var yid = ytId(o.yt);
   var vid = o.yt ? (yid ? '<div style="position:relative;padding-top:56.25%;margin-bottom:6px"><iframe src="https://www.youtube-nocookie.com/embed/' + yid + '" title="Video ' + esc(o.nama) + '" style="position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:8px" allow="encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" loading="lazy"></iframe></div>' : "") +
     '<a class="act" href="' + esc(o.yt) + '" target="_blank" rel="noopener"><span>Buka di YouTube</span></a>' : '<span class="note">Belum ada link YouTube. Isi lewat tombol Edit.</span>';
-  var html = '<dl class="dl">' + drow("Panggilan", esc(o.pang)) + drow("Status pewarta", statusTag(o)) + drow("Kategori", esc(o.kp)) + drow("Status pengajar", esc(o.sg)) + drow("Status konselor", esc(o.sk)) +
+  var hist = pwHist(o);
+  var brief = '<dl class="dl">' + drow("Keahlian", [o.kual ? '<span class="tag">' + esc(o.kual) + "</span>" : "", tagsHtml(o.libat)].filter(Boolean).join(" ")) + drow("Usia", o.age == null ? "" : esc(o.age + " tahun · " + o.ag)) +
+    drow("Modul dikuasai", tagsHtml(o.modul) || '<span class="note">Belum diisi</span>') + drow("PD / Komunitas", esc(o.pd)) + "</dl>" +
+    '<p style="margin:10px 0"><button type="button" class="btn" data-pwhist="' + o.id + '">Riwayat pewartaan (' + hist.length + ")</button></p>" +
+    '<details class="more"><summary>Detail lengkap dan video</summary>';
+  var html = brief + '<dl class="dl">' + drow("Panggilan", esc(o.pang)) + drow("Status pewarta", statusTag(o)) + drow("Kategori", esc(o.kp)) + drow("Status pengajar", esc(o.sg)) + drow("Status konselor", esc(o.sk)) +
     drow("Kualifikasi", esc(o.kual)) + drow("Asal BPK", esc(o.asal)) + drow("PD / Komunitas", esc(o.pd)) + drow("Paroki", esc(o.paroki)) + drow("Dekanat", esc(o.dek)) +
     drow("Kelompok usia", o.age == null ? "" : esc(o.age + " th · " + o.ag)) + drow("Keterlibatan", tagsHtml(o.libat)) + drow("Modul dikuasai", tagsHtml(o.modul)) +
-    drow("Jumlah pewartaan", o.jml ? esc(String(o.jml)) : "") + drow("Hubungi", waLink(o.wa)) + drow("Video", vid) + "</dl>";
+    drow("Jumlah pewartaan", o.jml ? esc(String(o.jml)) : "") + drow("Hubungi", waLink(o.wa)) + drow("Video", vid) + "</dl></details>";
   openInfo(o.nama, [o.pang, o.kual].filter(Boolean).join(" · "), html, opener, o.foto);
 }
 /* edit status calon + modul */
@@ -2324,7 +2353,7 @@ function renderTamu() {
   var l = t.filter(function (o) { return (!tm.asal || (o.asal || "Asal belum diisi") === tm.asal) && (!tm.q || (o.nama + " " + o.pang + " " + pgl(o.nama)).toLowerCase().indexOf(tm.q) >= 0); }).sort(function (a, b) { return cmpId(a.asal || "", b.asal || "") || cmpId(a.nama, b.nama); });
   document.getElementById("tmCount").textContent = l.length + " pewarta tamu aktif dari keuskupan/BPK lain (tidak dihitung sebagai pewarta BPK Bandung).";
   tb.innerHTML = l.map(function (o) {
-    return '<tr><td class="nama"><div class="who"><span class="n">' + esc(o.nama) + '</span><span class="acts"><button type="button" class="act" data-pw="view" data-id="' + o.id + '" aria-label="Lihat profil ' + esc(o.nama) + '">' + ICON_VIEW + "<span>View</span></button>" + waBtn(o) + "</span></div></td><td>" + esc(o.asal || "-") + "</td><td>" + statusTag(o) + "</td><td>" + ageTag(o) + "</td><td>" + (o.jml || "–") + "</td></tr>";
+    return '<tr><td class="nama"><div class="who"><span class="n"><button type="button" class="linkbtn" data-pw="view" data-id="' + o.id + '">' + esc(o.nama) + '</button></span><span class="acts"><button type="button" class="act" data-pw="view" data-id="' + o.id + '" aria-label="Lihat profil ' + esc(o.nama) + '">' + ICON_VIEW + "<span>View</span></button>" + waBtn(o) + "</span></div></td><td>" + esc(o.asal || "-") + "</td><td>" + statusTag(o) + "</td><td>" + ageTag(o) + "</td><td>" + (o.jml || "–") + "</td></tr>";
   }).join("");
 }
 document.getElementById("tmAsal").addEventListener("change", function (e) { tm.asal = e.target.value; renderTamu(); });
