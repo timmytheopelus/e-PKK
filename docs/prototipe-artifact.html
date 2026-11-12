@@ -1825,7 +1825,7 @@ function nav(spec) {
   else if (k === "pw") { pw.view = v; goTab("pewarta"); renderPewarta(); }
   else if (k === "pwf") { var kv = v.split("|"); pwFilterGo(kv[0], kv.slice(1).join("|")); }
   else if (k === "cal") { var m = v.split("-"); cal.y = +m[0]; cal.m = +m[1] - 1; goTab("kalender"); }
-  else if (k === "evt") { EV.sel = v; EV.waktu = "next"; EV.open = true; EV.dim = -1; EV.dv = ""; EV.pdf = ""; EV.rq = ""; goTab("event"); renderEvent(); }
+  else if (k === "evt") { EV.sel = v; EV.waktu = "all"; document.getElementById("evWaktu").value = "all"; EV.open = true; EV.dim = -1; EV.dv = ""; EV.pdf = ""; EV.rq = ""; goTab("event"); renderEvent(); }
   else if (k === "dash") openDash(v, document.activeElement);
   else if (k === "evd") { goTab("kalender"); openEv(v, null); }
 }
@@ -1918,8 +1918,11 @@ function renderBeranda() {
   if (!real) ag.innerHTML = '<p class="hint">Menunggu data kegiatan…</p>';
   else {
     var up = real.filter(function (e) { return e.date >= TODAY; }).sort(function (a, b) { return a.date.localeCompare(b.date) || byTime(a, b); }).slice(0, 5);
+    var regN = {}, regEv = {};
+    if (D.evx && D.pend && navOk("event")) { D.pend.forEach(function (p) { if (pAktif(p)) regN[p.ev] = (regN[p.ev] || 0) + 1; }); D.evx.forEach(function (x) { if (!(/batal|libur/i.test(x.st)) && (x.reg || x.link || regN[x.id])) regEv[x.id] = 1; }); }
     ag.innerHTML = up.length ? up.map(function (e) {
-      return '<button type="button" class="li c' + kelIdx(e.kelompok) + (e.date === TODAY ? " today" : "") + '" data-nav="evd:' + e.id + '"><span class="dt"><b>' + (+e.date.slice(8, 10)) + "</b><small>" + esc(fmtDate(e.date, { month: "short" })) + '</small></span><span><span class="nm">' + esc(e.nama) + '</span><span class="mt">' + esc([evTime(e), e.lokasi].filter(Boolean).join(" · ") || " ") + '</span></span><span class="rt">' + kchip(e) + "<br>" + esc(relDay(e.date)) + "</span></button>";
+      var hasReg = !!regEv[e.id], cnt = hasReg ? '<br><span class="tag">' + (regN[e.id] || 0) + " pendaftar</span>" : "";
+      return '<button type="button" class="li c' + kelIdx(e.kelompok) + (e.date === TODAY ? " today" : "") + '" data-nav="' + (hasReg ? "evt:" : "evd:") + e.id + '"><span class="dt"><b>' + (+e.date.slice(8, 10)) + "</b><small>" + esc(fmtDate(e.date, { month: "short" })) + '</small></span><span><span class="nm">' + esc(e.nama) + '</span><span class="mt">' + esc([evTime(e), e.lokasi].filter(Boolean).join(" · ") || " ") + '</span></span><span class="rt">' + kchip(e) + "<br>" + esc(relDay(e.date)) + cnt + "</span></button>";
     }).join("") : '<p class="hint">Belum ada kegiatan terjadwal ke depan.</p>';
   }
   // tren
