@@ -58,3 +58,34 @@ describe("event / pendaftaran", () => {
     expect(() => checkWrite(spec, "update", [{ id: "rec", fields: {} }], acc(["Event"]))).toThrow();
   });
 });
+
+describe("inventaris", () => {
+  const inv = (TABLES as any)[T.inventaris], log = (TABLES as any)[T.logPinjam];
+  const ed = { ...base, level: "Edit", tabs: ["Inventaris"] };
+  it("tanpa tab Inventaris tidak boleh membaca", () => {
+    expect(() => checkRead(inv, T.inventaris, { fieldIds: ["fldKqnNoXp9p8tbe5"] }, base)).toThrow(HttpError);
+  });
+  it("foto barang, telepon, selfie tidak boleh dibaca", () => {
+    expect(() => checkRead(inv, T.inventaris, { fieldIds: ["fldxfDpPt6Qc0bGIa"] }, ed)).toThrow(HttpError);
+    expect(() => checkRead(log, T.logPinjam, { fieldIds: ["fldiGyKXKXpxPrfKG"] }, ed)).toThrow(HttpError);
+    expect(() => checkRead(log, T.logPinjam, { fieldIds: ["fldoFtkzmv5yzHWvb"] }, ed)).toThrow(HttpError);
+  });
+  it("View hanya baca, Edit boleh ubah status barang", () => {
+    const body = [{ id: "rec1", fields: { fldKqnNoXp9p8tbe5: "Rusak" } }];
+    expect(() => checkWrite(inv, "update", body, { ...ed, level: "View" })).toThrow(HttpError);
+    expect(() => checkWrite(inv, "update", body, ed)).not.toThrow();
+  });
+  it("kode, nama, harga tidak boleh diubah lewat update; boleh saat tambah", () => {
+    expect(() => checkWrite(inv, "update", [{ id: "rec1", fields: { fld1BFGhqPuYraTQW: "x" } }], ed)).toThrow(HttpError);
+    expect(() => checkWrite(inv, "create", [{ fields: { fld1BFGhqPuYraTQW: "Kursi", fldKqnNoXp9p8tbe5: "Bisa Dipinjam" } }], ed)).not.toThrow();
+  });
+  it("status peminjaman: hanya persetujuan/cancel; tidak ada create; formula Status ditolak", () => {
+    expect(() => checkWrite(log, "update", [{ id: "rec1", fields: { fld3rE3bLovKfljQ0: "Disetujui", flds1ccMDkZdRrhfz: true } }], ed)).not.toThrow();
+    expect(() => checkWrite(log, "update", [{ id: "rec1", fields: { fldGGhED24A4QWwzz: "DISETUJUI" } }], ed)).toThrow(HttpError);
+    expect(() => checkWrite(log, "create", [{ fields: {} }], ed)).toThrow(HttpError);
+  });
+  it("render: skrip Inventaris hanya untuk yang punya tab", () => {
+    expect(renderDashboard(base)).not.toContain("Tambah barang inventaris");
+    expect(renderDashboard({ ...base, tabs: ["Inventaris"] })).toContain("Tambah barang inventaris");
+  });
+});

@@ -1,6 +1,7 @@
 import { PRE, MAIN_HEAD, RAW, TAIL } from "./dashboard-html";
 import { Access, TAB_IDS } from "@/lib/policy";
 import { ADMIN_JS } from "./admin-js";
+import { INVENTARIS_JS } from "./inventaris-js";
 import { canApprove } from "@/lib/approval";
 
 const safeJson = (o: unknown) => JSON.stringify(o).replace(/</g, "\\u003c").replace(new RegExp("[\\u2028\\u2029]", "g"), "");
@@ -13,6 +14,7 @@ export function renderDashboard(acc: Access, openKelola = false, sekjen: { nama:
   // Daftar pengurus hanya dikirim ke pengguna yang punya tab Pengurus.
   const raw = tabs.includes("pengurus") ? RAW : "";
   const admin = !acc.viewAs && acc.tabs.includes("Administrasi") && (level === "Superadmin" || level === "Admin") ? "<script>" + ADMIN_JS + "</script>\n" : "";
-  const body = (PRE + admin + MAIN_HEAD).replace("__ME_JSON__", safeJson(me)) + raw + TAIL;
+  const inv = acc.tabs.includes("Inventaris") ? "<script>" + INVENTARIS_JS + "</script>\n" : "";
+  const body = (PRE + admin + inv + MAIN_HEAD).replace("__ME_JSON__", safeJson(me)) + raw + TAIL;
   return '<!doctype html><html lang="id"><head><meta charset="utf-8"></head><body>' + body + "</body></html>";
 }

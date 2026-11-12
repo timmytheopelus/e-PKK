@@ -9,6 +9,7 @@ export const TAB_IDS: Record<string, string> = {
   Kalender: "kalender",
   Event: "event",
   KEP: "kep",
+  Inventaris: "inventaris",
   Administrasi: "admin",
 };
 export const ALL_TABS = Object.keys(TAB_IDS);
@@ -30,6 +31,8 @@ export const T = {
   penyelenggaraKep: "tblH4SN6qpNxJFg35",
   sepKegiatan: "tblGuf3UnMnGBqpbR",
   pendaftarSep: "tbllhFlsiFLaZzHkG",
+  inventaris: "tblkbpgHrJ2ZW8WzL",
+  logPinjam: "tblDjNGHbh9yE4vUS",
 };
 
 /** Pewarta BPK (base SMP): field yang boleh diubah dari tab Pewarta (status, kategori, status pengajar, modul, link YouTube). */
@@ -53,6 +56,18 @@ type Spec = {
 const EF = ["fld0d9tIyi4nyTZsM", "fldoIkx9wLMaKOa38", "fldMO46zH4SDzIypy", "fld4i5iQ6zTY8UTSm", "fldrYLgd8LCDjwmLZ", "fldhgv2WlvqytF6zA", "fldCGnuPOkqzb5jx2", "fldROaJ8rPAZQPTED", "fld4qestIo5EjWAvk", "fldY0qw1v0a4fK9Sp", "fldSNUErmbrKEOCcf", "fldG7mLTlU3TDeXoF", "fldCFtFJH9S16bjl3"];
 /** Pendaftaran Events: hanya kolom demografis. Tanpa kontak, riwayat penyakit, kontak darurat, dll. */
 export const PEND_READ = ["flduf15moMpZSklGL", "fld9ucFxEU0cUSHWw", "fldMBf67dQxv51kY1", "fldAZzqERt3oFHRRx", "fldylW3JpqB1DJ0Fh", "fldArgqtlZOnnRIvX", "fldmecbafGeLtqCSd", "fldIgnkqdrDPz8gCV", "fldNGGEcwHqIsQPct", "fldqB6h9rzzC5VhKI", "fldCqIqQmVnFXqrOU", "fldcpfpO2QvPGmgd7"];
+/** Inventaris BPK: field yang boleh dibaca (tanpa foto) dan ditulis dari tab Inventaris. */
+export const INV = { kode: "fldoCY9qSEXNBMegx", nama: "fld1BFGhqPuYraTQW", pj: "fldd1gRb1sYkG2ITD", tahun: "fldQ2bE16Y0R5nF4K", lokasi: "fldPmKThge9ns76Uv", status: "fldKqnNoXp9p8tbe5", jumlah: "fldQSpa4WFFDNUUSk", harga: "fldJkMiPpeju2JB06", total: "fldaAN3xasXHhumYP", notes: "fldscpFwbj5cDg1mp", dibuat: "fldcbCVXSCmSLAN7s", log: "fldK7PyRMfH27qvZY", booking: "fld68eSRGzSohJwWJ", petugas: "fldM32Ja2Z3gUeA3E" };
+export const INV_READ = Object.values(INV);
+/** Edit status barang + data dasar. Tambah barang: semua kolom isian (bukan formula). */
+export const INV_UPDATE = [INV.status, INV.lokasi, INV.notes, INV.pj, INV.jumlah];
+export const INV_CREATE = [INV.kode, INV.nama, INV.pj, INV.tahun, INV.lokasi, INV.status, INV.jumlah, INV.harga, INV.notes, INV.petugas];
+/** Log Peminjaman: tanpa nomor telepon, tombol WhatsApp, dan foto selfie/serah terima. */
+export const LOG = { tglAjuan: "fld00uuD6wrq2CkTS", peminjam: "fldAEP70YeYFUvzdI", barang: "fldnfJ9gXIXCZhy9u", namaBarang: "fldAZeTquC34Z1xBs", jumlah: "fld9trtGpRujr6H6r", catatan: "fld8HJK5019YIwFzQ", tglPinjam: "fldyjGdu0annLW0U4", tglKembali: "fldmLPkuTSDsCFj2K", metode: "fldkYOipTayk6X2Z7", keperluan: "fldSnKuZ2LYxahO33", setuju: "fld3rE3bLovKfljQ0", alasanTolak: "fldPj7Rpj4z2XJLef", cancel: "flds1ccMDkZdRrhfz", alasanCancel: "flddGTdfdmZJcAoMH", diambil: "fldVdHMEPYG25ZI6d", kembali: "fldjb64fOm8B92rH6", status: "fldGGhED24A4QWwzz", statusUser: "fldKkdgxU7jQ9qgpZ", bentrok: "fldqPvqSiIrqW7oPl" };
+export const LOG_READ = Object.values(LOG);
+/** Status peminjaman diubah lewat Persetujuan Sarpras dan Cancel (kolom Status sendiri formula). */
+export const LOG_UPDATE = [LOG.setuju, LOG.alasanTolak, LOG.cancel, LOG.alasanCancel];
+
 const PERSON = ["fldIpQTSkFB9sU0lo", "fld469PYR80nAUNIF", "fldzY1Z2QvIIEkYXR", "fldAaQ3zmiLBhp4z9", "fldcQFzBtr9EELTtV"];
 
 export const TABLES: Record<string, Spec> = {
@@ -74,6 +89,8 @@ export const TABLES: Record<string, Spec> = {
   [T.sepKegiatan]: { base: BASE_BPK, read: ["KEP"] },
   // Email, No WhatsApp tidak boleh dibaca browser (hanya lewat tombol/server).
   [T.pendaftarSep]: { base: BASE_BPK, read: ["KEP"], readFields: ["fld4aXu6UhTUyu2a8", "fldJjgxA4mESGeOYG", "fldVwYghE0cSodecK", "fldBap2tEPX9R4LtD", "fldTj9n5kTQiquymW", "fldU3sCQfDmubXeBZ", "fld4dVr7hIV4xqAg7", "fldnQxpE9QVt0o9JH"] },
+  [T.inventaris]: { base: BASE_BPK, read: ["Inventaris"], readFields: INV_READ, update: { tabs: ["Inventaris"], fields: INV_UPDATE }, create: { tabs: ["Inventaris"], fields: INV_CREATE } },
+  [T.logPinjam]: { base: BASE_BPK, read: ["Inventaris"], readFields: LOG_READ, update: { tabs: ["Inventaris"], fields: LOG_UPDATE } },
   [T.pewartaBpk]: { base: BASE_SMP, read: ["Pewarta", "Pewarta luar kota", "Dashboard"], update: { tabs: ["Pewarta"], fields: PWB_EDIT } },
 };
 

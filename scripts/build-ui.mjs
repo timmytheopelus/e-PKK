@@ -14,6 +14,14 @@ swap('function showTab(name) {\n  if (TABS.indexOf(name) < 0) name = "beranda";'
   'function showTab(name) {\n  if (TABS.indexOf(name) < 0) name = "beranda";\n  if (window.__ME__ && window.__ME__.tabs.indexOf(name) < 0) name = window.__ME__.tabs[0] || "beranda";');
 swap("renderLink();\nrender();\nrefreshViews();\nshowTab(", "applyMe();\nrenderLink();\nrender();\nrefreshViews();\nshowTab(");
 
+// Menu Inventaris: tombol menu, panel, daftar tab, dan pemicu buka tab (isi diisi oleh src/ui/inventaris-js.ts)
+swap('    <button type="button" class="tabbtn" role="tab" id="tabbtn-admin"',
+  '    <button type="button" class="tabbtn" role="tab" id="tabbtn-inventaris" aria-controls="tab-inventaris" aria-selected="false" tabindex="-1" data-tab="inventaris">Inventaris</button>\n    <button type="button" class="tabbtn" role="tab" id="tabbtn-admin"');
+swap('  <div id="tab-admin" class="tab"',
+  '  <div id="tab-inventaris" class="tab" role="tabpanel" aria-labelledby="tabbtn-inventaris" hidden>\n    <div id="invRoot"><p class="hint">Memuat inventaris…</p></div>\n  </div>\n\n  <div id="tab-admin" class="tab"');
+swap('"kalender", "event", "kep", "admin"];', '"kalender", "event", "kep", "inventaris", "admin"];');
+swap('  if (name === "kalender") calOpen();', '  if (name === "inventaris") { if (window.EPK_INV_OPEN) window.EPK_INV_OPEN(); }\n  else if (name === "kalender") calOpen();');
+
 // bagian RAW (daftar pengurus) dipisah supaya bisa dikosongkan untuk pengguna tanpa tab Pengurus
 const i = h.indexOf("var RAW = [") + "var RAW = [".length;
 const j = h.indexOf("\n];", i);
@@ -101,7 +109,7 @@ var EPK = {
 };
 function applyMe() {
   var me = window.__ME__; if (!me) return;
-  ["beranda", "pengurus", "pewarta", "luar", "pd", "umat", "kalender", "event", "kep", "admin"].forEach(function (t) {
+  ["beranda", "pengurus", "pewarta", "luar", "pd", "umat", "kalender", "event", "kep", "inventaris", "admin"].forEach(function (t) {
     var b = document.getElementById("tabbtn-" + t); if (b && me.tabs.indexOf(t) < 0) b.hidden = true;
   });
   var kb = document.getElementById("admKelola"); if (kb && me.level !== "Superadmin") kb.hidden = true;
