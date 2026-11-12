@@ -310,6 +310,33 @@ footer { color: var(--muted); font-size: 13px; }
   .summary { grid-template-columns: minmax(0, 1fr); gap: 18px; padding: 18px; }
 }
 @media (prefers-reduced-motion: no-preference) { .chip { transition: background .15s, border-color .15s; } }
+.wrap { max-width: 1240px; }
+.shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; align-items: start; }
+.shell.collapsed { grid-template-columns: minmax(0, 1fr); }
+.shell.collapsed .side { display: none; }
+.main { display: grid; gap: 20px; min-width: 0; }
+.side.tabs { position: sticky; top: 12px; flex-direction: column; gap: 2px; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px; overflow: visible; }
+.side .tabbtn { text-align: left; white-space: normal; border: 0; border-left: 3px solid transparent; border-radius: 6px; margin: 0; padding: 10px 12px; }
+.side .tabbtn[aria-selected="true"] { background: var(--accent-soft); border-left-color: var(--accent); }
+.sidetgl { justify-self: start; }
+.sideback { display: none; }
+@media (max-width: 860px) {
+  .shell, .shell.collapsed { grid-template-columns: minmax(0, 1fr); }
+  .shell.collapsed .side { display: flex; }
+  .side.tabs { position: fixed; top: 0; left: 0; bottom: 0; width: 260px; z-index: 60; border-radius: 0 12px 12px 0; transform: translateX(-105%); overflow-y: auto; padding-top: max(12px, env(safe-area-inset-top, 0px)); }
+  .shell.open .side.tabs { transform: none; box-shadow: 0 8px 32px rgba(0,0,0,.25); }
+  .shell.open .sideback { display: block; position: fixed; inset: 0; z-index: 55; background: var(--scrim); }
+}
+@media (prefers-reduced-motion: no-preference) { .side.tabs { transition: transform .2s; } }
+.evlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.evc { font: inherit; text-align: left; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 4px; cursor: pointer; min-width: 0; }
+.evc b { overflow-wrap: anywhere; } .evc span { color: var(--muted); font-size: 13px; } .evc em { font-style: normal; font-weight: 600; color: var(--accent); }
+.evc:hover, .evc.on { border-color: var(--accent); } .evc.on { background: var(--accent-soft); }
+.evdetail { display: grid; gap: 16px; min-width: 0; } .evdetail h3 { margin: 0; font-family: var(--font-display); font-size: 1.3rem; } .evdetail .sub { margin: 0; color: var(--muted); }
+.hb { display: grid; gap: 4px; align-content: start; min-width: 0; } .hb h4 { margin: 0 0 2px; font-size: 14px; }
+.hbr { display: grid; grid-template-columns: minmax(80px, 38%) 1fr auto; gap: 8px; align-items: center; font-size: 13px; }
+.hbr span { overflow-wrap: anywhere; } .hbr i { display: block; height: 10px; border-radius: 5px; background: var(--accent); min-width: 2px; } .hbr em { font-style: normal; font-variant-numeric: tabular-nums; color: var(--muted); }
+.tw { overflow-x: auto; } .tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; } .tbl th, .tbl td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); } .tbl .num { text-align: right; font-variant-numeric: tabular-nums; }
 </style>
 
 <div class="wrap">
@@ -321,7 +348,9 @@ footer { color: var(--muted); font-size: 13px; }
     </div>
   </header>
 
-  <div class="tabs" role="tablist" aria-label="Bagian halaman">
+  <button type="button" class="btn sidetgl" id="sideToggle" aria-controls="side" aria-expanded="true">☰ Menu</button>
+  <div class="shell" id="shell">
+  <nav class="tabs side" id="side" role="tablist" aria-label="Menu" aria-orientation="vertical">
     <button type="button" class="tabbtn" role="tab" id="tabbtn-beranda" aria-controls="tab-beranda" aria-selected="true" data-tab="beranda">Dashboard</button>
     <button type="button" class="tabbtn" role="tab" id="tabbtn-pengurus" aria-controls="tab-pengurus" aria-selected="false" tabindex="-1" data-tab="pengurus">Pengurus</button>
     <button type="button" class="tabbtn" role="tab" id="tabbtn-pewarta" aria-controls="tab-pewarta" aria-selected="false" tabindex="-1" data-tab="pewarta">Pewarta, pengajar &amp; konselor</button>
@@ -329,7 +358,11 @@ footer { color: var(--muted); font-size: 13px; }
     <button type="button" class="tabbtn" role="tab" id="tabbtn-pd" aria-controls="tab-pd" aria-selected="false" tabindex="-1" data-tab="pd">PD / Komunitas</button>
     <button type="button" class="tabbtn" role="tab" id="tabbtn-umat" aria-controls="tab-umat" aria-selected="false" tabindex="-1" data-tab="umat">Umat</button>
     <button type="button" class="tabbtn" role="tab" id="tabbtn-kalender" aria-controls="tab-kalender" aria-selected="false" tabindex="-1" data-tab="kalender">Kalender kegiatan</button>
-  </div>
+    <button type="button" class="tabbtn" role="tab" id="tabbtn-event" aria-controls="tab-event" aria-selected="false" tabindex="-1" data-tab="event">Event &amp; pendaftar</button>
+  </nav>
+  <div class="sideback" id="sideBack"></div>
+  <div class="main">
+
 
   <div id="tab-pengurus" class="tab" role="tabpanel" aria-labelledby="tabbtn-pengurus" hidden>
   <span class="badge" style="justify-self:start;margin:0">Periode 2026–2031 · Aktif</span>
@@ -530,7 +563,19 @@ footer { color: var(--muted); font-size: 13px; }
     <div id="calBody"></div>
   </div>
 
+  <div id="tab-event" class="tab" role="tabpanel" aria-labelledby="tabbtn-event" hidden>
+    <div class="link" id="evLink" role="status"></div>
+    <div class="fil">
+      <input type="search" id="evQ" placeholder="Cari nama event" autocomplete="off" aria-label="Cari event">
+      <select id="evWaktu" aria-label="Waktu event"><option value="next">Berjalan dan akan datang</option><option value="past">Sudah berlalu</option><option value="all">Semua</option></select>
+    </div>
+    <div class="evlist" id="evList"></div>
+    <div class="evdetail" id="evDetail"></div>
+  </div>
+
   <footer>Tombol Edit menyimpan langsung ke tabel MasterData TeamUmat di Airtable, dan nomor WA dibaca dari Airtable saat halaman dibuka. Kalender menambah baris di tabel Events; penggantian koordinator PD dan penambahan umat baru juga menulis ke Airtable. Selebihnya hanya membaca. Daftar dikelompokkan menurut seksi atau bidang. Tim Inti Koordinator otomatis dihitung sebagai anggota Grup Harian. Satu orang dapat memegang lebih dari satu jabatan dan ditampilkan di kelompok jabatan utamanya.</footer>
+  </div>
+  </div>
 </div>
 
 <div class="scrim" id="scrim" hidden>
@@ -1171,7 +1216,7 @@ document.getElementById("dlg").addEventListener("submit", function (e) {
 
 /* ---------- tab ---------- */
 var mcpState = "pending";
-var TABS = ["beranda", "pengurus", "pewarta", "luar", "pd", "umat", "kalender"];
+var TABS = ["beranda", "pengurus", "pewarta", "luar", "pd", "umat", "kalender", "event"];
 function showTab(name) {
   if (TABS.indexOf(name) < 0) name = "beranda";
   TABS.forEach(function (t) {
@@ -1181,16 +1226,32 @@ function showTab(name) {
     b.tabIndex = t === name ? 0 : -1;
   });
   if (name === "kalender") calOpen();
+  else if (name === "event") { if (mcpState === "ready") ensureEvt(); }
   else if (mcpState === "ready") { ensureData(); if (name === "umat") ensureUa(false); }
 }
 Array.prototype.forEach.call(document.querySelectorAll(".tabbtn"), function (b) {
   b.addEventListener("click", function () { var n = b.dataset.tab; try { location.hash = "#" + n; } catch (e) {} showTab(n); });
   b.addEventListener("keydown", function (e) {
-    var d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0; if (!d) return;
+    var d = (e.key === "ArrowRight" || e.key === "ArrowDown") ? 1 : (e.key === "ArrowLeft" || e.key === "ArrowUp") ? -1 : 0; if (!d) return;
     var o = document.getElementById("tabbtn-" + TABS[(TABS.indexOf(b.dataset.tab) + d + TABS.length) % TABS.length]);
     o.focus(); o.click();
   });
 });
+/* ---------- sidebar ---------- */
+(function () {
+  var shell = document.getElementById("shell"), tgl = document.getElementById("sideToggle"), mq = window.matchMedia ? window.matchMedia("(max-width: 860px)") : { matches: false };
+  function sync() { tgl.setAttribute("aria-expanded", String(mq.matches ? shell.classList.contains("open") : !shell.classList.contains("collapsed"))); }
+  try { if (localStorage.getItem("epk.side") === "0") shell.classList.add("collapsed"); } catch (e) {}
+  sync();
+  tgl.addEventListener("click", function () {
+    if (mq.matches) shell.classList.toggle("open");
+    else { shell.classList.toggle("collapsed"); try { localStorage.setItem("epk.side", shell.classList.contains("collapsed") ? "0" : "1"); } catch (e) {} }
+    sync();
+  });
+  document.getElementById("sideBack").addEventListener("click", function () { shell.classList.remove("open"); sync(); });
+  document.getElementById("side").addEventListener("click", function (e) { if (mq.matches && e.target.closest && e.target.closest(".tabbtn")) { shell.classList.remove("open"); sync(); } });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && shell.classList.contains("open")) { shell.classList.remove("open"); sync(); } });
+})();
 window.addEventListener("hashchange", function () { showTab(location.hash.replace("#", "")); });
 
 /* ---------- kalender ---------- */
@@ -1264,7 +1325,7 @@ function calOpen() {
   else if (mcpState === "none") { cal.state = "unavailable"; calStatus(); }
   else { cal.state = "loading"; calStatus(); }
 }
-function onMcp() { ensureData(true); if (!document.getElementById('tab-umat').hidden) ensureUa(true); }
+function onMcp() { ensureData(true); if (!document.getElementById('tab-event').hidden) ensureEvt(true); if (!document.getElementById('tab-umat').hidden) ensureUa(true); }
 document.getElementById("calStatus").addEventListener("click", function (e) {
   if (e.target.closest && e.target.closest("[data-act=calretry]")) loadEvents();
 });
@@ -2372,7 +2433,134 @@ document.getElementById("uaBody").addEventListener("click", function (e) {
   var o = (D.ua || []).filter(function (x) { return x.id === b.dataset.ua; })[0]; if (o) viewPerson(o.id, o.nama, b);
 });
 
-function refreshViews() { renderBeranda(); renderPewarta(); renderLuar(); renderTamu(); renderPd(); renderUmat(); }
+/* ---------- event ---------- */
+var T_PEND = "tbltiJ1qDJEwfWPLg";
+var PF = { ev: "flduf15moMpZSklGL", nama: "fld9ucFxEU0cUSHWw", pd: "fldMBf67dQxv51kY1", dek: "fldAZzqERt3oFHRRx", jk: "fldylW3JpqB1DJ0Fh", usia: "fldArgqtlZOnnRIvX", nikah: "fldmecbafGeLtqCSd", kat: "fldIgnkqdrDPz8gCV", st: "fldNGGEcwHqIsQPct", val: "fldqB6h9rzzC5VhKI", inap: "fldCqIqQmVnFXqrOU", hadir: "fldcpfpO2QvPGmgd7" };
+var EVX = { nama: "fld0d9tIyi4nyTZsM", tgl: "fldoIkx9wLMaKOa38", st: "fldHs8NnkUlEXDqLy", reg: "fldUqEnDI4GCqdwAk", jenis: "fldrYLgd8LCDjwmLZ", kel: "fldhgv2WlvqytF6zA", lokasi: "fldY0qw1v0a4fK9Sp" };
+var EV = { sel: "", waktu: "next", q: "", pdf: "", rq: "" };
+SRC_LABEL.evx = "Event"; SRC_LABEL.pend = "Pendaftaran event";
+function loadEvx() {
+  return fetchAll(BASE, T_EVENTS, Object.keys(EVX).map(function (k) { return EVX[k]; })).then(function (recs) {
+    D.evx = recs.map(function (r) {
+      var v = r.cellValuesByFieldId || {};
+      return { id: r.id, nama: one(v[EVX.nama]), tgl: one(v[EVX.tgl]).slice(0, 10), st: one(v[EVX.st]), reg: one(v[EVX.reg]), jenis: one(v[EVX.jenis]), kel: one(v[EVX.kel]), lokasi: one(v[EVX.lokasi]) };
+    }).filter(function (e) { return e.nama && e.tgl; });
+  });
+}
+function loadPend() {
+  return fetchAll(BASE, T_PEND, Object.keys(PF).map(function (k) { return PF[k]; })).then(function (recs) {
+    D.pend = recs.map(function (r) {
+      var v = r.cellValuesByFieldId || {}, l = v[PF.ev], eid = Array.isArray(l) && l[0] ? (l[0].id || l[0]) : "";
+      return { id: r.id, ev: eid, nama: one(v[PF.nama]).replace(/\s+/g, " "), pd: one(v[PF.pd]).replace(/\s+/g, " "), dek: one(v[PF.dek]), jk: one(v[PF.jk]), usia: one(v[PF.usia]), nikah: one(v[PF.nikah]), kat: one(v[PF.kat]),
+        st: one(v[PF.st]), val: v[PF.val] === true, inap: one(v[PF.inap]), hadir: one(v[PF.hadir]) };
+    }).filter(function (p) { return p.ev; });
+  });
+}
+function ensureEvt(manual) {
+  if (!mcp) return;
+  [["evx", loadEvx], ["pend", loadPend], ["pd", loadPd]].forEach(function (p) {
+    var st = SS[p[0]];
+    if (D[p[0]] || (st && st.state === "loading")) return;
+    if (st && !manual) return;
+    loadSource(p[0], p[1]);
+  });
+}
+function ageLbl(s) { s = String(s || "").replace(/^[^0-9A-Za-z]+/, "").trim(); return !s || /^kosong$/i.test(s) ? "Belum diisi" : s; }
+function ageNum(s) { if (s === "Belum diisi") return 999; if (/bawah/i.test(s)) return 0; var m = /\d+/.exec(s); return m ? +m[0] : 998; }
+function pAktif(p) { return !/^(batal|dobel)/i.test(p.st); }
+function evKind(e, n) {
+  if (/batal|libur/i.test(e.st) || e.jenis === "Rutin" || /libur/i.test(e.jenis)) return "";
+  var open = /open/i.test(e.reg);
+  if (/aktif|scheduled/i.test(e.st) && (open || n > 0 || e.kel !== "BPK")) return "next";
+  if (/berlalu/i.test(e.st) && n > 0) return "past";
+  return "";
+}
+function tally(list, fn) { var m = {}; list.forEach(function (x) { var k = fn(x) || "Belum diisi"; m[k] = (m[k] || 0) + 1; }); return m; }
+function hbars(title, m, sorter) {
+  var ks = Object.keys(m); ks.sort(sorter || function (a, b) { return m[b] - m[a] || cmpId(a, b); });
+  var max = Math.max.apply(null, ks.map(function (k) { return m[k]; }).concat([1]));
+  return '<div class="hb"><h4>' + esc(title) + "</h4>" + ks.map(function (k) { return '<div class="hbr"><span>' + esc(k) + '</span><i style="width:' + (m[k] / max * 100).toFixed(1) + '%"></i><em>' + m[k] + "</em></div>"; }).join("") + "</div>";
+}
+function renderEvent() {
+  var box = document.getElementById("evList");
+  if (!box) return;
+  srcStatus("evLink", ["evx", "pend", "pd"]);
+  if (!D.evx || !D.pend) { box.innerHTML = ""; document.getElementById("evDetail").innerHTML = ""; return; }
+  var by = {};
+  D.pend.forEach(function (p) { if (pAktif(p)) (by[p.ev] = by[p.ev] || []).push(p); });
+  var q = EV.q.toLowerCase(), list = D.evx.filter(function (e) {
+    var k = evKind(e, (by[e.id] || []).length);
+    if (!k) return false;
+    if (EV.waktu === "next" && k !== "next") return false;
+    if (EV.waktu === "past" && k !== "past") return false;
+    return !q || e.nama.toLowerCase().indexOf(q) >= 0;
+  });
+  list.sort(function (a, b) { return EV.waktu === "past" ? b.tgl.localeCompare(a.tgl) : a.tgl.localeCompare(b.tgl); });
+  if (!list.length) { box.innerHTML = '<p class="note">Tidak ada event untuk filter ini.</p>'; document.getElementById("evDetail").innerHTML = ""; return; }
+  if (!list.some(function (e) { return e.id === EV.sel; })) EV.sel = list[0].id;
+  box.innerHTML = list.map(function (e) {
+    var n = (by[e.id] || []).length, open = /open/i.test(e.reg);
+    return '<button type="button" class="evc' + (e.id === EV.sel ? " on" : "") + '" data-ev="' + esc(e.id) + '"><b>' + esc(e.nama.replace(/^\d{6}-/, "")) + "</b><span>" + esc(fmtDate(e.tgl, { weekday: "short", day: "numeric", month: "short", year: "numeric" })) +
+      '</span><span class="tag' + (open ? "" : " alt") + '">' + (open ? "Pendaftaran dibuka" : "Pendaftaran ditutup") + '</span><em>' + n + " pendaftar</em></button>";
+  }).join("");
+  renderEvDetail(list.filter(function (e) { return e.id === EV.sel; })[0], by[EV.sel] || []);
+}
+function renderEvDetail(e, regs) {
+  var el = document.getElementById("evDetail");
+  var pdActive = (D.pd || []).filter(function (p) { return isAktif(p.status); });
+  var keyOf = {}; pdActive.forEach(function (p) { keyOf[pdKey(p.nama)] = p; });
+  var perPd = {}, other = {};
+  regs.forEach(function (p) { var k = pdKey(p.pd); if (keyOf[k]) (perPd[k] = perPd[k] || []).push(p); else other[p.pd || "Tanpa PD"] = (other[p.pd || "Tanpa PD"] || 0) + 1; });
+  var done = pdActive.filter(function (p) { return perPd[pdKey(p.nama)]; }), miss = pdActive.filter(function (p) { return !perPd[pdKey(p.nama)]; });
+  var bayar = regs.filter(function (p) { return /paid|confirm/i.test(p.st); }).length, vald = regs.filter(function (p) { return p.val; }).length;
+  var batal = D.pend.filter(function (p) { return p.ev === e.id && !pAktif(p); }).length;
+  var h = '<h3>' + esc(e.nama.replace(/^\d{6}-/, "")) + '</h3><p class="sub">' + esc(fmtDate(e.tgl, { weekday: "long", day: "numeric", month: "long", year: "numeric" })) + (e.lokasi ? " · " + esc(e.lokasi) : "") + "</p>";
+  h += '<div class="tiles">' + tile(regs.length, "Pendaftar aktif", batal ? batal + " batal / dobel daftar tidak dihitung" : "") + tile(done.length, "PD sudah mendaftar", "dari " + pdActive.length + " PD aktif") + tile(miss.length, "PD belum mendaftar", "belum ada satu pun pendaftar") + tile(bayar, "Confirmed / Paid", "validasi bendahara: " + vald) + "</div>";
+  h += '<div class="pan"><h4>Per PD</h4><div class="tw"><table class="tbl"><thead><tr><th>PD / Komunitas</th><th>Dekanat</th><th class="num">Pendaftar</th></tr></thead><tbody>';
+  var rows = done.map(function (p) { return { n: p.nama, d: p.dekanat, c: perPd[pdKey(p.nama)].length }; });
+  Object.keys(other).forEach(function (k) { rows.push({ n: k, d: "(di luar daftar PD aktif)", c: other[k] }); });
+  rows.sort(function (a, b) { return b.c - a.c || cmpId(a.n, b.n); });
+  h += rows.map(function (r) { return "<tr><td>" + esc(r.n) + "</td><td>" + esc(r.d.replace(/^Dekanat /, "")) + '</td><td class="num">' + r.c + "</td></tr>"; }).join("") + "</tbody></table></div></div>";
+  h += '<div class="pan"><h4>PD aktif yang belum mendaftar (' + miss.length + ')</h4>' + (miss.length ? '<div class="chips">' + miss.map(function (p) { return '<span class="tag alt">' + esc(p.nama) + "</span>"; }).join("") + "</div>" : '<p class="note">Semua PD aktif sudah ada pendaftarnya.</p>') + "</div>";
+  var dekOf = function (p) { var x = keyOf[pdKey(p.pd)]; return (x ? x.dekanat : p.dek) || ""; };
+  h += '<div class="pan"><h4>Data demografis pendaftar</h4><div class="dgrid">' +
+    hbars("Jenis kelamin", tally(regs, function (p) { return p.jk; })) +
+    hbars("Kelompok usia", tally(regs, function (p) { return ageLbl(p.usia); }), function (a, b) { return ageNum(a) - ageNum(b); }) +
+    hbars("Status pernikahan", tally(regs, function (p) { return p.nikah; })) +
+    hbars("Kategori kepesertaan", tally(regs, function (p) { return p.kat; })) +
+    hbars("Menginap", tally(regs, function (p) { return p.inap; })) +
+    hbars("Status pendaftaran", tally(regs, function (p) { return p.st; })) +
+    hbars("Validasi bendahara", tally(regs, function (p) { return p.val ? "Sudah divalidasi" : "Belum divalidasi"; })) +
+    hbars("Dekanat", tally(regs, function (p) { return dekOf(p).replace(/^Dekanat /, ""); })) + "</div></div>";
+  var pdNames = uniq(regs.map(function (p) { return p.pd; })).sort(cmpId);
+  h += '<div class="pan"><h4>Daftar pendaftar</h4><div class="fil"><input type="search" id="evRq" placeholder="Cari nama" autocomplete="off" aria-label="Cari pendaftar" value="' + esc(EV.rq) + '"><select id="evPd" aria-label="Filter PD"><option value="">Semua PD</option>' +
+    pdNames.map(function (n) { return '<option value="' + esc(n) + '"' + (n === EV.pdf ? " selected" : "") + ">" + esc(n) + "</option>"; }).join("") + '</select></div><div id="evRegs"></div></div>';
+  el.innerHTML = h;
+  el._regs = regs;
+  renderEvRegs();
+}
+function renderEvRegs() {
+  var el = document.getElementById("evDetail"), box = document.getElementById("evRegs");
+  if (!box || !el._regs) return;
+  var q = EV.rq.toLowerCase(), l = el._regs.filter(function (p) { return (!EV.pdf || p.pd === EV.pdf) && (!q || p.nama.toLowerCase().indexOf(q) >= 0); }).sort(function (a, b) { return cmpId(a.nama, b.nama); });
+  box.innerHTML = '<p class="count">' + l.length + ' pendaftar</p><div class="tw"><table class="tbl"><thead><tr><th>Nama</th><th>PD</th><th>Usia</th><th>Status</th><th>Kehadiran</th></tr></thead><tbody>' +
+    l.map(function (p) { return "<tr><td>" + esc(p.nama) + "</td><td>" + esc(p.pd) + "</td><td>" + esc(ageLbl(p.usia)) + "</td><td>" + esc(p.st) + (p.val ? " ✓" : "") + "</td><td>" + esc(p.hadir) + "</td></tr>"; }).join("") + "</tbody></table></div>";
+}
+document.getElementById("tab-event").addEventListener("click", function (e) {
+  var b = e.target.closest && e.target.closest("[data-ev]");
+  if (b) { EV.sel = b.getAttribute("data-ev"); EV.pdf = ""; EV.rq = ""; renderEvent(); }
+  if (e.target.closest && e.target.closest("[data-act=srcretry]")) ensureEvt(true);
+});
+document.getElementById("tab-event").addEventListener("input", function (e) {
+  if (e.target.id === "evQ") { EV.q = e.target.value; renderEvent(); }
+  else if (e.target.id === "evRq") { EV.rq = e.target.value; renderEvRegs(); }
+});
+document.getElementById("tab-event").addEventListener("change", function (e) {
+  if (e.target.id === "evWaktu") { EV.waktu = e.target.value; renderEvent(); }
+  else if (e.target.id === "evPd") { EV.pdf = e.target.value; renderEvRegs(); }
+});
+
+function refreshViews() { renderEvent(); renderBeranda(); renderPewarta(); renderLuar(); renderTamu(); renderPd(); renderUmat(); }
 
 (function boot() {
   var c = window.claude;

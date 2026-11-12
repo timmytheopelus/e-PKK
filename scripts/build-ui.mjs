@@ -94,7 +94,7 @@ var EPK = {
 };
 function applyMe() {
   var me = window.__ME__; if (!me) return;
-  ["beranda", "pengurus", "pewarta", "luar", "pd", "umat", "kalender"].forEach(function (t) {
+  ["beranda", "pengurus", "pewarta", "luar", "pd", "umat", "kalender", "event"].forEach(function (t) {
     var b = document.getElementById("tabbtn-" + t); if (b && me.tabs.indexOf(t) < 0) b.hidden = true;
   });
   if (me.level === "View") document.body.classList.add("ro");

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { checkWrite, HttpError, TABLES, T } from "@/lib/policy";
+import { checkWrite, checkRead, PEND_READ, HttpError, TABLES, T } from "@/lib/policy";
 import { evalFilter } from "@/lib/filters";
 import { renderDashboard } from "@/ui/render";
 
@@ -41,5 +41,20 @@ describe("pewarta bpk", () => {
   it("link bukan URL ditolak, View ditolak", () => {
     expect(() => checkWrite(pwb, "update", [{ id: "rec1", fields: { fldJGTPgfN00lAdMo: "javascript:alert(1)" } }], ed)).toThrow(HttpError);
     expect(() => checkWrite(pwb, "update", [{ id: "rec1", fields: {} }], { ...ed, level: "View" })).toThrow(HttpError);
+  });
+});
+
+describe("event / pendaftaran", () => {
+  const acc = (tabs: string[]) => ({ email: "a@b.c", nama: "A", status: "Disetujui", level: "View", tabs }) as any;
+  it("tab Event boleh membaca kolom demografis saja", () => {
+    const spec = TABLES[T.pendaftaran];
+    expect(() => checkRead(spec, T.pendaftaran, { fieldIds: PEND_READ }, acc(["Event"]))).not.toThrow();
+    expect(() => checkRead(spec, T.pendaftaran, { fieldIds: ["fldoq0H8LdWFsOA05"] }, acc(["Event"]))).toThrow();
+    expect(() => checkRead(spec, T.pendaftaran, { fieldIds: [PEND_READ[0]], filters: { operands: [{ operator: "contains", operands: ["fldoq0H8LdWFsOA05", "x"] }] } }, acc(["Event"]))).toThrow();
+  });
+  it("tanpa tab Event ditolak dan tidak bisa menulis", () => {
+    const spec = TABLES[T.pendaftaran];
+    expect(() => checkRead(spec, T.pendaftaran, { fieldIds: PEND_READ }, acc(["PD"]))).toThrow();
+    expect(() => checkWrite(spec, "update", [{ id: "rec", fields: {} }], acc(["Event"]))).toThrow();
   });
 });

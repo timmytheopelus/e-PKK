@@ -7,6 +7,7 @@ export const TAB_IDS: Record<string, string> = {
   PD: "pd",
   Umat: "umat",
   Kalender: "kalender",
+  Event: "event",
 };
 export const ALL_TABS = Object.keys(TAB_IDS);
 
@@ -22,6 +23,7 @@ export const T = {
   pengguna: "tbls2nQ3hW5rEIZUk",
   jabatan: "tblrfilR2eNUOiFMa",
   pewartaBpk: "tblCcm2UAWHquZzEk",
+  pendaftaran: "tbltiJ1qDJEwfWPLg",
 };
 
 /** Pewarta BPK (base SMP): field yang boleh diubah dari tab Pewarta (status, kategori, status pengajar, modul, link YouTube). */
@@ -37,11 +39,14 @@ export const canEdit = (a: Access) => a.level === "Edit" || a.level === "Superad
 type Spec = {
   base: string;
   read: string[]; // tab (nama tampilan) yang boleh membaca
+  readFields?: string[]; // bila ada: hanya field ini yang boleh diminta
   update?: { tabs: string[]; fields: string[] };
   create?: { tabs: string[]; fields: string[] };
 };
 
 const EF = ["fld0d9tIyi4nyTZsM", "fldoIkx9wLMaKOa38", "fldMO46zH4SDzIypy", "fld4i5iQ6zTY8UTSm", "fldrYLgd8LCDjwmLZ", "fldhgv2WlvqytF6zA", "fldCGnuPOkqzb5jx2", "fldROaJ8rPAZQPTED", "fld4qestIo5EjWAvk", "fldY0qw1v0a4fK9Sp", "fldSNUErmbrKEOCcf", "fldG7mLTlU3TDeXoF", "fldCFtFJH9S16bjl3"];
+/** Pendaftaran Events: hanya kolom demografis. Tanpa kontak, riwayat penyakit, kontak darurat, dll. */
+export const PEND_READ = ["flduf15moMpZSklGL", "fld9ucFxEU0cUSHWw", "fldMBf67dQxv51kY1", "fldAZzqERt3oFHRRx", "fldylW3JpqB1DJ0Fh", "fldArgqtlZOnnRIvX", "fldmecbafGeLtqCSd", "fldIgnkqdrDPz8gCV", "fldNGGEcwHqIsQPct", "fldqB6h9rzzC5VhKI", "fldCqIqQmVnFXqrOU", "fldcpfpO2QvPGmgd7"];
 const PERSON = ["fldIpQTSkFB9sU0lo", "fld469PYR80nAUNIF", "fldzY1Z2QvIIEkYXR", "fldAaQ3zmiLBhp4z9", "fldcQFzBtr9EELTtV"];
 
 export const TABLES: Record<string, Spec> = {
@@ -53,10 +58,11 @@ export const TABLES: Record<string, Spec> = {
     update: { tabs: ["Pengurus", "Pewarta"], fields: PERSON },
     create: { tabs: ["PD"], fields: [PERSON[0], PERSON[2], "fldrHJ6q3HZvApccl"] },
   },
-  [T.events]: { base: BASE_BPK, read: ["Kalender", "Dashboard"], create: { tabs: ["Kalender"], fields: EF } },
-  [T.pd]: { base: BASE_BPK, read: ["PD", "Dashboard"], update: { tabs: ["PD"], fields: ["fldagyoKQyhfenB7u"] } },
+  [T.events]: { base: BASE_BPK, read: ["Kalender", "Dashboard", "Event"], create: { tabs: ["Kalender"], fields: EF } },
+  [T.pd]: { base: BASE_BPK, read: ["PD", "Dashboard", "Event"], update: { tabs: ["PD"], fields: ["fldagyoKQyhfenB7u"] } },
   [T.smpEvents]: { base: BASE_SMP, read: ["Dashboard", "Pewarta luar kota"] },
   [T.smpKui]: { base: BASE_SMP, read: ["Dashboard"] },
+  [T.pendaftaran]: { base: BASE_BPK, read: ["Event"], readFields: PEND_READ },
   [T.pewartaBpk]: { base: BASE_SMP, read: ["Pewarta", "Pewarta luar kota", "Dashboard"], update: { tabs: ["Pewarta"], fields: PWB_EDIT } },
 };
 
@@ -75,6 +81,10 @@ export function checkRead(spec: Spec, tableId: string, input: any, acc: Access) 
     if (hasIds) tabs = ["Pengurus", "Pewarta", "PD", "Umat"];
   }
   if (!any(acc, tabs)) throw new HttpError(403, "Anda tidak punya izin membaca data ini.");
+  if (spec.readFields) {
+    const ids: string[] = [...(Array.isArray(input.fieldIds) ? input.fieldIds : []), ...(JSON.stringify(input.filters || "").match(/fld[A-Za-z0-9]{14}/g) || [])];
+    if (!ids.length || !ids.every((f) => spec.readFields!.includes(f))) throw new HttpError(403, "Field tidak boleh dibaca dari dashboard.");
+  }
 }
 
 export function checkWrite(spec: Spec, kind: "update" | "create", records: any[], acc: Access) {
