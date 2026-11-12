@@ -75,9 +75,16 @@ export const ADMIN_JS = String.raw`
   }
   var ME = window.__ME__, IS_SUPER = ME.level === "Superadmin";
   var umatCache = null;
+  function show(title, holder, which) {
+    var p = document.getElementById("admPane");
+    if (!p) { EPK.modal(title, holder); return; }
+    if (window.goTab) window.goTab("admin");
+    p.textContent = ""; p.appendChild(holder);
+    ["admTambah", "admKelola"].forEach(function (id) { var b = document.getElementById(id); if (b) b.classList.toggle("on", id === which); });
+  }
   function pick() {
     var holder = EPK.el("div", {}, [EPK.el("p", { text: "Memuat daftar umat…" })]);
-    EPK.modal("Tambah pengguna dari daftar umat", holder);
+    show("Tambah pengguna dari daftar umat", holder, "admTambah");
     function ready(list) {
       holder.textContent = "";
       var q = EPK.el("input", { type: "search", placeholder: "Cari nama, panggilan, atau email", autocomplete: "off" });
@@ -170,7 +177,7 @@ export const ADMIN_JS = String.raw`
   window.EPK_LIHATSEBAGAI = viewAsPicker;
   function kelola() {
     var holder = EPK.el("div", {}, [EPK.el("p", { text: "Memuat…" })]);
-    EPK.modal("Kelola Pengguna", holder);
+    show("Kelola Pengguna", holder, "admKelola");
     var kq = "", listBox = EPK.el("div", {});
     var search = EPK.el("input", { type: "search", placeholder: "Cari pengguna: nama, email, jabatan", autocomplete: "off", "aria-label": "Cari pengguna" });
     search.addEventListener("input", function () { kq = search.value.trim().toLowerCase(); draw(); });
@@ -194,6 +201,7 @@ export const ADMIN_JS = String.raw`
     load().then(build, function (e) { holder.textContent = e.message; });
   }
   window.EPK_KELOLA = kelola;
+  window.EPK_ADMIN_OPEN = function () { var p = document.getElementById("admPane"); if (p && !p.firstChild) { if (IS_SUPER) kelola(); else pick(); } };
   window.EPK_ADMIN_BOOT = function () {
     if (!IS_SUPER) return;
     load().then(function () { if (window.__ME__.openKelola) kelola(); }, function () {});

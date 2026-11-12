@@ -356,6 +356,8 @@ footer { color: var(--muted); font-size: 13px; }
 .tile.go { font: inherit; color: inherit; text-align: left; cursor: pointer; width: 100%; } .tile.go:hover, .tile.go:focus-visible { border-color: var(--accent); }
 .bcol[data-nav] { cursor: pointer; } .bcol[data-nav]:hover .bl { color: var(--accent); }
 .hbr.ev { font: inherit; font-size: 13px; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; padding: 6px 0; cursor: pointer; } .hbr.ev span { flex: 1 1 100%; } .hbr.ev i { flex: 0 0 auto; max-width: calc(100% - 40px); } .hbr.ev:hover span { color: var(--accent); }
+#admBtns .chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+#admPane { margin-top: 12px; }
 .evr { display: block; padding: 8px 0; border-bottom: 1px solid var(--line); cursor: pointer; font-size: 13px; } .evr:last-child { border-bottom: 0; } .evr-t { overflow-wrap: anywhere; margin-bottom: 4px; } .evr:hover .evr-t { color: var(--accent); }
 .evr-b { display: flex; align-items: center; gap: 8px; } .evr-bar { flex: 1 1 auto; min-width: 0; height: 10px; background: var(--accent-soft); border-radius: 5px; overflow: hidden; } .evr-bar i { display: block; height: 100%; background: var(--accent); border-radius: 5px; } .evr em { font-style: normal; font-variant-numeric: tabular-nums; color: var(--muted); min-width: 22px; text-align: right; }
 .hbr small { font-size: 11.5px; }
@@ -617,8 +619,8 @@ footer { color: var(--muted); font-size: 13px; }
     <div class="fil" id="admBtns">
       <button type="button" class="chip" id="admTambah">＋ Tambah pengguna</button>
       <button type="button" class="chip" id="admKelola">Kelola pengguna</button>
-      <button type="button" class="chip" id="admLihat" hidden>Lihat sebagai…</button>
     </div>
+    <div id="admPane"></div>
   </div>
 
   <div id="tab-kep" class="tab" role="tabpanel" aria-labelledby="tabbtn-kep" hidden>
@@ -1284,12 +1286,13 @@ document.getElementById("dlg").addEventListener("submit", function (e) {
 var mcpState = "pending";
 var TABS = ["beranda", "pengurus", "pewarta", "luar", "pd", "umat", "kalender", "event", "kep", "admin"];
 document.addEventListener("click", function (e) {
-  var t = e.target.closest && e.target.closest("#admTambah,#admKelola,#admLihat"); if (!t) return;
-  var fn = { admTambah: "EPK_TAMBAH", admKelola: "EPK_KELOLA", admLihat: "EPK_LIHATSEBAGAI" }[t.id];
+  var t = e.target.closest && e.target.closest("#admTambah,#admKelola"); if (!t) return;
+  var fn = { admTambah: "EPK_TAMBAH", admKelola: "EPK_KELOLA" }[t.id];
   if (window[fn]) window[fn]();
 });
 function showTab(name) {
   if (TABS.indexOf(name) < 0) name = "beranda";
+  if (name === "admin" && window.EPK_ADMIN_OPEN) setTimeout(window.EPK_ADMIN_OPEN, 0);
   TABS.forEach(function (t) {
     document.getElementById("tab-" + t).hidden = t !== name;
     var b = document.getElementById("tabbtn-" + t);
