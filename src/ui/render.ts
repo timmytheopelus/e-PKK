@@ -8,7 +8,8 @@ const safeJson = (o: unknown) => JSON.stringify(o).replace(/</g, "\\u003c").repl
 export function renderDashboard(acc: Access, openKelola = false, sekjen: { nama: string; wa: string } | null = null) {
   const tabs = acc.tabs.map((t) => TAB_IDS[t]).filter(Boolean);
   const level = ["Superadmin", "Edit", "Admin"].includes(acc.level) ? acc.level : "View";
-  const me = { email: acc.email, nama: acc.nama, level, tabs, tabNames: acc.tabs, jabatan: acc.jabatan || "", login: acc.login || "", openKelola: level === "Superadmin" && acc.tabs.includes("Administrasi") && openKelola && !acc.viewAs, tabsOwned: acc.tabs, viewAs: acc.viewAs ? { by: acc.viewAs } : null, approver: canApprove(acc), sekjen: ["Superadmin", "Admin"].includes(acc.level) ? sekjen : null };
+  const sep = acc.level === "Superadmin" || acc.sepPeran === "Tim SEP BPK" ? "tim" : acc.sepPeran === "PIC SEP Paroki" ? "pic" : "view";
+  const me = { sep: acc.viewAs ? "view" : sep, email: acc.email, nama: acc.nama, level, tabs, tabNames: acc.tabs, jabatan: acc.jabatan || "", login: acc.login || "", openKelola: level === "Superadmin" && acc.tabs.includes("Administrasi") && openKelola && !acc.viewAs, tabsOwned: acc.tabs, viewAs: acc.viewAs ? { by: acc.viewAs } : null, approver: canApprove(acc), sekjen: ["Superadmin", "Admin"].includes(acc.level) ? sekjen : null };
   // Daftar pengurus hanya dikirim ke pengguna yang punya tab Pengurus.
   const raw = tabs.includes("pengurus") ? RAW : "";
   const admin = !acc.viewAs && acc.tabs.includes("Administrasi") && (level === "Superadmin" || level === "Admin") ? "<script>" + ADMIN_JS + "</script>\n" : "";

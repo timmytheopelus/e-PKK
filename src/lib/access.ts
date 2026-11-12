@@ -3,7 +3,7 @@ import { Access, ALL_TABS, BASE_BPK, T } from "./policy";
 import { at, listPage } from "./airtable";
 import { notifySuperadmins } from "./mail";
 
-export const AF = { email: "fldXCAPjc4bPkTbSq", nama: "fldR7uM68NdmjWJdK", status: "fldRiPREBGEFPsyjW", level: "fldvlRQXDZJdIIcw8", tabs: "fldgMD37Bgpg1ZdW6", jabatan: "fldKD8CpWcra5yaTR", login: "fldhehrsHwvACGhiu", umat: "fldf0NRl2Ts4kVxKr", jabLk: "fldXkY5f3WwMcB9Yz" };
+export const AF = { sepPeran: "fldJ3wO4gKKrUChC5", sepParoki: "fldt2iu9oKWIHcmU6", email: "fldXCAPjc4bPkTbSq", nama: "fldR7uM68NdmjWJdK", status: "fldRiPREBGEFPsyjW", level: "fldvlRQXDZJdIIcw8", tabs: "fldgMD37Bgpg1ZdW6", jabatan: "fldKD8CpWcra5yaTR", login: "fldhehrsHwvACGhiu", umat: "fldf0NRl2Ts4kVxKr", jabLk: "fldXkY5f3WwMcB9Yz" };
 
 /** Jabatan BPK diambil dari lookup data umat; kolom Jabatan lama hanya cadangan. */
 export const jabatanOf = (f: Record<string, any>) => {
@@ -28,7 +28,7 @@ async function fetchUser(email: string) {
   const own = ((f[AF.tabs] as string[]) || []).filter((t) => ALL_TABS.includes(t));
   // Superadmin: semua menu. Admin: menu miliknya + Administrasi pengguna (untuk menambah pengguna View).
   const tabs = level === "Superadmin" ? [...ALL_TABS] : level === "Admin" ? [...new Set([...own, "Administrasi"])] : own;
-  return { id: r.id, v: { email: norm(email), nama: f[AF.nama] || "", status: f[AF.status] || "Menunggu", level, tabs, jabatan: jabatanOf(f), login: f[AF.login] || "" } as Access };
+  return { id: r.id, v: { email: norm(email), nama: f[AF.nama] || "", status: f[AF.status] || "Menunggu", level, tabs, jabatan: jabatanOf(f), login: f[AF.login] || "", sepPeran: (f[AF.sepPeran] as string) || "", sepParoki: ((f[AF.sepParoki] as string[]) || []) } as Access };
 }
 
 /** Akses pengguna (cache 30 detik, jadi pencabutan hak berlaku cepat). */

@@ -288,7 +288,7 @@ img.pic { cursor: zoom-in; }
 .lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; }
 .lightbox button { position: absolute; top: 12px; right: 12px; font: inherit; font-size: 20px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: #fff; color: #000; cursor: pointer; }
 details.more { margin-top: 6px; } details.more summary { cursor: pointer; font-weight: 600; color: var(--accent); padding: 6px 0; }
-.pic { width: 112px; height: 112px; border-radius: 12px; object-fit: cover; background: var(--accent-soft); flex: none; }
+.pic { width: 120px; height: 150px; border-radius: 12px; object-fit: contain; object-position: center top; background: var(--accent-soft); flex: none; }
 .pic.ph { display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: 2rem; color: var(--accent); }
 .phead { display: flex; gap: 16px; align-items: center; }
 .phead h2 { overflow-wrap: anywhere; }
@@ -1755,7 +1755,7 @@ function viewPerson(id, name, opener) {
 /* ---------- sumber data ---------- */
 var BASE_SMP = "appK4oGjawCjLHV0w", T_SMP_EV = "tbll71vbqU6JbmrJq", T_SMP_KUI = "tblIMjnv1ffB4LqK7", T_PD = "tblNjwoOJEGZeQxkJ";
 var D = { smp: null, kui: null, pd: null, pwb: null }, SS = {};
-var SRC_LABEL = { kpar: "Daftar paroki", kpen: "Penyelenggara KEP", ev: "Kegiatan", smp: "Permohonan pewarta", kui: "Kuesioner", pd: "Data PD", pwb: "Pewarta BPK", ua: "Data umat" };
+var SRC_LABEL = { skeg: "Kegiatan SEP", spen: "Pendaftar SEP", kpar: "Daftar paroki", kpen: "Penyelenggara KEP", ev: "Kegiatan", smp: "Permohonan pewarta", kui: "Kuesioner", pd: "Data PD", pwb: "Pewarta BPK", ua: "Data umat" };
 
 var SM = { tgl: "fldFJ1CisvUveU2cM", nama: "fldQEDVuqLDDDSSex", nama2: "fldmgPwKTRjNtnAyL", tema: "fldd7MVZUtVyhB6Ar", pd: "flddzhNZ23pbUSuEk", asal: "fldqjU4a9td4dSeL5", jenis: "fld4TELQ3hdY7TFwC", dari: "fld2EMXkb86EGB9E5", konf: "fldPexb87iG2ygbNC", acc: "fld4hZqPpwywk8yfM", status: "fldsDHrZOKWMZQRrF", kual: "fldh2dp4SbpVXuSZ2", bpk: "fldUrgjrHXaaYqTbk", jml: "fld7RTeXxejdIYM3r", ket: "fldITi6QsnBmDrTWY", req: "fld12ONhwxcHGFyWh", hapus: "fldhLU1ca1XQz9jzr" };
 function loadSmp() {
@@ -2784,7 +2784,7 @@ function loadPend() {
 }
 function ensureEvt(manual) {
   if (!mcp) return;
-  [["evx", loadEvx], ["pend", loadPend], ["pd", loadPd]].concat(navOk("kep") ? [["kpar", loadKpar], ["kpen", loadKpen]] : []).forEach(function (p) {
+  [["evx", loadEvx], ["pend", loadPend], ["pd", loadPd]].concat(navOk("kep") ? [["kpar", loadKpar], ["kpen", loadKpen], ["skeg", loadSkeg], ["spen", loadSpen]] : []).forEach(function (p) {
     var st = SS[p[0]];
     if (D[p[0]] || (st && st.state === "loading")) return;
     if (st && !manual) return;
@@ -2868,6 +2868,67 @@ function loadKpen() {
 }
 function kpCanon(s) { return String(s || "").toLowerCase().replace(/gereja|paroki|keuskupan|bandung\b/g, " ").replace(/\bst\b\.?|santo|santa|angkatan.*$/g, " ").replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim(); }
 function kpTitle(s) { return s.replace(/\b[a-z]/g, function (c) { return c.toUpperCase(); }); }
+/* ---------- SEP: kegiatan baru, pendaftar, approval ---------- */
+var T_SKEG = "tblGuf3UnMnGBqpbR", T_SPEN = "tbllhFlsiFLaZzHkG";
+function sepRole() { var m = window.__ME__ || {}; return m.sep || "view"; }
+function loadSkeg() {
+  return fetchAll(BASE, T_SKEG, ["fldYqmy7odEnwqbrh", "fldxM5KAH4txJsC4s", "fldfHUZK6u2zkI7Yu", "flddxcs0pEaEZlXL1", "fldidtKcy6zhf1owX"]).then(function (recs) {
+    var id1 = function (l) { return Array.isArray(l) && l[0] ? (l[0].id || l[0]) : ""; };
+    D.skeg = recs.map(function (r) { var v = r.cellValuesByFieldId || {}; return { id: r.id, judul: one(v.fldYqmy7odEnwqbrh), ev: id1(v.fldxM5KAH4txJsC4s), token: one(v.flddxcs0pEaEZlXL1), status: one(v.fldidtKcy6zhf1owX) }; });
+  });
+}
+function loadSpen() {
+  return fetchAll(BASE, T_SPEN, ["fld4aXu6UhTUyu2a8", "fldJjgxA4mESGeOYG", "fldVwYghE0cSodecK", "fldBap2tEPX9R4LtD", "fldTj9n5kTQiquymW", "fldU3sCQfDmubXeBZ", "fld4dVr7hIV4xqAg7", "fldnQxpE9QVt0o9JH"]).then(function (recs) {
+    var id1 = function (l) { return Array.isArray(l) && l[0] ? (l[0].id || l[0]) : ""; };
+    D.spen = recs.map(function (r) { var v = r.cellValuesByFieldId || {}; return { id: r.id, nama: one(v.fld4aXu6UhTUyu2a8), keg: id1(v.fldJjgxA4mESGeOYG), lahir: one(v.fldVwYghE0cSodecK).slice(0, 10), alamat: one(v.fldBap2tEPX9R4LtD), paroki: one(v.fldTj9n5kTQiquymW), jk: one(v.fldU3sCQfDmubXeBZ), st: one(v.fld4dVr7hIV4xqAg7), sumber: one(v.fldnQxpE9QVt0o9JH) }; });
+  });
+}
+function ageGroup(lahir) {
+  if (!lahir) return "";
+  var b = new Date(lahir + "T00:00:00"), n = new Date(), a = n.getFullYear() - b.getFullYear(); if (n < new Date(n.getFullYear(), b.getMonth(), b.getDate())) a--;
+  return a < 12 ? "Di bawah 12 Tahun" : a < 18 ? "12-18 Tahun" : a < 35 ? "18-35 Tahun" : a < 50 ? "35-50 Tahun" : a < 70 ? "50-70 Tahun" : "70 Tahun Keatas";
+}
+function sepPost(action, input) {
+  return fetch("/api/sep", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: action, input: input }) })
+    .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.message || "Gagal."); return j; }); });
+}
+function sepReload() { delete D.evx; delete D.spen; delete D.skeg; SS.evx = SS.spen = SS.skeg = null; ensureEvt(true); }
+function kpFormHtml() {
+  var pk = (D.kpar || []).filter(function (p) { return /bandung/i.test(p.kus) && !/luar/i.test(p.nama); }).sort(function (a, b) { return cmpId(a.nama, b.nama); });
+  return '<button type="button" class="btn" data-kpv="home">← Kembali</button><h2>KEP baru</h2><p class="hint">Isi detail kegiatan. Setelah disimpan, sistem membuat link form pendaftaran untuk peserta.</p>' +
+    '<div class="pan"><div class="epk-row"><label>Nama kegiatan <input id="nbNama" type="text" placeholder="mis. KEP Paroki ... Angkatan 10" maxlength="120"></label></div>' +
+    '<div class="epk-row"><label>Jenis <select id="nbJenis"><option value="KEP">KEP paroki</option>' + (sepRole() === "tim" ? '<option value="KEP Exe">KEP non paroki (Exe)</option>' : "") + '</select></label>' +
+    '<label>Paroki penyelenggara <select id="nbPk"><option value="">Pilih…</option>' + pk.map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.nama) + "</option>"; }).join("") + "</select></label></div>" +
+    '<div class="epk-row"><label>Tanggal mulai <input id="nbTgl" type="date"></label><label>Lokasi <input id="nbLok" type="text" maxlength="200"></label></div>' +
+    '<div class="epk-row"><button type="button" class="chip" id="nbSimpan">Simpan dan buat link pendaftaran</button></div><div id="nbMsg" class="note"></div></div>';
+}
+function kpLinkCard(token, judul) {
+  var url = location.origin + "/daftar/" + token, wa = "https://wa.me/?text=" + encodeURIComponent("Pendaftaran " + judul + ":\n" + url);
+  return '<div class="pan"><h4>Link pendaftaran peserta</h4><div class="epk-row"><input type="text" readonly value="' + esc(url) + '" style="flex:1;min-width:220px" onclick="this.select()"></div><div class="epk-row">' +
+    '<button type="button" class="chip" data-kpcopy="' + esc(url) + '">Salin link</button><a class="chip" href="' + wa + '" target="_blank" rel="noopener">Bagikan lewat WhatsApp</a><a class="chip" href="/api/sep/template">Unduh template Excel</a></div></div>';
+}
+function kpApprHtml(all) {
+  var byKeg = {}; (D.skeg || []).forEach(function (k) { byKeg[k.id] = k; });
+  var evBy = {}; all.forEach(function (x) { evBy[x.id] = x; });
+  var wait = (D.spen || []).filter(function (p) { return p.st === "Menunggu" && byKeg[p.keg]; });
+  var h = '<button type="button" class="btn" data-kpv="home">← Kembali</button><h2>Persetujuan peserta</h2><p class="hint">Centang peserta yang sudah sesuai lalu simpan. Peserta yang disetujui otomatis masuk ke data dan infografis kegiatan.</p>';
+  if (!wait.length) return h + '<p class="note">Tidak ada pendaftar yang menunggu persetujuan.</p>';
+  h += '<div class="tw"><table class="tbl"><thead><tr><th><input type="checkbox" id="apAll" aria-label="Pilih semua"></th><th>Nama</th><th>Kegiatan</th><th>Usia</th><th>Paroki domisili</th></tr></thead><tbody>' + wait.map(function (p) {
+    var k = byKeg[p.keg], x = k && evBy[k.ev];
+    return '<tr><td><input type="checkbox" class="apCk" value="' + esc(p.id) + '"></td><td>' + esc(p.nama) + "<br><small>" + esc(p.jk) + " · " + esc(p.alamat) + "</small></td><td>" + esc(x ? x.nama : k.judul) + "</td><td>" + esc(ageGroup(p.lahir) || "-") + "</td><td>" + esc(p.paroki) + "</td></tr>";
+  }).join("") + '</tbody></table></div><div class="epk-row"><button type="button" class="chip" id="apOk">Simpan: setujui yang dicentang</button><button type="button" class="chip" id="apNo">Tolak yang dicentang</button></div><div id="apMsg" class="note"></div>';
+  return h;
+}
+function kpAdminBox(x) {
+  var k = x.keg; if (!k) return '<p class="note">Kegiatan lama (belum memakai form pendaftaran @SEP).</p>';
+  var w = sepRole(), h = '<div class="pan"><h4>Status kegiatan</h4><p><span class="tag' + (k.status === "Selesai" ? " alt" : "") + '">' + esc(k.status || "Berjalan") + "</span></p>";
+  if (k.status === "Selesai") h += '<p class="note">Kegiatan sudah selesai dan statusnya tidak bisa diubah lagi.</p>';
+  else if (w === "tim") h += '<button type="button" class="chip" data-kpfin="' + esc(k.id) + '">Tandai selesai (tidak bisa dibatalkan)</button>';
+  h += "</div>";
+  if (k.status !== "Selesai" && (w === "tim" || w === "pic")) h += kpLinkCard(k.token, x.nama) + '<div class="pan"><h4>Unggah Excel peserta</h4><p class="note">Panitia mengisi template lalu mengunggahnya. Peserta masuk antrean persetujuan.</p><div class="epk-row"><input type="file" id="upFile" accept=".xlsx"><button type="button" class="chip" data-kpup="' + esc(k.id) + '">Unggah</button></div><div id="upMsg" class="note"></div></div>';
+  return h;
+}
+
 function kepEvents() {
   return (D.evx || []).filter(function (e) { return (e.kel === "KEP" || e.kel === "KEP Exe") && !/pembekalan\s+pengajar/i.test(e.nama); });
 }
@@ -2885,8 +2946,11 @@ function kpKey(e) {
 function kpEvs() {
   var by = {}; (D.pend || []).forEach(function (p) { if (pAktif(p)) (by[p.ev] = by[p.ev] || []).push(p); });
   return kepEvents().map(function (e) {
-    var k = kpKey(e), batal = /batal/i.test(e.st);
-    return { e: e, id: e.id, nama: e.nama.replace(/^\d{6}-/, ""), tgl: e.tgl, yr: e.tgl.slice(0, 4), key: k.key, pk: k.name, batal: batal, done: !batal && (e.tgl < TODAY || /berlalu/i.test(e.st)), nxt: !batal && e.tgl >= TODAY && !/berlalu/i.test(e.st), ps: by[e.id] || [] };
+    var k = kpKey(e), batal = /batal/i.test(e.st), kg = (D.skeg || []).filter(function (g) { return g.ev === e.id; })[0];
+    var ps = (by[e.id] || []).slice();
+    if (kg) (D.spen || []).forEach(function (p) { if (p.keg === kg.id && p.st === "Disetujui") ps.push({ id: "s" + p.id, nama: p.nama, jk: p.jk, usia: ageGroup(p.lahir), nikah: "", kat: "", st: "Disetujui", pd: "" }); });
+    var done = !batal && (kg ? kg.status === "Selesai" : (e.tgl < TODAY || /berlalu/i.test(e.st)));
+    return { e: e, id: e.id, nama: e.nama.replace(/^\d{6}-/, ""), tgl: e.tgl, yr: e.tgl.slice(0, 4), key: k.key, pk: k.name, batal: batal, done: done, nxt: !batal && !done && e.tgl >= TODAY, keg: kg, ps: ps };
   });
 }
 function kpFilter(all) {
@@ -2954,10 +3018,12 @@ function kpChips() {
 }
 function kpNav(all) {
   var t = [["home", "Ringkasan"], ["keg", "Kegiatan"], ["peserta", "Peserta"], ["par", "Paroki"]];
+  if (sepRole() !== "view") { var np = (D.spen || []).filter(function (p) { return p.st === "Menunggu"; }).length; t.push(["appr", "Persetujuan" + (np ? " (" + np + ")" : "")], ["baru", "＋ KEP baru"]); }
   return '<div class="chips" role="tablist">' + t.map(function (x) { return '<button type="button" class="chip" data-kpv="' + x[0] + '" aria-pressed="' + (KP.v === x[0]) + '">' + x[1] + "</button>"; }).join("") + "</div>";
 }
+function kpStat(x) { return x.batal ? "Dibatalkan" : x.keg ? (x.keg.status === "Selesai" ? "Selesai" : "Berjalan") : x.done ? "Sudah berjalan" : "Terjadwal"; }
 function kpEvCard(x) {
-  var st = x.batal ? "Dibatalkan" : x.done ? "Sudah berjalan" : "Terjadwal";
+  var st = kpStat(x);
   return '<button type="button" class="evc" data-kpe="' + esc(x.id) + '"><b>' + esc(x.nama) + "</b><span>" + esc(fmtDate(x.tgl, { day: "numeric", month: "short", year: "numeric" })) + " · " + esc(x.pk) + '</span><span class="tag' + (x.done ? " alt" : "") + '">' + st + "</span><em>" + x.ps.length + " peserta</em></button>";
 }
 function kpPersonRows(psl) {
@@ -2978,14 +3044,16 @@ function kpParoki(all) {
 }
 function renderKep() {
   var el = document.getElementById("kepRoot"); if (!el) return;
-  srcStatus("kepLink", ["evx", "pend", "kpar", "kpen"]);
+  srcStatus("kepLink", ["evx", "pend", "kpar", "kpen", "skeg", "spen"]);
   if (!D.evx || !D.pend) { el.innerHTML = '<p class="hint">Memuat data KEP…</p>'; return; }
   var all = kpEvs(), f = kpFilter(all), back = '<button type="button" class="btn" data-kpv="home">← Kembali</button>', h = "";
+  if (KP.v === "baru") { el.innerHTML = kpFormHtml() + (KP.made ? kpLinkCard(KP.made.token, KP.made.judul) : ""); return; }
+  if (KP.v === "appr") { el.innerHTML = kpApprHtml(all); return; }
   if (KP.v === "evd") {
     var x = all.filter(function (a) { return a.id === KP.sel; })[0];
     if (!x) { KP.v = "keg"; return renderKep(); }
-    h = back.replace("data-kpv=\"home\"", 'data-kpv="keg"').replace("Kembali", "Kembali ke daftar kegiatan") + "<h2>" + esc(x.nama) + '</h2><p class="sub">' + esc(fmtDate(x.tgl, { weekday: "long", day: "numeric", month: "long", year: "numeric" })) + " · " + esc(x.pk) + (x.e.lokasi ? " · " + esc(x.e.lokasi) : "") + " · " + (x.batal ? "Dibatalkan" : x.done ? "Sudah berjalan" : "Terjadwal") + "</p>" +
-      '<div class="tiles">' + tile(x.ps.length, "Peserta terdaftar", "") + "</div>" +
+    h = back.replace("data-kpv=\"home\"", 'data-kpv="keg"').replace("Kembali", "Kembali ke daftar kegiatan") + "<h2>" + esc(x.nama) + '</h2><p class="sub">' + esc(fmtDate(x.tgl, { weekday: "long", day: "numeric", month: "long", year: "numeric" })) + " · " + esc(x.pk) + (x.e.lokasi ? " · " + esc(x.e.lokasi) : "") + " · " + kpStat(x) + "</p>" +
+      '<div class="tiles">' + tile(x.ps.length, "Peserta terdaftar", "") + "</div>" + kpAdminBox(x) +
       '<div class="pan"><h4>Profil peserta</h4>' + kpDemog(x.ps) + "</div>" +
       '<div class="pan"><h4>Daftar peserta <small class="note">· klik nama untuk detail</small></h4>' + kpPersonRows(x.ps.map(function (p) { return { p: p, x: x }; })) + "</div>";
   } else if (KP.v === "psd") {
@@ -3028,6 +3096,28 @@ document.getElementById("tab-kep").addEventListener("click", function (e) {
   else if (t.dataset.kpp) { KP.from = KP.v === "evd" ? "evd" : "peserta"; KP.ps = t.dataset.kpp; KP.v = "psd"; }
   else if (t.dataset.kppk) { KP.pk = t.dataset.kppk; KP.v = "keg"; }
   renderKep(); window.scrollTo(0, 0);
+});
+document.getElementById("tab-kep").addEventListener("click", function (e) {
+  var t = e.target, id = t.id, say = function (el, m, bad) { var n = document.getElementById(el); if (n) { n.textContent = m; n.style.color = bad ? "#b3261e" : ""; } };
+  if (id === "nbSimpan") {
+    var v = function (i) { return document.getElementById(i).value; }; t.disabled = true; say("nbMsg", "Menyimpan…");
+    sepPost("create", { nama: v("nbNama"), jenis: v("nbJenis"), parokiId: v("nbPk"), tgl: v("nbTgl"), lokasi: v("nbLok") }).then(function (j) { KP.made = { token: j.token, judul: v("nbNama") }; sepReload(); renderKep(); }, function (er) { t.disabled = false; say("nbMsg", er.message, true); });
+  } else if (id === "apAll") { Array.prototype.forEach.call(document.querySelectorAll(".apCk"), function (c) { c.checked = t.checked; }); }
+  else if (id === "apOk" || id === "apNo") {
+    var ids = Array.prototype.map.call(document.querySelectorAll(".apCk:checked"), function (c) { return c.value; }); if (!ids.length) { say("apMsg", "Centang peserta dulu.", true); return; }
+    if (!confirm((id === "apOk" ? "Setujui " : "Tolak ") + ids.length + " pendaftar?")) return;
+    t.disabled = true; say("apMsg", "Menyimpan…");
+    sepPost("decide", { ids: ids, decision: id === "apOk" ? "Disetujui" : "Ditolak" }).then(function () { sepReload(); }, function (er) { t.disabled = false; say("apMsg", er.message, true); });
+  } else if (t.dataset && t.dataset.kpcopy) { try { navigator.clipboard.writeText(t.dataset.kpcopy); t.textContent = "Tersalin ✓"; } catch (x) { prompt("Salin link:", t.dataset.kpcopy); } }
+  else if (t.dataset && t.dataset.kpfin) {
+    if (!confirm("Tandai kegiatan ini SELESAI? Status tidak bisa diubah lagi dan pendaftaran ditutup.")) return;
+    sepPost("finish", { id: t.dataset.kpfin }).then(function () { sepReload(); }, function (er) { alert(er.message); });
+  } else if (t.dataset && t.dataset.kpup) {
+    var f = document.getElementById("upFile").files[0]; if (!f) { say("upMsg", "Pilih file Excel dulu.", true); return; }
+    say("upMsg", "Mengunggah…"); var rd = new FileReader();
+    rd.onload = function () { var b64 = String(rd.result).split(",")[1] || ""; sepPost("import", { kegiatanId: t.dataset.kpup, b64: b64 }).then(function (j) { say("upMsg", j.masuk + " baris masuk antrean persetujuan" + (j.totalError ? ", " + j.totalError + " baris ditolak: " + j.errors.map(function (x) { return "baris " + x.baris + " (" + x.pesan + ")"; }).join("; ") : "."), j.totalError > 0 && !j.masuk); sepReload(); }, function (er) { say("upMsg", er.message, true); }); };
+    rd.readAsDataURL(f);
+  }
 });
 document.getElementById("tab-kep").addEventListener("change", function (e) {
   var id = e.target.id; if (id === "kpYr") KP.yr = e.target.value; else if (id === "kpPk") KP.pk = e.target.value; else if (id === "kpSt") KP.st = e.target.value; else return;

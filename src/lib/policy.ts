@@ -28,6 +28,8 @@ export const T = {
   pendaftaran: "tbltiJ1qDJEwfWPLg",
   paroki: "tbl8sfqU6G47orPpn",
   penyelenggaraKep: "tblH4SN6qpNxJFg35",
+  sepKegiatan: "tblGuf3UnMnGBqpbR",
+  pendaftarSep: "tbllhFlsiFLaZzHkG",
 };
 
 /** Pewarta BPK (base SMP): field yang boleh diubah dari tab Pewarta (status, kategori, status pengajar, modul, link YouTube). */
@@ -37,7 +39,7 @@ const PWB_YT = "fldJGTPgfN00lAdMo";
 /** MasterJabatanBPK: kolom pengelompokan (urutan opsi select = urutan tampil di dashboard). */
 export const JAB = { bidang: "fldCCi0hV9yTL091P", seksi: "fldAAyRg1kko5YgrK", peran: "fldI8J3VXZDyjWa3f" };
 
-export type Access = { email: string; nama: string; status: string; level: string; tabs: string[]; jabatan?: string; login?: string; viewAs?: string };
+export type Access = { email: string; nama: string; status: string; level: string; tabs: string[]; jabatan?: string; login?: string; viewAs?: string; sepPeran?: string; sepParoki?: string[] };
 export const canEdit = (a: Access) => a.level === "Edit" || a.level === "Admin" || a.level === "Superadmin";
 
 type Spec = {
@@ -69,6 +71,9 @@ export const TABLES: Record<string, Spec> = {
   [T.pendaftaran]: { base: BASE_BPK, read: ["Event", "KEP"], readFields: PEND_READ },
   [T.paroki]: { base: BASE_BPK, read: ["KEP"], readFields: ["fldskPQJ7WQgCVODZ", "fldm9LChbMMxzwAU6", "fldTx78aUdQXrpSMY"] },
   [T.penyelenggaraKep]: { base: BASE_BPK, read: ["KEP"], readFields: ["fldIrpPwvByuQjm1a", "fldQX4RydVh243bI0"] },
+  [T.sepKegiatan]: { base: BASE_BPK, read: ["KEP"] },
+  // Email, No WhatsApp tidak boleh dibaca browser (hanya lewat tombol/server).
+  [T.pendaftarSep]: { base: BASE_BPK, read: ["KEP"], readFields: ["fld4aXu6UhTUyu2a8", "fldJjgxA4mESGeOYG", "fldVwYghE0cSodecK", "fldBap2tEPX9R4LtD", "fldTj9n5kTQiquymW", "fldU3sCQfDmubXeBZ", "fld4dVr7hIV4xqAg7", "fldnQxpE9QVt0o9JH"] },
   [T.pewartaBpk]: { base: BASE_SMP, read: ["Pewarta", "Pewarta luar kota", "Dashboard"], update: { tabs: ["Pewarta"], fields: PWB_EDIT } },
 };
 
