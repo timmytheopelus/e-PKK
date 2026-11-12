@@ -1003,8 +1003,10 @@ function ocPeople(n, set) {
 }
 var KLBL = { bidang: "Koord. Bidang", seksi: "Koord. Seksi", sub: "Koord. Sub seksi" };
 var KPRE = { bidang: "Bidang", seksi: "Seksi", sub: "Subseksi" };
+function dispT(t) { return /^pimpinan inti$/i.test(t || "") ? "Grup Tim Koordinator BPK" : /^pimpinan$/i.test(t || "") ? "Koordinator BPK" : t; }
 function ocTitle(n, kind) {
-  var t = n.title || "";
+  var t = dispT(n.title || "");
+  if (t !== (n.title || "")) return t;
   if (!kind || /^(Sie|Subsie|Seksi|Subseksi|Bidang|Tim|Dekanat|Pimpinan|Penasihat|Koordinator|BPKPKK)\b/i.test(t)) return t;
   if (kind === "sub" && /^(Sekolah|Forkom)\b/i.test(t)) return t;
   return KPRE[kind] + " " + t;
@@ -1014,7 +1016,7 @@ function ocCard(n, color, kind, col) {
   var h = '<div class="oc-card" style="--cc:' + color + '"><div class="oc-h' + (hasK ? " tg" : "") + '"' + (hasK ? ' role="button" tabindex="0" aria-expanded="' + (col ? "false" : "true") + '"' : "") + ">" + (hasK ? '<span class="oc-chev" aria-hidden="true">' + (col ? "▸" : "▾") + "</span> " : "") + esc(ocTitle(n, kind)) + (hasK ? ' <span class="oc-cnt">(' + Object.keys(ocPeople(n)).length + " orang)</span>" : "") + "</div>";
   if (n.persons.length) {
     var one = function (p) {
-      var lbl = PERAN_LABEL[p.peran] ? "<small>" + esc(p.peran) + "</small>" : "";
+      var lbl = p.peran === "Pimpinan" && p.jn ? "<small>" + esc(p.jn) + "</small>" : PERAN_LABEL[p.peran] ? "<small>" + esc(p.peran) + "</small>" : "";
       if (!p.d.nama) return '<span class="oc-v0">Belum terisi</span>';
       if (p.lead) return '<span class="oc-ketua k-' + (kind || "seksi") + '"><button type="button" class="oc-n" data-act="view" data-i="' + p.d.i + '">' + esc(p.d.nama) + "</button>" + pdChip(p) + "<small>" + (p.peran === "Pimpinan" ? "Koordinator" : (kind === "sub" && /^(Kepala|Koordinator)\b/i.test(p.jn || "") ? p.jn : KLBL[kind] || "Ketua")) + "</small></span>";
       return '<span><button type="button" class="oc-n" data-act="view" data-i="' + p.d.i + '">' + esc(p.d.nama) + "</button>" + pdChip(p) + lbl + "</span>";
@@ -1168,9 +1170,9 @@ function render() {
     if (g.bidang !== lastB) {
       lastB = g.bidang;
       var tot = list.filter(function (d) { return d.b === g.bidang && !d.alias; }).length;
-      html += '<tr class="grp"><td colspan="5">' + esc(g.bidang) + ' <span class="gn">' + tot + " posisi</span></td></tr>";
+      html += '<tr class="grp"><td colspan="5">' + esc(dispT(g.bidang)) + ' <span class="gn">' + tot + " posisi</span></td></tr>";
     }
-    if (g.seksi !== g.bidang) { var nAl = items.filter(function (d) { return d.alias; }).length; html += '<tr class="grp2"><td colspan="5">' + esc(g.seksi) + ' <span class="gn">' + (items.length - nAl) + " posisi" + (nAl ? " · +" + nAl + " jabatan ganda ↳" : "") + "</span></td></tr>"; }
+    if (g.seksi !== g.bidang) { var nAl = items.filter(function (d) { return d.alias; }).length; html += '<tr class="grp2"><td colspan="5">' + esc(dispT(g.seksi)) + ' <span class="gn">' + (items.length - nAl) + " posisi" + (nAl ? " · +" + nAl + " jabatan ganda ↳" : "") + "</span></td></tr>"; }
     items.forEach(function (d) {
       if (!d.alias) no++;
       var nm = d.nama ? whoCell(d) : '<td class="nama kosong">Belum terisi</td>';
