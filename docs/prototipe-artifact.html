@@ -259,6 +259,13 @@ tr.alias td.nama { font-weight: 500; }
 .li .rt { text-align: right; font-size: 12.5px; color: var(--muted); }
 .li.today { border-color: var(--accent); background: var(--accent-soft); }
 .li.w2 { grid-template-columns: minmax(0, 1fr) auto; }
+.li .rt .tag { white-space: normal; text-align: left; }
+@media (max-width: 560px) {
+  .li:not(.w2) { grid-template-columns: 48px minmax(0, 1fr); row-gap: 4px; }
+  .li:not(.w2) .rt { grid-column: 2; text-align: left; }
+  .li:not(.w2) .rt br { display: none; }
+  .li:not(.w2) .rt > * { margin-right: 6px; }
+}
 .pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; font-variant-numeric: tabular-nums; }
 .pill.ok { background: var(--accent-soft); color: var(--accent); }
 .pill.mid { background: var(--warn-soft); color: var(--warn); }
@@ -987,7 +994,7 @@ function render() {
     if (state.f === "kosong" && d.nama) return false;
     if (state.f === "H" && d.t !== "H" && d.t !== "I") return false;   /* Grup Harian mencakup Tim Inti */
     if (["I", "K", "P"].indexOf(state.f) > -1 && d.t !== state.f && !(state.f === "K" && d.x === "K")) return false;
-    if (state.q && (d.nama + " " + d.jab.join(" ") + " " + d.g + " " + d.b).toLowerCase().indexOf(state.q) < 0) return false;
+    if (state.q && (d.nama + " " + pgl(d.nama) + " " + d.jab.join(" ") + " " + d.g + " " + d.b).toLowerCase().indexOf(state.q) < 0) return false;
     return true;
   });
   list.sort(function (a, b) { return (a.br - b.br) || (a.sr - b.sr) || (a.rr - b.rr) || (TORDER[a.t] - TORDER[b.t]) || a.nama.localeCompare(b.nama); });
@@ -1261,7 +1268,7 @@ function showTab(name) {
   });
   if (name === "kalender") calOpen();
   else if (name === "event") { if (mcpState === "ready") ensureEvt(); }
-  else if (mcpState === "ready") { ensureData(); if (name === "umat") ensureUa(false); }
+  else if (mcpState === "ready") { ensureData(); if (name === "umat") ensureUa(false); if (name === "beranda" && navOk("event")) ensureEvt(); }
 }
 Array.prototype.forEach.call(document.querySelectorAll(".tabbtn"), function (b) {
   b.addEventListener("click", function () { var n = b.dataset.tab; try { location.hash = "#" + n; } catch (e) {} showTab(n); });
@@ -1359,7 +1366,7 @@ function calOpen() {
   else if (mcpState === "none") { cal.state = "unavailable"; calStatus(); }
   else { cal.state = "loading"; calStatus(); }
 }
-function onMcp() { ensureData(true); if (!document.getElementById('tab-event').hidden) ensureEvt(true); if (!document.getElementById('tab-umat').hidden) ensureUa(true); }
+function onMcp() { ensureData(true); if (navOk("event")) ensureEvt(true); if (!document.getElementById('tab-event').hidden) ensureEvt(true); if (!document.getElementById('tab-umat').hidden) ensureUa(true); }
 document.getElementById("calStatus").addEventListener("click", function (e) {
   if (e.target.closest && e.target.closest("[data-act=calretry]")) loadEvents();
 });
@@ -2137,6 +2144,13 @@ function loadPwb() {
   });
 }
 function pwSet(g) { return (D.pwb || []).filter(function (o) { return o.grp === g; }); }
+var PGL = { n: -1, m: {} };
+function pgl(nama) {
+  var n = (D.pwb ? D.pwb.length : 0) + (D.ua ? D.ua.length : 0);
+  if (PGL.n !== n) { PGL.n = n; PGL.m = {}; [D.ua, D.pwb].forEach(function (l) { (l || []).forEach(function (o) { if (o.pang && o.nama) { var k = String(o.nama).toLowerCase().replace(/\s+/g, " ").trim(); PGL.m[k] = (PGL.m[k] ? PGL.m[k] + " " : "") + o.pang; } }); }); }
+  return PGL.m[String(nama || "").toLowerCase().replace(/\s+/g, " ").trim()] || "";
+}
+document.addEventListener("input", function (e) { var t = e.target; if (t && t.type === "search" && !D.ua && mcpState === "ready" && navOk("umat")) ensureUa(false); });
 function pdKey(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim(); }
 function ageTag(o) { return o.age == null ? '<span class="note">–</span>' : '<span class="tag alt" title="' + esc(o.ag) + '">' + o.age + " th · " + esc(o.ag.split(" ")[0]) + "</span>"; }
 function statusTag(o) {
@@ -2307,7 +2321,7 @@ function renderTamu() {
   if (!all) { tb.innerHTML = ""; document.getElementById("tmCount").textContent = ""; return; }
   var t = pwSet("tamu").filter(function (o) { return isAktif(o.sp); });
   fillOpts("tmAsal", "Semua asal", uniq(t.map(function (o) { return o.asal || "Asal belum diisi"; })).sort(cmpId));
-  var l = t.filter(function (o) { return (!tm.asal || (o.asal || "Asal belum diisi") === tm.asal) && (!tm.q || (o.nama + " " + o.pang).toLowerCase().indexOf(tm.q) >= 0); }).sort(function (a, b) { return cmpId(a.asal || "", b.asal || "") || cmpId(a.nama, b.nama); });
+  var l = t.filter(function (o) { return (!tm.asal || (o.asal || "Asal belum diisi") === tm.asal) && (!tm.q || (o.nama + " " + o.pang + " " + pgl(o.nama)).toLowerCase().indexOf(tm.q) >= 0); }).sort(function (a, b) { return cmpId(a.asal || "", b.asal || "") || cmpId(a.nama, b.nama); });
   document.getElementById("tmCount").textContent = l.length + " pewarta tamu aktif dari keuskupan/BPK lain (tidak dihitung sebagai pewarta BPK Bandung).";
   tb.innerHTML = l.map(function (o) {
     return '<tr><td class="nama"><div class="who"><span class="n">' + esc(o.nama) + '</span><span class="acts"><button type="button" class="act" data-pw="view" data-id="' + o.id + '" aria-label="Lihat profil ' + esc(o.nama) + '">' + ICON_VIEW + "<span>View</span></button>" + waBtn(o) + "</span></div></td><td>" + esc(o.asal || "-") + "</td><td>" + statusTag(o) + "</td><td>" + ageTag(o) + "</td><td>" + (o.jml || "–") + "</td></tr>";
@@ -2332,7 +2346,7 @@ function renderPd() {
     if (pdf.status && p.status !== pdf.status) return false;
     if (pdf.dekanat && p.dekanat !== pdf.dekanat) return false;
     if (pdf.kota && p.kota.indexOf(pdf.kota) < 0) return false;
-    if (pdf.q && (p.nama + " " + p.koor + " " + p.pastor).toLowerCase().indexOf(pdf.q) < 0) return false;
+    if (pdf.q && (p.nama + " " + p.koor + " " + pgl(p.koor) + " " + p.pastor).toLowerCase().indexOf(pdf.q) < 0) return false;
     return true;
   });
   document.getElementById("pdCount").textContent = "Menampilkan " + list.length + " dari " + pd.length + " PD";
@@ -2418,7 +2432,7 @@ function koorHtml() {
 function kMsg(t, bad) { var m = document.getElementById("kMsg"); if (m) { m.textContent = t || ""; m.style.color = bad ? "var(--danger)" : "var(--muted)"; } }
 function fillKoorList() {
   var el = document.getElementById("kList"); if (!el || !kst) return;
-  var q = kst.q, l = kst.pd.mem.filter(function (m) { return !q || m.name.toLowerCase().indexOf(q) >= 0; }).slice(0, 80);
+  var q = kst.q, l = kst.pd.mem.filter(function (m) { return !q || (m.name + " " + pgl(m.name)).toLowerCase().indexOf(q) >= 0; }).slice(0, 80);
   el.innerHTML = l.length ? l.map(function (m) { return '<button type="button" class="li" data-go="kpick:' + m.id + '" aria-pressed="' + (kst.sel === m.id ? "true" : "false") + '"><span class="nm">' + esc(m.name) + "</span><span class='rt'>" + (m.id === kst.cur ? "koordinator sekarang" : "") + "</span></button>"; }).join("") : '<p class="hint">Tidak ada nama yang cocok.</p>';
   var sv = document.getElementById("kSave"), chosen = kst.pd.mem.filter(function (m) { return m.id === kst.sel; })[0];
   if (sv) { sv.disabled = !chosen; sv.textContent = chosen ? "Jadikan " + chosen.name + " koordinator" : "Pilih seseorang dulu"; sv.dataset.go = "ksave:" + (chosen ? chosen.id : ""); }
@@ -2510,7 +2524,7 @@ function renderLuar() {
   fillOpts("luAsal", "Semua asal", uniq(all.g.map(function (x) { return x.asal; })).sort(cmpId));
   var gs = all.g.filter(function (x) {
     if (lu.asal && x.asal !== lu.asal) return false;
-    if (lu.q && (x.nama + " " + Object.keys(x.pds).join(" ")).toLowerCase().indexOf(lu.q) < 0) return false;
+    if (lu.q && (x.nama + " " + pgl(x.nama) + " " + Object.keys(x.pds).join(" ")).toLowerCase().indexOf(lu.q) < 0) return false;
     return true;
   }).sort(function (a, b) { return b.n - a.n || b.nf - a.nf || cmpId(a.nama, b.nama); });
   var tot = gs.reduce(function (a, x) { return a + x.n; }, 0), fut = gs.reduce(function (a, x) { return a + x.nf; }, 0);
@@ -2757,7 +2771,7 @@ function renderEvRegs() {
   var el = document.getElementById("evDetail"), box = document.getElementById("evRegs");
   if (!box || !el._regs) return;
   var q = EV.rq.toLowerCase(), dm = EV.dim >= 0 && el._dims ? el._dims[EV.dim] : null;
-  var l = el._regs.filter(function (p) { return (!EV.pdf || p.pd === EV.pdf) && (!q || p.nama.toLowerCase().indexOf(q) >= 0) && (!dm || (dm[1](p) || "Belum diisi") === EV.dv); }).sort(function (a, b) { return cmpId(a.nama, b.nama); });
+  var l = el._regs.filter(function (p) { return (!EV.pdf || p.pd === EV.pdf) && (!q || (p.nama + " " + pgl(p.nama)).toLowerCase().indexOf(q) >= 0) && (!dm || (dm[1](p) || "Belum diisi") === EV.dv); }).sort(function (a, b) { return cmpId(a.nama, b.nama); });
   var chip = document.getElementById("evDimChip");
   if (chip) chip.innerHTML = dm ? '<p class="count"><span class="tag">Filter: ' + esc(dm[0]) + " = " + esc(EV.dv) + '</span> <button type="button" class="btn" data-evclr="1">Hapus filter ✕</button></p>' : "";
   Array.prototype.forEach.call(el.querySelectorAll(".hbr[data-dim]"), function (x) { x.classList.toggle("on", !!dm && +x.dataset.dim === EV.dim && x.dataset.val === EV.dv); });

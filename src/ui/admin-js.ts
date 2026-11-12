@@ -171,19 +171,27 @@ export const ADMIN_JS = String.raw`
   function kelola() {
     var holder = EPK.el("div", {}, [EPK.el("p", { text: "Memuat…" })]);
     EPK.modal("Kelola Pengguna", holder);
+    var kq = "", listBox = EPK.el("div", {});
+    var search = EPK.el("input", { type: "search", placeholder: "Cari pengguna: nama, email, jabatan", autocomplete: "off", "aria-label": "Cari pengguna" });
+    search.addEventListener("input", function () { kq = search.value.trim().toLowerCase(); draw(); });
+    function match(u) { return !kq || [u.nama, u.email, u.jabatan, u.level].join(" ").toLowerCase().indexOf(kq) >= 0; }
     function draw() {
-      holder.textContent = "";
-      var p = pending();
-      holder.appendChild(EPK.el("h3", { class: "epk-sec", text: "Menunggu persetujuan (" + p.length + ")" }));
-      if (!p.length) holder.appendChild(EPK.el("p", { class: "sub", text: "Tidak ada permintaan baru." }));
-      p.forEach(function (u) { holder.appendChild(userCard(u, draw)); });
-      holder.appendChild(EPK.el("h3", { class: "epk-sec", text: "Tambah pengguna" }));
-      holder.appendChild(addForm(draw));
-      var rest = users.filter(function (u) { return u.status !== "Menunggu"; });
-      holder.appendChild(EPK.el("h3", { class: "epk-sec", text: "Semua pengguna (" + rest.length + ")" }));
-      rest.forEach(function (u) { holder.appendChild(userCard(u, draw)); });
+      listBox.textContent = "";
+      var p = pending().filter(match);
+      listBox.appendChild(EPK.el("h3", { class: "epk-sec", text: "Menunggu persetujuan (" + p.length + ")" }));
+      if (!p.length) listBox.appendChild(EPK.el("p", { class: "sub", text: kq ? "Tidak ada yang cocok." : "Tidak ada permintaan baru." }));
+      p.forEach(function (u) { listBox.appendChild(userCard(u, draw)); });
+      var rest = users.filter(function (u) { return u.status !== "Menunggu" && match(u); });
+      listBox.appendChild(EPK.el("h3", { class: "epk-sec", text: "Semua pengguna (" + rest.length + ")" }));
+      if (!rest.length) listBox.appendChild(EPK.el("p", { class: "sub", text: "Tidak ada pengguna." }));
+      rest.forEach(function (u) { listBox.appendChild(userCard(u, draw)); });
     }
-    load().then(draw, function (e) { holder.textContent = e.message; });
+    function build() {
+      holder.textContent = "";
+      holder.appendChild(EPK.el("div", { class: "epk-row" }, [search, EPK.el("button", { type: "button", class: "epk-btn", text: "＋ Tambah pengguna", onclick: function () { pick(); } })]));
+      holder.appendChild(listBox); draw();
+    }
+    load().then(build, function (e) { holder.textContent = e.message; });
   }
   window.EPK_KELOLA = kelola;
   window.EPK_ADMIN_BOOT = function () {
