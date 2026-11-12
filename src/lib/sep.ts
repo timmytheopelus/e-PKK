@@ -35,14 +35,14 @@ function scope(a: Access, p: Peran, keg: { fields: Record<string, any> }) {
 
 const clean = (v: any, max: number) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 function normWa(v: any) { let d = String(v ?? "").replace(/[^\d+]/g, "").replace(/^\+/, ""); if (d.startsWith("0")) d = "62" + d.slice(1); return d; }
-function isoDate(v: any): string {
+function isoDate(v: any, future = false): string {
   if (v instanceof Date && !isNaN(+v)) return v.toISOString().slice(0, 10);
   const s = String(v ?? "").trim();
   let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);
   if (!m) { const n = /^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})$/.exec(s); if (n) m = [s, n[3], n[2], n[1]] as any; }
   if (!m) return "";
   const y = +m[1], mo = +m[2], d = +m[3], dt = new Date(Date.UTC(y, mo - 1, d));
-  if (y < 1900 || dt.getUTCMonth() !== mo - 1 || dt > new Date()) return "";
+  if (y < 1900 || dt.getUTCMonth() !== mo - 1 || (!future && dt > new Date())) return "";
   return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
 /** Validasi satu pendaftar; kembalikan fields Airtable atau pesan kesalahan. */
@@ -71,7 +71,7 @@ async function createPendaftar(kegId: string, rows: Record<string, any>[], sumbe
 export async function sepCall(action: string, i: any, a: Access) {
   const p = mustWrite(a);
   if (action === "create") {
-    const nama = clean(i?.nama, 120), jenis = i?.jenis === "KEP Exe" ? "KEP Exe" : "KEP", lokasi = clean(i?.lokasi, 200), tgl = isoDate(i?.tgl);
+    const nama = clean(i?.nama, 120), jenis = i?.jenis === "KEP Exe" ? "KEP Exe" : "KEP", lokasi = clean(i?.lokasi, 200), tgl = isoDate(i?.tgl, true);
     if (nama.length < 3) throw new HttpError(400, "Nama kegiatan wajib diisi.");
     if (!tgl) throw new HttpError(400, "Tanggal mulai tidak valid.");
     let paroki: string[] = [];
