@@ -122,6 +122,18 @@ describe("laporan keuangan: klik kartu membuka rincian", () => {
   });
 });
 
+describe("laporan keuangan: tampilan tabel", () => {
+  it("header tabel menempel, huruf tebal dan lebih besar, baris selang-seling", async () => {
+    const w = await boot();
+    click(w, tab(w, "Per Bulan"));
+    const css: string = w.document.getElementById("keuCss").textContent;
+    expect(css).toMatch(/\.keu-tw thead th\{position:sticky;top:0;[^}]*font-size:15px;font-weight:700/);
+    expect(css).toContain(".keu-tw tbody tr:nth-child(even) td{background:var(--bg)}");
+    expect(css).toMatch(/\.keu-tw\{overflow:auto;max-height:70vh/); // header menempel relatif terhadap kotak tabel
+    expect(w.document.querySelector(".keu-tw thead th")).toBeTruthy();
+  });
+});
+
 describe("laporan keuangan: ekspor dan galat", () => {
   it("CSV: header berbahasa Indonesia, minus untuk uang keluar, transaksi dihapus tidak ikut", async () => {
     const w = await boot();
