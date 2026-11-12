@@ -114,6 +114,10 @@ td.nama { font-weight: 600; }
 .oc-ketua .oc-n { color: #fff; font-weight: 700; text-decoration: none; }
 .oc-ketua small { display: block; color: #fff; opacity: .85; margin: 0; font-size: 11.5px; }
 .oc-b .oc-ketua small { color: #fff; margin-left: 0; }
+.oc-ketua.k-bidang { box-shadow: 0 0 0 2px var(--cc, var(--accent)) inset; font-size: 14px; }
+.oc-ketua.k-sub { background: transparent; border: 1.5px solid var(--cc, var(--accent)); }
+.oc-ketua.k-sub .oc-n { color: var(--cc, var(--accent)); }
+.oc-ketua.k-sub small, .oc-b .oc-ketua.k-sub small { color: var(--cc, var(--accent)); }
 .oc-v0 { color: var(--warn); }
 .oc-stack { display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 14px; position: relative; }
 .oc-stack::before { content: ""; position: absolute; top: 0; left: 50%; height: 100%; border-left: 2px solid var(--line); }
@@ -941,7 +945,10 @@ function buildTree(only) {
       var n = ocKid(bn, j.seksi, 0);
       var path = j.sub ? j.sub.split("›").map(function (s) { return s.trim(); }).filter(Boolean) : [];
       path.forEach(function (t) { n = ocKid(n, t, j.urut); });
-      n.persons.push({ d: d, pr: rankOf(ORDER.peran, j.peran), peran: j.peran });
+      var jn = j.nama || "", lead = j.peran === "Ketua" || (j.seksi === "Pimpinan Inti" && /^koordinator$/i.test(jn));
+      var ex = n.persons.filter(function (x) { return x.d === d; })[0];
+      if (ex) { if (lead && !ex.lead) { ex.lead = true; ex.peran = j.peran; ex.pr = -1; } return; }
+      n.persons.push({ d: d, pr: lead ? -1 : rankOf(ORDER.peran, j.peran), peran: j.peran, lead: lead });
     });
   });
   Object.keys(by).sort(function (a, b) { return rankOf(ORDER.bidang, a) - rankOf(ORDER.bidang, b); }).forEach(function (b, i) { by[b].ci = i; root.kids.push(by[b]); });
@@ -956,30 +963,36 @@ function sortKids(n) {
   n.persons.sort(function (a, b) { return (a.pr - b.pr) || a.d.nama.localeCompare(b.d.nama); });
   n.kids.forEach(sortKids);
 }
-function ocCard(n, color) {
+var KLBL = { bidang: "Koord. Bidang", seksi: "Koord. Seksi", sub: "Koord. Sub seksi" };
+function ocCard(n, color, kind) {
   var h = '<div class="oc-card" style="--cc:' + color + '"><div class="oc-h">' + esc(n.title) + "</div>";
   if (n.persons.length) {
     h += '<div class="oc-b">' + n.persons.map(function (p) {
       var lbl = PERAN_LABEL[p.peran] ? "<small>" + esc(p.peran) + "</small>" : "";
       if (!p.d.nama) return '<span class="oc-v0">Belum terisi</span>';
-      if (p.peran === "Ketua") return '<span class="oc-ketua"><button type="button" class="oc-n" data-act="view" data-i="' + p.d.i + '">' + esc(p.d.nama) + "</button><small>Ketua</small></span>";
+      if (p.lead) return '<span class="oc-ketua k-' + (kind || "seksi") + '"><button type="button" class="oc-n" data-act="view" data-i="' + p.d.i + '">' + esc(p.d.nama) + "</button><small>" + (p.peran === "Pimpinan" ? "Koordinator" : KLBL[kind] || "Ketua") + "</small></span>";
       return '<span><button type="button" class="oc-n" data-act="view" data-i="' + p.d.i + '">' + esc(p.d.nama) + "</button>" + lbl + "</span>";
     }).join("") + "</div>";
   }
   return h + "</div>";
 }
-function ocStack(n, color) {
-  return '<div class="oc-sub">' + ocCard(n, color) + (n.kids.length ? '<div class="oc-stack">' + n.kids.map(function (k) { return ocStack(k, color); }).join("") + "</div>" : "") + "</div>";
+function ocStack(n, color, kind) {
+  return '<div class="oc-sub">' + ocCard(n, color, kind || "sub") + (n.kids.length ? '<div class="oc-stack">' + n.kids.map(function (k) { return ocStack(k, color); }).join("") + "</div>" : "") + "</div>";
 }
 function ocTree(n, depth, ci) {
   var color = OC_COLORS[(ci == null ? 6 : ci) % OC_COLORS.length];
   if (ci == null && n.ci != null) { ci = n.ci; color = OC_COLORS[ci % OC_COLORS.length]; }
   var kids = "";
+  if (depth === 1) {
+    var pk = n.kids.filter(function (k) { return /^pimpinan\s/i.test(k.title); })[0];
+    if (pk) { n = { title: n.title, ci: n.ci, urut: n.urut, persons: pk.persons.concat(n.persons), kids: n.kids.filter(function (k) { return k !== pk; }) }; }
+  }
+  var kind = depth === 1 ? "bidang" : depth === 2 ? "seksi" : "sub";
   if (n.kids.length) {
     if (depth >= 3) kids = '<div class="oc-stack">' + n.kids.map(function (k) { return ocStack(k, color); }).join("") + "</div>";
     else kids = "<ul>" + n.kids.map(function (k) { return ocTree(k, depth + 1, ci); }).join("") + "</ul>";
   }
-  return "<li>" + ocCard(n, color) + kids + "</li>";
+  return "<li>" + ocCard(n, color, kind) + kids + "</li>";
 }
 function renderBagan() {
   var chips = document.getElementById("baganChips"), box = document.getElementById("baganBox");
@@ -1009,7 +1022,7 @@ function ocTop(root) {
   var color = OC_COLORS[(pim.ci || 0) % OC_COLORS.length];
   var side = function (k) { return /penasihat|pastor/i.test(k.title) ? 1 : 0; };
   var seks = pim.kids.slice().sort(function (a, b) { return side(a) - side(b); });
-  var row = '<div class="oc-toprow">' + seks.map(function (k) { return ocStack(k, color); }).join("") + "</div>";
+  var row = '<div class="oc-toprow">' + seks.map(function (k) { return ocStack(k, color, "seksi"); }).join("") + "</div>";
   var kids = others.length ? "<ul>" + others.map(function (k) { return ocTree(k, 1, k.ci); }).join("") + "</ul>" : "";
   return "<li>" + ocCard(pim, color) + row + kids + "</li>";
 }
