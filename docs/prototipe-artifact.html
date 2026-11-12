@@ -109,6 +109,11 @@ td.nama { font-weight: 600; }
 .oc-b { padding: 6px 8px; display: grid; gap: 3px; color: var(--fg); }
 .oc-n { font: inherit; background: none; border: 0; padding: 0; color: var(--fg); cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
 .oc-b small { color: var(--muted); margin-left: 4px; }
+.oc-toprow { display: flex; justify-content: center; align-items: flex-start; gap: 16px; margin-top: 14px; flex-wrap: nowrap; }
+.oc-ketua { background: var(--cc, var(--accent)); border-radius: 6px; padding: 5px 8px; }
+.oc-ketua .oc-n { color: #fff; font-weight: 700; text-decoration: none; }
+.oc-ketua small { display: block; color: #fff; opacity: .85; margin: 0; font-size: 11.5px; }
+.oc-b .oc-ketua small { color: #fff; margin-left: 0; }
 .oc-v0 { color: var(--warn); }
 .oc-stack { display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 14px; position: relative; }
 .oc-stack::before { content: ""; position: absolute; top: 0; left: 50%; height: 100%; border-left: 2px solid var(--line); }
@@ -957,6 +962,7 @@ function ocCard(n, color) {
     h += '<div class="oc-b">' + n.persons.map(function (p) {
       var lbl = PERAN_LABEL[p.peran] ? "<small>" + esc(p.peran) + "</small>" : "";
       if (!p.d.nama) return '<span class="oc-v0">Belum terisi</span>';
+      if (p.peran === "Ketua") return '<span class="oc-ketua"><button type="button" class="oc-n" data-act="view" data-i="' + p.d.i + '">' + esc(p.d.nama) + "</button><small>Ketua</small></span>";
       return '<span><button type="button" class="oc-n" data-act="view" data-i="' + p.d.i + '">' + esc(p.d.nama) + "</button>" + lbl + "</span>";
     }).join("") + "</div>";
   }
@@ -992,7 +998,20 @@ function renderBagan() {
   });
   if (!DATA.length) { box.innerHTML = '<p class="sub">' + esc(roster.state === "loading" ? "Memuat bagan…" : (roster.msg || "Bagan belum tersedia.")) + "</p>"; return; }
   var tree = buildTree(baganSel === "all" ? null : baganSel);
-  box.innerHTML = "<ul>" + ocTree(tree, baganSel === "all" ? 0 : 1, baganSel === "all" ? null : tree.ci) + "</ul>";
+  if (baganSel === "all") { box.innerHTML = "<ul>" + ocTop(tree) + "</ul>"; return; }
+  box.innerHTML = "<ul>" + ocTree(tree, 1, tree.ci) + "</ul>";
+}
+/* Seluruh organisasi: Pimpinan di atas (Penasihat di sampingnya), bidang lain di bawah Pimpinan */
+function ocTop(root) {
+  var pim = null, others = [];
+  root.kids.forEach(function (k) { if (!pim && /^pimpinan$/i.test(k.title)) pim = k; else others.push(k); });
+  if (!pim) return ocTree(root, 0, null);
+  var color = OC_COLORS[(pim.ci || 0) % OC_COLORS.length];
+  var side = function (k) { return /penasihat|pastor/i.test(k.title) ? 1 : 0; };
+  var seks = pim.kids.slice().sort(function (a, b) { return side(a) - side(b); });
+  var row = '<div class="oc-toprow">' + seks.map(function (k) { return ocStack(k, color); }).join("") + "</div>";
+  var kids = others.length ? "<ul>" + others.map(function (k) { return ocTree(k, 1, k.ci); }).join("") + "</ul>" : "";
+  return "<li>" + ocCard(pim, color) + row + kids + "</li>";
 }
 document.getElementById("viewChips").addEventListener("click", function (e) {
   var b = e.target.closest && e.target.closest("[data-v]"); if (!b) return;
