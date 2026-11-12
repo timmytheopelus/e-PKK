@@ -619,6 +619,7 @@ footer { color: var(--muted); font-size: 13px; }
     <div class="fil" id="admBtns">
       <button type="button" class="chip" id="admTambah">＋ Tambah pengguna</button>
       <button type="button" class="chip" id="admKelola">Kelola pengguna</button>
+      <button type="button" class="chip" id="admRingkas">Siapa punya akses</button>
     </div>
     <div id="admPane"></div>
   </div>
@@ -1286,8 +1287,8 @@ document.getElementById("dlg").addEventListener("submit", function (e) {
 var mcpState = "pending";
 var TABS = ["beranda", "pengurus", "pewarta", "luar", "pd", "umat", "kalender", "event", "kep", "admin"];
 document.addEventListener("click", function (e) {
-  var t = e.target.closest && e.target.closest("#admTambah,#admKelola"); if (!t) return;
-  var fn = { admTambah: "EPK_TAMBAH", admKelola: "EPK_KELOLA" }[t.id];
+  var t = e.target.closest && e.target.closest("#admTambah,#admKelola,#admRingkas"); if (!t) return;
+  var fn = { admTambah: "EPK_TAMBAH", admKelola: "EPK_KELOLA", admRingkas: "EPK_RINGKAS" }[t.id];
   if (window[fn]) window[fn]();
 });
 function showTab(name) {

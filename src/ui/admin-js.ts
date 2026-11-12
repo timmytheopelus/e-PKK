@@ -80,9 +80,9 @@ export const ADMIN_JS = String.raw`
     if (!p) { EPK.modal(title, holder); return; }
     if (window.goTab) window.goTab("admin");
     p.textContent = ""; p.appendChild(holder);
-    ["admTambah", "admKelola"].forEach(function (id) { var b = document.getElementById(id); if (b) b.classList.toggle("on", id === which); });
+    ["admTambah", "admKelola", "admRingkas"].forEach(function (id) { var b = document.getElementById(id); if (b) b.classList.toggle("on", id === which); });
   }
-  function pick() {
+  function pick(preId) {
     var holder = EPK.el("div", {}, [EPK.el("p", { text: "Memuat daftar umat…" })]);
     show("Tambah pengguna dari daftar umat", holder, "admTambah");
     function ready(list) {
@@ -148,10 +148,40 @@ export const ADMIN_JS = String.raw`
       listWrap.appendChild(cnt); listWrap.appendChild(box);
       holder.appendChild(listWrap); holder.appendChild(form);
       draw();
+      if (preId) { var pu = list.filter(function (x) { return x.id === preId; })[0]; if (pu && !pu.terdaftar) choose(pu); }
     }
     (umatCache ? Promise.resolve(umatCache) : api("umat").then(function (j) { umatCache = j.umat; return umatCache; })).then(ready, function (e) { holder.textContent = e.message; });
   }
-  window.EPK_TAMBAH = pick;
+  window.EPK_TAMBAH = function () { pick(); };
+  function ringkas() {
+    var holder = EPK.el("div", {}, [EPK.el("p", { text: "Memuat…" })]);
+    show("Ringkasan hak akses", holder, "admRingkas");
+    var q = EPK.el("input", { type: "search", placeholder: "Cari nama, jabatan, PD", autocomplete: "off", "aria-label": "Cari" }), box = EPK.el("div", {}), data = {};
+    function m(t) { var k = q.value.trim().toLowerCase(); return !k || t.toLowerCase().indexOf(k) >= 0; }
+    function draw() {
+      box.textContent = "";
+      var belum = (data.umat || []).filter(function (u) { return u.jab && !u.terdaftar && m([u.nama, u.pgl, u.jab, u.pd].join(" ")); });
+      box.appendChild(EPK.el("h3", { class: "epk-sec", text: "Pengurus BPK yang belum punya akses (" + belum.length + ")" }));
+      box.appendChild(EPK.el("p", { class: "sub", text: "Klik nama untuk langsung memberi akses." }));
+      belum.forEach(function (u) {
+        box.appendChild(EPK.el("button", { type: "button", class: "epk-pickrow", onclick: function () { pick(u.id); } }, [EPK.el("b", { text: u.nama }), EPK.el("small", { text: [u.jab, u.pd].filter(Boolean).join(" · ") })]));
+      });
+      if (!belum.length) box.appendChild(EPK.el("p", { class: "sub", text: "Tidak ada." }));
+      if (data.users) {
+        var ada = data.users.filter(function (u) { return u.status === "Disetujui" && m([u.nama, u.email, u.jabatan, u.level].join(" ")); });
+        box.appendChild(EPK.el("h3", { class: "epk-sec", text: "Sudah punya akses (" + ada.length + ")" }));
+        ada.forEach(function (u) {
+          box.appendChild(EPK.el("div", { class: "epk-card" }, [EPK.el("h4", { text: u.nama || u.email }),
+            EPK.el("div", { class: "sub", text: [u.jabatan, u.level].filter(Boolean).join(" · ") }), EPK.el("div", { class: "sub", text: "Menu: " + (u.level === "Superadmin" ? "semua" : (u.tabs.join(", ") || "-")) })]));
+        });
+      }
+    }
+    q.addEventListener("input", draw);
+    Promise.all([api("umat").then(function (j) { return j.umat; }), IS_SUPER ? load() : Promise.resolve(null)]).then(function (r) {
+      data.umat = r[0]; data.users = r[1]; holder.textContent = ""; holder.appendChild(q); holder.appendChild(box); draw();
+    }, function (e) { holder.textContent = e.message; });
+  }
+  window.EPK_RINGKAS = ringkas;
   function viewAsPicker() {
     var holder = EPK.el("div", {}, [EPK.el("p", { text: "Memuat pengguna…" })]);
     EPK.modal("Lihat sebagai", holder);
