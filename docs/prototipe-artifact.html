@@ -393,21 +393,51 @@ footer { color: var(--muted); font-size: 13px; }
 
   <div id="tab-pewarta" class="tab" role="tabpanel" aria-labelledby="tabbtn-pewarta" hidden>
     <div class="tiles" id="pwTiles"></div>
-    <div class="sel2">
-      <input type="search" id="pwQ" placeholder="Cari nama atau PD" autocomplete="off" aria-label="Cari">
-      <select id="pwPeran" aria-label="Peran"><option value="">Semua peran</option><option value="Pewarta">Pewarta</option><option value="Pengajar">Pengajar</option><option value="Konselor">Konselor</option></select>
-      <select id="pwStatus" aria-label="Status"></select>
-      <select id="pwKat" aria-label="Kategori"></select>
-      <select id="pwAhli" aria-label="Keahlian"></select>
-      <select id="pwPd" aria-label="PD"></select>
-    </div>
     <div class="link" id="pwLink" role="status"></div>
-    <p class="count" id="pwCount"></p>
-    <div class="tablebox">
-      <table><thead><tr><th>Nama (Bandung)</th><th>Peran</th><th>Kategori</th><th>Keahlian</th><th>PD / Komunitas</th></tr></thead><tbody id="pwBody"></tbody></table>
-      <div class="empty" id="pwNone" hidden>Tidak ada data yang cocok dengan filter ini.</div>
+    <div class="vchips" id="pwViews" role="group" aria-label="Tampilan pewarta">
+      <button type="button" class="chip" data-pv="daftar" aria-pressed="true">Daftar</button>
+      <button type="button" class="chip" data-pv="pd" aria-pressed="false">Per PD</button>
+      <button type="button" class="chip" data-pv="modul" aria-pressed="false">Per modul</button>
+      <button type="button" class="chip" data-pv="pastor" aria-pressed="false">Pastor &amp; suster</button>
     </div>
-    <button type="button" class="btn" id="pwMore" hidden>Tampilkan lebih banyak</button>
+    <section id="pwSecDaftar" style="display:grid;gap:12px" aria-label="Daftar pewarta">
+      <div class="sel2">
+        <input type="search" id="pwQ" placeholder="Cari nama atau PD" autocomplete="off" aria-label="Cari">
+        <select id="pwStatus" aria-label="Status"><option value="aktif">Pewarta aktif</option><option value="calon">Calon pewarta</option><option value="nonaktif">Tidak aktif / mundur</option><option value="">Semua status</option></select>
+        <select id="pwUsia" aria-label="Kelompok usia"></select>
+        <select id="pwModul" aria-label="Modul"></select>
+        <select id="pwKat" aria-label="Kategori"></select>
+        <select id="pwPd" aria-label="PD"></select>
+      </div>
+      <p class="count" id="pwAge"></p>
+      <p class="count" id="pwCount"></p>
+      <div class="tablebox">
+        <table><thead><tr><th>Nama (BPK Bandung)</th><th>Status</th><th>Usia</th><th>Modul</th><th>PD / Komunitas</th></tr></thead><tbody id="pwBody"></tbody></table>
+        <div class="empty" id="pwNone" hidden>Tidak ada data yang cocok dengan filter ini.</div>
+      </div>
+      <button type="button" class="btn" id="pwMore" hidden>Tampilkan lebih banyak</button>
+    </section>
+    <section id="pwSecPd" style="display:grid;gap:12px" aria-label="Pewarta per PD" hidden>
+      <div class="chips" id="pwPdChips" role="group" aria-label="Filter PD">
+        <button type="button" class="chip" data-pdf="semua" aria-pressed="true">Semua PD</button>
+        <button type="button" class="chip" data-pdf="belum" aria-pressed="false">Belum punya pewarta</button>
+        <button type="button" class="chip" data-pdf="sudah" aria-pressed="false">Sudah punya pewarta</button>
+      </div>
+      <p class="count" id="pwPdCount"></p>
+      <div class="tablebox">
+        <table><thead><tr><th>PD / Komunitas</th><th>Dekanat</th><th>Pewarta aktif</th><th>Nama pewarta</th></tr></thead><tbody id="pwPdBody"></tbody></table>
+      </div>
+      <p class="hint" id="pwPdOrphan" style="margin:0;color:var(--muted);font-size:13px"></p>
+    </section>
+    <section id="pwSecModul" style="display:grid;gap:12px" aria-label="Pengajar per modul" hidden>
+      <div id="pwModulBox" style="display:grid;gap:12px"></div>
+    </section>
+    <section id="pwSecPastor" style="display:grid;gap:12px" aria-label="Pastor dan suster" hidden>
+      <p class="count" id="pwPaCount"></p>
+      <div class="tablebox">
+        <table><thead><tr><th>Nama</th><th>Status</th><th>Paroki / PD</th><th>Modul</th></tr></thead><tbody id="pwPaBody"></tbody></table>
+      </div>
+    </section>
   </div>
 
   <div id="tab-pd" class="tab" role="tabpanel" aria-labelledby="tabbtn-pd" hidden>
@@ -447,6 +477,11 @@ footer { color: var(--muted); font-size: 13px; }
       <table><thead><tr><th>Pewarta</th><th>Asal</th><th>Diundang</th><th>Terakhir</th><th>Tujuan</th></tr></thead><tbody id="luBody"></tbody></table>
       <div class="empty" id="luNone" hidden>Tidak ada pewarta luar kota yang cocok.</div>
     </div>
+    <section class="pan" aria-labelledby="h-tamu" style="margin-top:8px"><h3 id="h-tamu">Pewarta tamu dari keuskupan lain</h3>
+      <p class="hint" id="tmCount"></p>
+      <div class="sel2"><input type="search" id="tmQ" placeholder="Cari nama pewarta tamu" autocomplete="off" aria-label="Cari pewarta tamu"><select id="tmAsal" aria-label="Asal"></select></div>
+      <div class="tablebox"><table><thead><tr><th>Pewarta</th><th>Asal</th><th>Status</th><th>Usia</th><th>Pewartaan</th></tr></thead><tbody id="tmBody"></tbody></table></div>
+    </section>
   </div>
 
   <div id="tab-umat" class="tab" role="tabpanel" aria-labelledby="tabbtn-umat" hidden>
@@ -516,6 +551,28 @@ footer { color: var(--muted); font-size: 13px; }
     <div class="row">
       <button type="button" class="btn" id="dlgCancel">Batal</button>
       <button type="submit" class="btn primary" id="dlgSave" disabled>Simpan ke Airtable</button>
+    </div>
+  </form>
+</div>
+
+<div class="scrim" id="pbScrim" hidden>
+  <form class="dlg" id="pbForm" role="dialog" aria-modal="true" aria-labelledby="pbTitle" novalidate>
+    <h2 id="pbTitle">Edit pewarta</h2>
+    <p class="sub" id="pbSub"></p>
+    <label for="pb_sp">Status pewarta (termasuk calon)</label>
+    <select id="pb_sp"></select>
+    <label for="pb_kp">Kategori pewarta</label>
+    <select id="pb_kp"><option value="">(tidak diubah)</option><option>A</option><option>B</option><option>C</option></select>
+    <label for="pb_sg">Status pengajar</label>
+    <select id="pb_sg"><option value="">(tidak diubah)</option><option>Aktif</option><option>Tidak Aktif</option><option>Mundur</option></select>
+    <label>Modul yang dikuasai</label>
+    <div class="chips" id="pb_modul" role="group" aria-label="Modul yang dikuasai"></div>
+    <label for="pb_yt">Link YouTube</label>
+    <input id="pb_yt" type="url" autocomplete="off" placeholder="https://www.youtube.com/…">
+    <p class="msg" id="pbMsg" role="status"></p>
+    <div class="row">
+      <button type="button" class="btn" id="pbCancel">Batal</button>
+      <button type="submit" class="btn primary" id="pbSave">Simpan ke Airtable</button>
     </div>
   </form>
 </div>
@@ -1545,8 +1602,8 @@ function viewPerson(id, name, opener) {
 
 /* ---------- sumber data ---------- */
 var BASE_SMP = "appK4oGjawCjLHV0w", T_SMP_EV = "tbll71vbqU6JbmrJq", T_SMP_KUI = "tblIMjnv1ffB4LqK7", T_PD = "tblNjwoOJEGZeQxkJ";
-var D = { smp: null, kui: null, pd: null, um: null }, SS = {};
-var SRC_LABEL = { ev: "Kegiatan", smp: "Permohonan pewarta", kui: "Kuesioner", pd: "Data PD", um: "Pewarta/pengajar/konselor", ua: "Data umat" };
+var D = { smp: null, kui: null, pd: null, pwb: null }, SS = {};
+var SRC_LABEL = { ev: "Kegiatan", smp: "Permohonan pewarta", kui: "Kuesioner", pd: "Data PD", pwb: "Pewarta BPK", ua: "Data umat" };
 
 var SM = { tgl: "fldFJ1CisvUveU2cM", nama: "fldQEDVuqLDDDSSex", nama2: "fldmgPwKTRjNtnAyL", tema: "fldd7MVZUtVyhB6Ar", pd: "flddzhNZ23pbUSuEk", asal: "fldqjU4a9td4dSeL5", jenis: "fld4TELQ3hdY7TFwC", dari: "fld2EMXkb86EGB9E5", konf: "fldPexb87iG2ygbNC", acc: "fld4hZqPpwywk8yfM", status: "fldsDHrZOKWMZQRrF", kual: "fldh2dp4SbpVXuSZ2", bpk: "fldUrgjrHXaaYqTbk", jml: "fld7RTeXxejdIYM3r", ket: "fldITi6QsnBmDrTWY", req: "fld12ONhwxcHGFyWh", hapus: "fldhLU1ca1XQz9jzr" };
 function loadSmp() {
@@ -1615,25 +1672,6 @@ function loadPd() {
   });
 }
 
-function loadUmat() {
-  var ids = [F.nama, F.wa, UF.sp, UF.kp, UF.sk, UF.kk, UF.sg, UF.kual, UF.pd, UF.hapus, UF.asal].concat(KOMP.map(function (k) { return k[1]; }));
-  var filt = { operator: "or", operands: [UF.sp, UF.sk, UF.sg].map(function (f) { return { operator: "isNotEmpty", operands: [f] }; }) };
-  return fetchAll(BASE, T_UMAT, ids, { filters: filt }).then(function (recs) {
-    D.um = recs.map(function (r) {
-      var v = r.cellValuesByFieldId || {};
-      var o = { id: r.id, nama: one(v[F.nama]), wa: one(v[F.wa]), pd: flat(v[UF.pd]).join(", "), kual: one(v[UF.kual]), sp: one(v[UF.sp]), kp: one(v[UF.kp]), sk: one(v[UF.sk]), kk: one(v[UF.kk]), sg: one(v[UF.sg]), hapus: v[UF.hapus] === true, asal: flat(v[UF.asal]).join(", "), ahli: [] };
-      KOMP.forEach(function (k) { flat(v[k[1]]).forEach(function (x) { o.ahli.push(k[0] + ": " + x); }); });
-      o.peran = [];
-      if (o.sp || o.kp) o.peran.push("Pewarta");
-      if (o.sg) o.peran.push("Pengajar");
-      if (o.sk || o.kk) o.peran.push("Konselor");
-      o.kat = uniq([o.kp, o.kk]);
-      o.status = uniq([o.sp, o.sg, o.sk]);
-      return o;
-    }).filter(function (o) { return o.nama && !o.hapus && o.peran.length && (!o.asal || /bandung/i.test(o.asal)); }).sort(function (a, b) { return cmpId(a.nama, b.nama); });
-  });
-}
-
 function setSS(k, state, msg) { SS[k] = { state: state, msg: msg || "" }; }
 function loadSource(k, fn) {
   setSS(k, "loading"); refreshViews();
@@ -1645,7 +1683,7 @@ function ensureData(manual) {
   var first = (cal.events || cal.state === "loading") ? Promise.resolve(!!cal.events) : loadEvents();
   first.then(function (ok) {
     if (!ok) { refreshViews(); return; }
-    [["smp", loadSmp], ["kui", loadKui], ["pd", loadPd], ["um", loadUmat]].forEach(function (p) {
+    [["smp", loadSmp], ["kui", loadKui], ["pd", loadPd], ["pwb", loadPwb]].forEach(function (p) {
       var st = SS[p[0]];
       if (D[p[0]] || (st && st.state === "loading")) return;
       if (st && !manual) return;
@@ -1685,24 +1723,25 @@ function isAktif(t) { return /aktif/i.test(t) && !/tidak|belum/i.test(t); }
 var lk = { y: NOW.getFullYear(), m: NOW.getMonth() };
 
 function renderBeranda() {
-  srcStatus("dashStatus", ["ev", "smp", "kui", "pd", "um"]);
-  var ev = cal.events, um = D.um, pd = D.pd;
+  srcStatus("dashStatus", ["ev", "smp", "kui", "pd", "pwb"]);
+  var ev = cal.events, um = D.pwb, pd = D.pd;
   var ym = monthKey(NOW.getFullYear(), NOW.getMonth());
   var real = ev ? ev.filter(function (e) { return !e.libur && !e.batal && e.date; }) : null;
   var wk = new Date(NOW); wk.setDate(wk.getDate() + 7); var wkKey = dkey(wk);
   var nBulan = real ? real.filter(function (e) { return e.date.slice(0, 7) === ym; }).length : "–";
   var nMinggu = real ? real.filter(function (e) { return e.date >= TODAY && e.date < wkKey; }).length : "–";
-  var cnt = function (f, st) { return um ? um.filter(function (o) { return o[f] && isAktif(o[st]); }).length : "–"; };
-  var pewarta = um ? um.filter(function (o) { return o.sp && isAktif(o.sp); }).length : "–";
-  var pengajar = um ? um.filter(function (o) { return o.sg && isAktif(o.sg); }).length : "–";
-  var konselor = um ? um.filter(function (o) { return o.sk && isAktif(o.sk); }).length : "–";
+  var bdg = um ? um.filter(function (o) { return o.grp === "bandung"; }) : null;
+  var pewarta = bdg ? bdg.filter(function (o) { return isAktif(o.sp); }).length : "–";
+  var calonN = bdg ? bdg.filter(function (o) { return o.calon; }).length : 0;
+  var pengajar = bdg ? bdg.filter(function (o) { return isAktif(o.sg); }).length : "–";
+  var konselor = bdg ? bdg.filter(function (o) { return isAktif(o.sk); }).length : "–";
   var pdAktif = pd ? pd.filter(function (p) { return isAktif(p.status); }).length : "–";
   var anggota = pd ? pd.reduce(function (a, p) { return a + p.mem.length; }, 0) : "–";
   document.getElementById("dashTiles").innerHTML = tile(jmlOrang == null ? "–" : jmlOrang, "Pengurus BPKPKK", jmlOrang == null ? "" : "periode 2026–2031, " + kosong + " posisi kosong") +
     tile(nBulan, "Kegiatan bulan ini", nMinggu + " dalam 7 hari ke depan") +
-    tile(pewarta, "Pewarta aktif", um ? "dari " + um.filter(function (o) { return o.sp || o.kp; }).length + " terdaftar" : "") +
-    tile(pengajar, "Pengajar aktif", um ? "dari " + um.filter(function (o) { return o.sg; }).length + " terdaftar" : "") +
-    tile(konselor, "Konselor aktif", um ? "dari " + um.filter(function (o) { return o.sk || o.kk; }).length + " terdaftar" : "") +
+    tile(pewarta, "Pewarta aktif", bdg ? "BPK Bandung, " + calonN + " calon" : "") +
+    tile(pengajar, "Pengajar aktif", bdg ? "BPK Bandung" : "") +
+    tile(konselor, "Konselor aktif", bdg ? "BPK Bandung" : "") +
     tile(pdAktif, "PD aktif", pd ? "dari " + pd.length + " PD / komunitas" : "") +
     tile(anggota, "Umat terdata di PD", "tercatat di sistem");
   // agenda
@@ -1818,53 +1857,210 @@ function openKui(key, opener) {
 }
 
 /* ---------- tab pewarta, pengajar, konselor ---------- */
-var pw = { q: "", peran: "", status: "", kat: "", ahli: "", pd: "", limit: 120 };
+/* ---------- tab Pewarta (sumber: tabel Pewarta BPK, base SMP) ---------- */
+var T_PWB = "tblCcm2UAWHquZzEk";
+var PB = { nama: "fldYlcG3J6Oqe7iPP", pang: "fldEsu7jGDFdlNzEh", wa: "fldLTJqhCx9Fmg3Pn", pd: "fldEhgiSEafmygmkw", paroki: "fldHH0JkuWgIaw7QD", dek: "fldWATyLrvoPlSLC7", sp: "fldIt4yvwOOsFa4XM", kp: "fldpoZIxZJA9n9PzL", sg: "fldFuXMCtrYyht9S0", sk: "fld5Ov9D9yn69Udvi", kual: "fldceNGz3NtUyrggw", asal: "fldgnKmnX5zUn3OkR", lahir: "fld8wDDPjswPjRRBj", libat: "fldxMRYERoRqjbeFv", modul: "fldZPqCG8ohmWHwY4", yt: "fldJGTPgfN00lAdMo", foto: "fldZQOwafh1h9gw29", jml: "fldVKiKmsr0da2FlA" };
+var MODUL = ["SHDR", "Pertumbuhan", "DKK", "MYS", "KEP", "Ron Ryan"];
+var SP_OPT = ["Aktif", "Aktif (dengan Surat)", "Tidak Aktif", "Mundur", "Calon Pewarta", "Calon Pewarta Muda Tetap"];
+var AGE_GRP = ["Muda (≤35)", "Dewasa (36–59)", "Senior (60+)", "Usia belum diisi"];
+function ageOf(s) {
+  var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || ""); if (!m) return null;
+  var a = NOW.getFullYear() - (+m[1]), mo = NOW.getMonth() + 1;
+  if (mo < +m[2] || (mo === +m[2] && NOW.getDate() < +m[3])) a--;
+  return a >= 0 && a < 120 ? a : null;
+}
+function ageGroup(a) { return a == null ? AGE_GRP[3] : a <= 35 ? AGE_GRP[0] : a < 60 ? AGE_GRP[1] : AGE_GRP[2]; }
+function pwDerive(o) {
+  o.age = ageOf(o.lahir); o.ag = ageGroup(o.age);
+  o.pastor = /^(imam|suster)$/i.test(o.kual);
+  o.grp = o.pastor ? "pastor" : (o.asal === "BPK Bandung" ? "bandung" : "tamu");
+  o.calon = /calon/i.test(o.sp);
+  return o;
+}
+function loadPwb() {
+  var ids = Object.keys(PB).map(function (k) { return PB[k]; });
+  return fetchAll(BASE_SMP, T_PWB, ids).then(function (recs) {
+    D.pwb = recs.map(function (r) {
+      var v = r.cellValuesByFieldId || {};
+      return pwDerive({ id: r.id, nama: one(v[PB.nama]).trim(), pang: one(v[PB.pang]), wa: one(v[PB.wa]), pd: one(v[PB.pd]).replace(/\s+/g, " ").trim(), paroki: one(v[PB.paroki]), dek: flat(v[PB.dek]).join(", "),
+        sp: one(v[PB.sp]), kp: one(v[PB.kp]), sg: one(v[PB.sg]), sk: one(v[PB.sk]), kual: one(v[PB.kual]), asal: one(v[PB.asal]).trim(), lahir: one(v[PB.lahir]).slice(0, 10),
+        libat: flat(v[PB.libat]), modul: flat(v[PB.modul]), yt: safeUrl(one(v[PB.yt])), foto: photoUrl(v[PB.foto]), jml: Number(one(v[PB.jml])) || 0 });
+    }).filter(function (o) { return o.nama; }).sort(function (a, b) { return cmpId(a.nama, b.nama); });
+  });
+}
+function pwSet(g) { return (D.pwb || []).filter(function (o) { return o.grp === g; }); }
+function pdKey(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim(); }
+function ageTag(o) { return o.age == null ? '<span class="note">–</span>' : '<span class="tag alt" title="' + esc(o.ag) + '">' + o.age + " th · " + esc(o.ag.split(" ")[0]) + "</span>"; }
+function statusTag(o) {
+  var t = o.sp || "Belum diisi", cls = isAktif(o.sp) ? "" : (o.calon ? " k0" : " alt");
+  return '<span class="tag' + cls + '">' + esc(t) + "</span>";
+}
+function waBtn(o) {
+  var num = waNumber(o.wa);
+  return num ? '<a class="act wa" href="https://wa.me/' + num + '" target="_blank" rel="noopener" aria-label="Kirim WhatsApp ke ' + esc(o.nama) + '" title="Buka WhatsApp +' + num + '">' + ICON_WA + "<span>WA</span></a>"
+    : '<button type="button" class="act wa" disabled title="Nomor WA belum tercatat" aria-label="WhatsApp belum tersedia">' + ICON_WA + "<span>WA</span></button>";
+}
+function pwActs(o) {
+  return '<button type="button" class="act" data-pw="view" data-id="' + o.id + '" aria-label="Lihat profil ' + esc(o.nama) + '" title="Lihat profil dan video">' + ICON_VIEW + "<span>View</span></button>" +
+    '<button type="button" class="act" data-pw="edit" data-id="' + o.id + '" aria-label="Edit ' + esc(o.nama) + '" title="Edit status dan modul">' + ICON_EDIT + "<span>Edit</span></button>" + waBtn(o);
+}
+function nameBtn(o) { return '<button type="button" class="linkbtn" data-pw="view" data-id="' + o.id + '">' + esc(o.nama) + "</button>" + (o.age != null ? ' <span class="note">' + o.age + " th</span>" : ""); }
+function modulTags(o) { return o.modul.length ? o.modul.map(function (m) { return '<span class="jab">' + esc(m) + "</span>"; }).join("") : '<span class="note">–</span>'; }
+
+var pw = { q: "", status: "aktif", usia: "", modul: "", kat: "", pd: "", limit: 120, view: "daftar", pdf: "semua" };
 function pwFiltered() {
-  return (D.um || []).filter(function (o) {
-    if (pw.peran && o.peran.indexOf(pw.peran) < 0) return false;
-    if (pw.status && o.status.indexOf(pw.status) < 0) return false;
-    if (pw.kat && o.kat.indexOf(pw.kat) < 0) return false;
-    if (pw.ahli && o.ahli.indexOf(pw.ahli) < 0) return false;
+  return pwSet("bandung").filter(function (o) {
+    if (pw.status === "aktif" && !isAktif(o.sp)) return false;
+    if (pw.status === "calon" && !o.calon) return false;
+    if (pw.status === "nonaktif" && (isAktif(o.sp) || o.calon)) return false;
+    if (pw.usia && o.ag !== pw.usia) return false;
+    if (pw.modul && o.modul.indexOf(pw.modul) < 0) return false;
+    if (pw.kat && o.kp !== pw.kat) return false;
     if (pw.pd && o.pd !== pw.pd) return false;
-    if (pw.q && (o.nama + " " + o.pd).toLowerCase().indexOf(pw.q) < 0) return false;
+    if (pw.q && (o.nama + " " + o.pang + " " + o.pd).toLowerCase().indexOf(pw.q) < 0) return false;
     return true;
   });
 }
 function renderPewarta() {
-  srcStatus("pwLink", ["um"]);
-  var um = D.um, tb = document.getElementById("pwBody");
-  var c = function (r, f) { return um ? um.filter(function (o) { return o.peran.indexOf(r) >= 0 && isAktif(o[f]); }).length : "–"; };
-  document.getElementById("pwTiles").innerHTML = tile(um ? um.length : "–", "Orang terdata", "pewarta, pengajar, atau konselor") + tile(c("Pewarta", "sp"), "Pewarta aktif", "") + tile(c("Pengajar", "sg"), "Pengajar aktif", "") + tile(c("Konselor", "sk"), "Konselor aktif", "");
-  if (!um) { tb.innerHTML = ""; document.getElementById("pwCount").textContent = ""; document.getElementById("pwNone").hidden = true; document.getElementById("pwMore").hidden = true; return; }
-  fillOpts("pwStatus", "Semua status", uniq([].concat.apply([], um.map(function (o) { return o.status; }))).sort(cmpId));
-  fillOpts("pwKat", "Semua kategori", uniq([].concat.apply([], um.map(function (o) { return o.kat; }))).sort(cmpId));
-  fillOpts("pwAhli", "Semua keahlian", uniq([].concat.apply([], um.map(function (o) { return o.ahli; }))).sort(cmpId));
-  fillOpts("pwPd", "Semua PD", uniq(um.map(function (o) { return o.pd; })).sort(cmpId));
+  srcStatus("pwLink", ["pwb"]);
+  var all = D.pwb, bd = all ? pwSet("bandung") : null;
+  var n = function (f) { return bd ? bd.filter(f).length : "–"; };
+  document.getElementById("pwTiles").innerHTML = tile(n(function (o) { return isAktif(o.sp); }), "Pewarta aktif", "BPK Bandung, tanpa pastor") + tile(n(function (o) { return o.calon; }), "Calon pewarta", "belum tetap") +
+    tile(n(function (o) { return isAktif(o.sg); }), "Pengajar aktif", "BPK Bandung") + tile(n(function (o) { return isAktif(o.sk); }), "Konselor aktif", "BPK Bandung") +
+    tile(all ? pwSet("pastor").filter(function (o) { return isAktif(o.sp); }).length : "–", "Pastor & suster aktif", "dipisah dari pewarta");
+  ["daftar", "pd", "modul", "pastor"].forEach(function (v) { document.getElementById("pwSec" + v.charAt(0).toUpperCase() + v.slice(1)).hidden = pw.view !== v; });
+  Array.prototype.forEach.call(document.getElementById("pwViews").children, function (x) { x.setAttribute("aria-pressed", x.dataset.pv === pw.view ? "true" : "false"); });
+  if (!all) { document.getElementById("pwBody").innerHTML = ""; document.getElementById("pwCount").textContent = ""; document.getElementById("pwAge").textContent = ""; document.getElementById("pwNone").hidden = true; document.getElementById("pwMore").hidden = true; return; }
+  if (pw.view === "pd") return renderPwPd();
+  if (pw.view === "modul") return renderPwModul();
+  if (pw.view === "pastor") return renderPwPastor();
+  fillOpts("pwUsia", "Semua usia", AGE_GRP);
+  fillOpts("pwModul", "Semua modul", MODUL);
+  fillOpts("pwKat", "Semua kategori", uniq(bd.map(function (o) { return o.kp; })).sort(cmpId));
+  fillOpts("pwPd", "Semua PD", uniq(bd.map(function (o) { return o.pd; })).sort(cmpId));
   var list = pwFiltered(), shown = list.slice(0, pw.limit);
-  document.getElementById("pwCount").textContent = "Menampilkan " + shown.length + " dari " + list.length + " orang (total terdata " + um.length + ")";
+  var ag = {}; list.forEach(function (o) { ag[o.ag] = (ag[o.ag] || 0) + 1; });
+  document.getElementById("pwAge").textContent = "Kelompok usia: " + AGE_GRP.map(function (g) { return g.replace(/ \(.*/, "") + " " + (ag[g] || 0); }).join(" · ");
+  document.getElementById("pwCount").textContent = "Menampilkan " + shown.length + " dari " + list.length + " pewarta (BPK Bandung)";
   document.getElementById("pwNone").hidden = list.length > 0;
   document.getElementById("pwMore").hidden = list.length <= shown.length;
-  tb.innerHTML = shown.map(function (o) {
-    var num = waNumber(o.wa);
-    var wa = num ? '<a class="act wa" href="https://wa.me/' + num + '" target="_blank" rel="noopener" aria-label="Kirim WhatsApp ke ' + esc(o.nama) + '" title="Buka WhatsApp +' + num + '">' + ICON_WA + "<span>WA</span></a>" : '<button type="button" class="act wa" disabled title="Nomor WA belum tercatat" aria-label="WhatsApp belum tersedia">' + ICON_WA + "<span>WA</span></button>";
-    var acts = '<button type="button" class="act" data-pw="view" data-id="' + o.id + '" aria-label="Lihat detail ' + esc(o.nama) + '" title="Lihat detail dan foto">' + ICON_VIEW + "<span>View</span></button>" +
-      '<button type="button" class="act" data-pw="edit" data-id="' + o.id + '" aria-label="Edit data ' + esc(o.nama) + '" title="Edit data">' + ICON_EDIT + "<span>Edit</span></button>" + wa;
-    var peran = o.peran.map(function (r) { var st = r === "Pewarta" ? o.sp : r === "Pengajar" ? o.sg : o.sk; return '<span class="tag' + (st && !isAktif(st) ? " alt" : "") + '" title="' + esc(st || "") + '">' + esc(r) + (st && !isAktif(st) ? " · " + esc(st) : "") + "</span>"; }).join(" ");
-    var ah = o.ahli.slice(0, 3).map(function (x) { return '<span class="jab">' + esc(x) + "</span>"; }).join("") + (o.ahli.length > 3 ? '<span class="note">+' + (o.ahli.length - 3) + " lagi</span>" : "");
-    return '<tr><td class="nama"><div class="who"><span class="n">' + esc(o.nama) + '</span><span class="acts">' + acts + "</span></div></td><td>" + peran + "</td><td>" + (o.kat.map(esc).join(", ") || '<span class="note">-</span>') + "</td><td>" + (ah || '<span class="note">-</span>') + "</td><td>" + esc(o.pd || "-") + "</td></tr>";
+  document.getElementById("pwBody").innerHTML = shown.map(function (o) {
+    return '<tr><td class="nama"><div class="who"><span class="n">' + esc(o.nama) + '</span><span class="acts">' + pwActs(o) + "</span></div></td><td>" + statusTag(o) + "</td><td>" + ageTag(o) + "</td><td>" + modulTags(o) + "</td><td>" + esc(o.pd || "-") + "</td></tr>";
   }).join("");
 }
-[["pwPeran", "peran"], ["pwStatus", "status"], ["pwKat", "kat"], ["pwAhli", "ahli"], ["pwPd", "pd"]].forEach(function (p) {
+function renderPwPd() {
+  var pds = D.pd;
+  if (!pds) { document.getElementById("pwPdBody").innerHTML = ""; document.getElementById("pwPdCount").textContent = "Menunggu data PD…"; return; }
+  var by = {}; pwSet("bandung").filter(function (o) { return isAktif(o.sp); }).forEach(function (o) { (by[pdKey(o.pd)] = by[pdKey(o.pd)] || []).push(o); });
+  var known = {};
+  var rows = pds.filter(function (p) { return isAktif(p.status); }).map(function (p) { var k = pdKey(p.nama); known[k] = 1; return { p: p, l: by[k] || [] }; });
+  var belum = rows.filter(function (r) { return !r.l.length; }).length;
+  var f = rows.filter(function (r) { return pw.pdf === "belum" ? !r.l.length : pw.pdf === "sudah" ? r.l.length : true; });
+  Array.prototype.forEach.call(document.getElementById("pwPdChips").children, function (x) { x.setAttribute("aria-pressed", x.dataset.pdf === pw.pdf ? "true" : "false"); });
+  document.getElementById("pwPdCount").textContent = rows.length + " PD aktif: " + (rows.length - belum) + " sudah punya pewarta, " + belum + " belum punya.";
+  document.getElementById("pwPdBody").innerHTML = f.sort(function (a, b) { return a.l.length - b.l.length || cmpId(a.p.nama, b.p.nama); }).map(function (r) {
+    return "<tr><td class=\"nama\">" + esc(r.p.nama) + "</td><td>" + esc(r.p.dekanat || "-") + "</td><td>" + (r.l.length ? '<span class="pill ok">' + r.l.length + "</span>" : '<span class="pill bad">Belum ada</span>') + "</td><td>" +
+      (r.l.map(nameBtn).join("<br>") || '<span class="note">–</span>') + "</td></tr>";
+  }).join("") || '<tr><td colspan="4" class="note">Tidak ada PD pada filter ini.</td></tr>';
+  var orphan = Object.keys(by).filter(function (k) { return k && !known[k]; }).reduce(function (a, k) { return a.concat(by[k]); }, []);
+  var noPd = by[""] || [];
+  document.getElementById("pwPdOrphan").textContent = orphan.length || noPd.length ? "Catatan: " + orphan.length + " pewarta aktif memakai nama PD yang tidak cocok dengan daftar PD (" + uniq(orphan.map(function (o) { return o.pd; })).join(", ") + ")" + (noPd.length ? "; " + noPd.length + " pewarta belum punya PD." : ".") : "";
+}
+function renderPwModul() {
+  var bd = pwSet("bandung").filter(function (o) { return isAktif(o.sp) || isAktif(o.sg); });
+  var box = document.getElementById("pwModulBox");
+  var sec = function (title, list, hint) {
+    return '<section class="pan"><h3>' + esc(title) + ' <span class="pill ' + (list.length ? "ok" : "bad") + '">' + list.length + "</span></h3>" + (hint ? '<p class="hint">' + esc(hint) + "</p>" : "") +
+      '<div class="lst">' + (list.sort(function (a, b) { return cmpId(a.nama, b.nama); }).map(function (o) { return '<div class="li w2"><span><span class="nm">' + nameBtn(o) + '</span><span class="mt">' + esc(o.pd || "") + '</span></span><span class="rt">' + ageTag(o) + "</span></div>"; }).join("") || '<p class="hint">Belum ada pengajar.</p>') + "</div></section>";
+  };
+  box.innerHTML = MODUL.map(function (m) { return sec("Modul " + m, bd.filter(function (o) { return o.modul.indexOf(m) >= 0; })); }).join("") +
+    sec("Belum diisi modulnya", bd.filter(function (o) { return !o.modul.length; }), "Pewarta aktif BPK Bandung yang belum tercatat menguasai modul. Isi lewat tombol Edit.");
+}
+function renderPwPastor() {
+  var l = pwSet("pastor").sort(function (a, b) { return cmpId(a.nama, b.nama); });
+  document.getElementById("pwPaCount").textContent = l.filter(function (o) { return isAktif(o.sp); }).length + " aktif dari " + l.length + " imam/suster terdata";
+  document.getElementById("pwPaBody").innerHTML = l.map(function (o) {
+    return '<tr><td class="nama"><div class="who"><span class="n">' + esc(o.nama) + '</span><span class="acts">' + pwActs(o) + "</span></div></td><td>" + statusTag(o) + ' <span class="tag alt">' + esc(o.kual) + "</span></td><td>" + esc(o.paroki || o.pd || "-") + "</td><td>" + modulTags(o) + "</td></tr>";
+  }).join("");
+}
+function ytId(u) { var m = /(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([A-Za-z0-9_-]{11})/.exec(u || ""); return m ? m[1] : ""; }
+function viewPwb(id, opener) {
+  var o = (D.pwb || []).filter(function (x) { return x.id === id; })[0]; if (!o) return;
+  var yid = ytId(o.yt);
+  var vid = o.yt ? (yid ? '<div style="position:relative;padding-top:56.25%;margin-bottom:6px"><iframe src="https://www.youtube-nocookie.com/embed/' + yid + '" title="Video ' + esc(o.nama) + '" style="position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:8px" allow="encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" loading="lazy"></iframe></div>' : "") +
+    '<a class="act" href="' + esc(o.yt) + '" target="_blank" rel="noopener"><span>Buka di YouTube</span></a>' : '<span class="note">Belum ada link YouTube. Isi lewat tombol Edit.</span>';
+  var html = '<dl class="dl">' + drow("Panggilan", esc(o.pang)) + drow("Status pewarta", statusTag(o)) + drow("Kategori", esc(o.kp)) + drow("Status pengajar", esc(o.sg)) + drow("Status konselor", esc(o.sk)) +
+    drow("Kualifikasi", esc(o.kual)) + drow("Asal BPK", esc(o.asal)) + drow("PD / Komunitas", esc(o.pd)) + drow("Paroki", esc(o.paroki)) + drow("Dekanat", esc(o.dek)) +
+    drow("Kelompok usia", o.age == null ? "" : esc(o.age + " th · " + o.ag)) + drow("Keterlibatan", tagsHtml(o.libat)) + drow("Modul dikuasai", tagsHtml(o.modul)) +
+    drow("Jumlah pewartaan", o.jml ? esc(String(o.jml)) : "") + drow("Hubungi", waLink(o.wa)) + drow("Video", vid) + "</dl>";
+  openInfo(o.nama, [o.pang, o.kual].filter(Boolean).join(" · "), html, opener, o.foto);
+}
+/* edit status calon + modul */
+var pbEd = null;
+function pbOpen(id, opener) {
+  var o = (D.pwb || []).filter(function (x) { return x.id === id; })[0]; if (!o) return;
+  pbEd = { o: o, opener: opener };
+  document.getElementById("pbSub").textContent = o.nama + (o.pd ? " · " + o.pd : "");
+  var sel = document.getElementById("pb_sp");
+  sel.innerHTML = SP_OPT.map(function (t) { return "<option" + (t === o.sp ? " selected" : "") + ">" + esc(t) + "</option>"; }).join("");
+  document.getElementById("pb_kp").value = o.kp || ""; document.getElementById("pb_sg").value = o.sg || "";
+  document.getElementById("pb_yt").value = o.yt || "";
+  document.getElementById("pb_modul").innerHTML = MODUL.map(function (m) { return '<button type="button" class="chip" data-m="' + esc(m) + '" aria-pressed="' + (o.modul.indexOf(m) >= 0 ? "true" : "false") + '">' + esc(m) + "</button>"; }).join("");
+  document.getElementById("pbMsg").textContent = ""; document.getElementById("pbMsg").className = "msg"; document.getElementById("pbSave").disabled = false;
+  showScrim("pbScrim", opener);
+}
+function pbMsg(t, bad) { var e = document.getElementById("pbMsg"); e.textContent = t || ""; e.className = "msg" + (bad ? " bad" : ""); }
+document.getElementById("pb_modul").addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-m]"); if (b) b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") === "true" ? "false" : "true"); });
+document.getElementById("pbCancel").addEventListener("click", function () { hideScrim("pbScrim"); pbEd = null; });
+document.getElementById("pbScrim").addEventListener("mousedown", function (e) { if (e.target.id === "pbScrim") { hideScrim("pbScrim"); pbEd = null; } });
+document.getElementById("pbForm").addEventListener("submit", function (e) {
+  e.preventDefault();
+  var me = pbEd; if (!me || document.getElementById("pbSave").disabled) return;
+  var o = me.o, f = {}, nv = {};
+  var sp = document.getElementById("pb_sp").value, kp = document.getElementById("pb_kp").value, sg = document.getElementById("pb_sg").value, yt = document.getElementById("pb_yt").value.trim();
+  var mods = MODUL.filter(function (m) { var b = document.querySelector('#pb_modul [data-m="' + m + '"]'); return b && b.getAttribute("aria-pressed") === "true"; });
+  if (yt && !/^https?:\/\/\S+$/i.test(yt)) { pbMsg("Link YouTube harus diawali http:// atau https://", true); return; }
+  if (sp && sp !== o.sp) { f[PB.sp] = sp; nv.sp = sp; }
+  if (kp && kp !== o.kp) { f[PB.kp] = kp; nv.kp = kp; }
+  if (sg && sg !== o.sg) { f[PB.sg] = sg; nv.sg = sg; }
+  if (mods.join("|") !== o.modul.slice().sort(function (a, b) { return MODUL.indexOf(a) - MODUL.indexOf(b); }).join("|")) { f[PB.modul] = mods; nv.modul = mods; }
+  if (yt !== (o.yt || "")) { f[PB.yt] = yt || null; nv.yt = yt; }
+  if (!Object.keys(f).length) { pbMsg("Tidak ada perubahan untuk disimpan."); return; }
+  document.getElementById("pbSave").disabled = true; pbMsg("Menyimpan ke Airtable…");
+  call("update_records_for_table", { baseId: BASE_SMP, tableId: T_PWB, records: [{ id: o.id, fields: f }] }).then(function () {
+    for (var k in nv) o[k] = nv[k];
+    pwDerive(o);
+    hideScrim("pbScrim"); pbEd = null; refreshViews();
+  }, function (err) { var i = errInfo(err); document.getElementById("pbSave").disabled = false; pbMsg(i.kind === "maybe" ? "Hasil penyimpanan belum pasti. Cek datanya di Airtable sebelum menyimpan lagi." : i.text, true); });
+});
+document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !document.getElementById("pbScrim").hidden) { hideScrim("pbScrim"); pbEd = null; } });
+function pwClick(e) {
+  var b = e.target.closest && e.target.closest("[data-pw]"); if (!b || b.disabled) return;
+  if (b.dataset.pw === "view") viewPwb(b.dataset.id, b); else if (b.dataset.pw === "edit") pbOpen(b.dataset.id, b);
+}
+["pwBody", "pwPdBody", "pwModulBox", "pwPaBody", "tmBody"].forEach(function (id) { document.getElementById(id).addEventListener("click", pwClick); });
+document.getElementById("pwViews").addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-pv]"); if (!b) return; pw.view = b.dataset.pv; renderPewarta(); });
+document.getElementById("pwPdChips").addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-pdf]"); if (!b) return; pw.pdf = b.dataset.pdf; renderPewarta(); });
+[["pwStatus", "status"], ["pwUsia", "usia"], ["pwModul", "modul"], ["pwKat", "kat"], ["pwPd", "pd"]].forEach(function (p) {
   document.getElementById(p[0]).addEventListener("change", function (e) { pw[p[1]] = e.target.value; pw.limit = 120; renderPewarta(); });
 });
 document.getElementById("pwQ").addEventListener("input", function (e) { pw.q = e.target.value.toLowerCase().trim(); pw.limit = 120; renderPewarta(); });
 document.getElementById("pwMore").addEventListener("click", function () { pw.limit += 200; renderPewarta(); });
-document.getElementById("pwBody").addEventListener("click", function (e) {
-  var b = e.target.closest && e.target.closest("[data-pw]"); if (!b || b.disabled) return;
-  var o = (D.um || []).filter(function (x) { return x.id === b.dataset.id; })[0]; if (!o) return;
-  if (b.dataset.pw === "view") viewPerson(o.id, o.nama, b);
-  else openEditPerson(o.id, o.nama, o.nama + " · " + o.peran.join(", "), b, function (vals) { o.nama = vals.nama; o.wa = vals.wa; renderPewarta(); });
-});
+/* pewarta tamu (keuskupan lain) di tab Pewarta luar kota */
+var tm = { q: "", asal: "" };
+function renderTamu() {
+  var all = D.pwb, tb = document.getElementById("tmBody");
+  if (!all) { tb.innerHTML = ""; document.getElementById("tmCount").textContent = ""; return; }
+  var t = pwSet("tamu").filter(function (o) { return isAktif(o.sp); });
+  fillOpts("tmAsal", "Semua asal", uniq(t.map(function (o) { return o.asal || "Asal belum diisi"; })).sort(cmpId));
+  var l = t.filter(function (o) { return (!tm.asal || (o.asal || "Asal belum diisi") === tm.asal) && (!tm.q || (o.nama + " " + o.pang).toLowerCase().indexOf(tm.q) >= 0); }).sort(function (a, b) { return cmpId(a.asal || "", b.asal || "") || cmpId(a.nama, b.nama); });
+  document.getElementById("tmCount").textContent = l.length + " pewarta tamu aktif dari keuskupan/BPK lain (tidak dihitung sebagai pewarta BPK Bandung).";
+  tb.innerHTML = l.map(function (o) {
+    return '<tr><td class="nama"><div class="who"><span class="n">' + esc(o.nama) + '</span><span class="acts"><button type="button" class="act" data-pw="view" data-id="' + o.id + '" aria-label="Lihat profil ' + esc(o.nama) + '">' + ICON_VIEW + "<span>View</span></button>" + waBtn(o) + "</span></div></td><td>" + esc(o.asal || "-") + "</td><td>" + statusTag(o) + "</td><td>" + ageTag(o) + "</td><td>" + (o.jml || "–") + "</td></tr>";
+  }).join("");
+}
+document.getElementById("tmAsal").addEventListener("change", function (e) { tm.asal = e.target.value; renderTamu(); });
+document.getElementById("tmQ").addEventListener("input", function (e) { tm.q = e.target.value.toLowerCase().trim(); renderTamu(); });
 
 /* ---------- tab PD ---------- */
 var pdf = { q: "", status: "", dekanat: "", kota: "" };
@@ -2051,7 +2247,7 @@ function luData() {
   return { g: Object.keys(by).map(function (k) { return by[k]; }), dest: Object.keys(dest).map(function (k) { return dest[k]; }) };
 }
 function renderLuar() {
-  srcStatus("luLink", ["smp"]);
+  srcStatus("luLink", ["smp", "pwb"]);
   var smp = D.smp, tb = document.getElementById("luBody");
   if (!smp) { document.getElementById("luTiles").innerHTML = tile("–", "Pewarta luar kota", ""); document.getElementById("luTop").innerHTML = ""; document.getElementById("luDest").innerHTML = ""; tb.innerHTML = ""; document.getElementById("luCount").textContent = ""; document.getElementById("luNone").hidden = true; return; }
   var yrs = uniq(smp.filter(function (o) { return o.luar; }).map(function (o) { return o.tgl.slice(0, 4); })).sort().reverse();
@@ -2176,7 +2372,7 @@ document.getElementById("uaBody").addEventListener("click", function (e) {
   var o = (D.ua || []).filter(function (x) { return x.id === b.dataset.ua; })[0]; if (o) viewPerson(o.id, o.nama, b);
 });
 
-function refreshViews() { renderBeranda(); renderPewarta(); renderLuar(); renderPd(); renderUmat(); }
+function refreshViews() { renderBeranda(); renderPewarta(); renderLuar(); renderTamu(); renderPd(); renderUmat(); }
 
 (function boot() {
   var c = window.claude;

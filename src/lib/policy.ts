@@ -21,7 +21,12 @@ export const T = {
   smpKui: "tblIMjnv1ffB4LqK7",
   pengguna: "tbls2nQ3hW5rEIZUk",
   jabatan: "tblrfilR2eNUOiFMa",
+  pewartaBpk: "tblCcm2UAWHquZzEk",
 };
+
+/** Pewarta BPK (base SMP): field yang boleh diubah dari tab Pewarta (status, kategori, status pengajar, modul, link YouTube). */
+export const PWB_EDIT = ["fldIt4yvwOOsFa4XM", "fldpoZIxZJA9n9PzL", "fldFuXMCtrYyht9S0", "fldZPqCG8ohmWHwY4", "fldJGTPgfN00lAdMo"];
+const PWB_YT = "fldJGTPgfN00lAdMo";
 
 /** MasterJabatanBPK: kolom pengelompokan (urutan opsi select = urutan tampil di dashboard). */
 export const JAB = { bidang: "fldCCi0hV9yTL091P", seksi: "fldAAyRg1kko5YgrK", peran: "fldI8J3VXZDyjWa3f" };
@@ -52,6 +57,7 @@ export const TABLES: Record<string, Spec> = {
   [T.pd]: { base: BASE_BPK, read: ["PD", "Dashboard"], update: { tabs: ["PD"], fields: ["fldagyoKQyhfenB7u"] } },
   [T.smpEvents]: { base: BASE_SMP, read: ["Dashboard", "Pewarta luar kota"] },
   [T.smpKui]: { base: BASE_SMP, read: ["Dashboard"] },
+  [T.pewartaBpk]: { base: BASE_SMP, read: ["Pewarta", "Pewarta luar kota", "Dashboard"], update: { tabs: ["Pewarta"], fields: PWB_EDIT } },
 };
 
 export class HttpError extends Error {
@@ -79,6 +85,10 @@ export function checkWrite(spec: Spec, kind: "update" | "create", records: any[]
   for (const r of records) {
     for (const k of Object.keys(r.fields || {})) {
       if (!rule.fields.includes(k)) throw new HttpError(403, "Field " + k + " tidak boleh diubah dari dashboard.");
+      if (k === PWB_YT) {
+        const v = r.fields[k];
+        if (v !== null && v !== "" && !(typeof v === "string" && /^https?:\/\/\S{3,500}$/i.test(v))) throw new HttpError(400, "Link YouTube harus berupa URL http(s).");
+      }
     }
   }
 }

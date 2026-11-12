@@ -28,3 +28,18 @@ describe("edit", () => {
     expect(() => checkWrite((TABLES as any)[T.umat], "update", [{ id: "rec1", fields: {} }], { ...base, level: "Edit" })).toThrow(HttpError);
   });
 });
+
+describe("pewarta bpk", () => {
+  const pwb = (TABLES as any)[T.pewartaBpk];
+  const ed = { ...base, level: "Edit", tabs: ["Pewarta"] };
+  it("tab Pewarta Edit boleh ubah status, modul, link YouTube", () => {
+    expect(() => checkWrite(pwb, "update", [{ id: "rec1", fields: { fldIt4yvwOOsFa4XM: "Calon Pewarta", fldZPqCG8ohmWHwY4: ["SHDR"], fldJGTPgfN00lAdMo: "https://youtu.be/abcdefghijk" } }], ed)).not.toThrow();
+  });
+  it("field lain (nama, WA) ditolak", () => {
+    expect(() => checkWrite(pwb, "update", [{ id: "rec1", fields: { fldYlcG3J6Oqe7iPP: "x" } }], ed)).toThrow(HttpError);
+  });
+  it("link bukan URL ditolak, View ditolak", () => {
+    expect(() => checkWrite(pwb, "update", [{ id: "rec1", fields: { fldJGTPgfN00lAdMo: "javascript:alert(1)" } }], ed)).toThrow(HttpError);
+    expect(() => checkWrite(pwb, "update", [{ id: "rec1", fields: {} }], { ...ed, level: "View" })).toThrow(HttpError);
+  });
+});
