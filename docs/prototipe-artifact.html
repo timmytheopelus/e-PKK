@@ -358,8 +358,12 @@ footer { color: var(--muted); font-size: 13px; }
 .hbr.ev { font: inherit; font-size: 13px; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; padding: 6px 0; cursor: pointer; } .hbr.ev span { flex: 1 1 100%; } .hbr.ev i { flex: 0 0 auto; max-width: calc(100% - 40px); } .hbr.ev:hover span { color: var(--accent); }
 #admBtns .chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
 #admPane { margin-top: 12px; }
-.sepfoot { display: none; justify-content: center; align-items: center; gap: 24px; padding: 28px 0 12px; } body.sep .sepfoot { display: flex; } .sepfoot img { height: 64px; width: auto; opacity: .9; }
-.kpie svg { display: block; margin: 4px 0; } .kleg { list-style: none; margin: 0; padding: 0; font-size: 13px; } .kleg li { display: flex; gap: 6px; align-items: center; margin: 2px 0; } .kleg i { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+.sepfoot { display: none; justify-content: center; align-items: center; gap: 24px; padding: 22px 0 6px; } body.sep .sepfoot { display: flex; } .sepnote { display: none; } body.sep .sepnote { display: block; } .sepfoot img { height: 34px; width: auto; opacity: .9; }
+body.sep img.logo { width: 120px; height: 120px; object-fit: contain; } @media (max-width: 560px) { body.sep img.logo { width: 84px; height: 84px; } }
+.kpie { display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; align-items: center; } .kpie h4 { grid-column: 1 / -1; } .kpie svg { display: block; width: 112px; height: 112px; }
+.kclk { cursor: pointer; } .kclk:hover { opacity: .75; } .kchip { display: inline-flex; gap: 8px; align-items: center; background: var(--accent-soft); border-radius: 999px; padding: 4px 6px 4px 12px; font-size: 13px; margin: 8px 0; } .kchip button { font: inherit; border: 0; background: var(--surface); border-radius: 999px; padding: 2px 9px; cursor: pointer; }
+.sepnote { text-align: center; font-size: 12px; color: var(--muted); max-width: 520px; margin: 0 auto; line-height: 1.45; }
+.dgrid.kg { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px 22px; } .kleg { list-style: none; margin: 0; padding: 0; font-size: 13px; } .kleg li { display: flex; gap: 6px; align-items: center; margin: 2px 0; } .kleg i { width: 12px; height: 12px; border-radius: 3px; flex: none; }
 .evr { display: block; padding: 8px 0; border-bottom: 1px solid var(--line); cursor: pointer; font-size: 13px; } .evr:last-child { border-bottom: 0; } .evr-t { overflow-wrap: anywhere; margin-bottom: 4px; } .evr:hover .evr-t { color: var(--accent); }
 .evr-b { display: flex; align-items: center; gap: 8px; } .evr-bar { flex: 1 1 auto; min-width: 0; height: 10px; background: var(--accent-soft); border-radius: 5px; overflow: hidden; } .evr-bar i { display: block; height: 100%; background: var(--accent); border-radius: 5px; } .evr em { font-style: normal; font-variant-numeric: tabular-nums; color: var(--muted); min-width: 22px; text-align: right; }
 .hbr small { font-size: 11.5px; }
@@ -629,7 +633,8 @@ footer { color: var(--muted); font-size: 13px; }
   <div id="tab-kep" class="tab" role="tabpanel" aria-labelledby="tabbtn-kep" hidden>
     <div class="link" id="kepLink" role="status"></div>
     <div id="kepRoot"><p class="hint">Memuat data KEP…</p></div>
-    <div class="sepfoot"><img src="/logo.png" alt="Logo BPK Keuskupan Bandung"></div>
+    <div class="sepfoot" id="sepFoot"><img src="/logo-keuskupan.png" alt="Lambang Keuskupan Bandung"><img src="/logo.png" alt="Logo BPK Keuskupan Bandung"></div>
+    <p class="sepnote" id="sepNote">Sekolah Evangelisasi Pribadi adalah bagian dari program evangelisasi Keuskupan Bandung, bersama BPKPKK Keuskupan Bandung.</p>
   </div>
 
   <div id="tab-event" class="tab" role="tabpanel" aria-labelledby="tabbtn-event" hidden>
@@ -1870,7 +1875,7 @@ function tile(num, label, sub, nav) {
   return nav ? '<button type="button" class="tile go" data-nav="' + nav + '">' + inner + "</button>" : '<div class="tile">' + inner + "</div>";
 }
 function navOk(t) { var b = document.getElementById("tabbtn-" + t); return !!b && !b.hidden; }
-document.getElementById("logoHome").addEventListener("click", function (e) { e.preventDefault(); goTab(navOk("beranda") ? "beranda" : (TABS.filter(navOk)[0] || "beranda")); });
+document.getElementById("logoHome").addEventListener("click", function (e) { e.preventDefault(); if (document.body.classList.contains("sep")) { KP.v = "home"; KP.dim = null; KP.mo = ""; renderKep(); goTab("kep"); return; } goTab(navOk("beranda") ? "beranda" : (TABS.filter(navOk)[0] || "beranda")); });
 function goTab(n) { try { location.hash = "#" + n; } catch (e) {} showTab(n); window.scrollTo(0, 0); }
 function nav(spec) {
   var p = spec.split(":"), k = p[0], v = p.slice(1).join(":");
@@ -2849,7 +2854,8 @@ function renderEvent() {
 
 /* ---------- KEP ---------- */
 var T_PAR = "tbl8sfqU6G47orPpn", T_PEN = "tblH4SN6qpNxJFg35";
-var KP = { v: "home", yr: "", pk: "", st: "", q: "", sel: "", ps: "" };
+var KP = { v: "home", yr: "", pk: "", st: "", q: "", sel: "", ps: "", mo: "", dim: null };
+var KDIM = { jk: ["Jenis kelamin", function (p) { return p.jk || "Belum diisi"; }], usia: ["Kelompok usia", function (p) { return ageLbl(p.usia); }], nikah: ["Status pernikahan", function (p) { return p.nikah || "Belum diisi"; }] };
 function loadKpar() {
   return fetchAll(BASE, T_PAR, ["fldskPQJ7WQgCVODZ", "fldm9LChbMMxzwAU6", "fldTx78aUdQXrpSMY"]).then(function (recs) {
     D.kpar = recs.map(function (r) { var v = r.cellValuesByFieldId || {}; return { nama: one(v.fldskPQJ7WQgCVODZ).trim(), dek: one(v.fldm9LChbMMxzwAU6), kus: one(v.fldTx78aUdQXrpSMY) }; }).filter(function (p) { return p.nama; });
@@ -2885,6 +2891,7 @@ function kpEvs() {
 }
 function kpFilter(all) {
   return all.filter(function (x) {
+    if (KP.mo && x.tgl.slice(0, 7) !== KP.mo) return false;
     if (KP.yr && x.yr !== KP.yr) return false; if (KP.pk && x.key !== KP.pk) return false;
     if (KP.st === "done" && !x.done) return false; if (KP.st === "nxt" && !x.nxt) return false; if (KP.st === "batal" && !x.batal) return false;
     if (KP.st === "" && x.batal) return false;
@@ -2899,19 +2906,19 @@ function kBars(title, m, order, attr) {
 function kpTile(num, label, sub, v, st) { return '<button type="button" class="tile go" data-kpv="' + v + '"' + (st !== undefined ? ' data-kpst="' + st + '"' : "") + "><b>" + num + "</b><span>" + esc(label) + "</span><small>" + esc(sub || "") + "</small></button>"; }
 function kpPs(list) { var a = []; list.forEach(function (x) { x.ps.forEach(function (p) { a.push({ p: p, x: x }); }); }); return a; }
 var KCOL = ["#2f6f73", "#c28b2c", "#4a63a8", "#b5504a", "#7a8f3c", "#8a6bb0", "#8a8f98"];
-function kPie(title, m, order) {
+function kPie(title, m, order, dim) {
   var ks = order || Object.keys(m).sort(function (a, b) { return m[b] - m[a]; }), tot = ks.reduce(function (t, k) { return t + m[k]; }, 0);
   if (!tot) return '<div class="hb"><h4>' + esc(title) + '</h4><p class="note">Belum ada data.</p></div>';
   var a0 = -Math.PI / 2, svg = "", leg = "";
   ks.forEach(function (k, i) {
     var frac = m[k] / tot, a1 = a0 + frac * 2 * Math.PI, c = KCOL[i % KCOL.length];
-    if (frac >= 0.9999) svg += '<circle cx="60" cy="60" r="54" fill="' + c + '"/>';
-    else svg += '<path d="M60 60 L' + (60 + 54 * Math.cos(a0)).toFixed(2) + " " + (60 + 54 * Math.sin(a0)).toFixed(2) + " A54 54 0 " + (frac > 0.5 ? 1 : 0) + " 1 " + (60 + 54 * Math.cos(a1)).toFixed(2) + " " + (60 + 54 * Math.sin(a1)).toFixed(2) + ' Z" fill="' + c + '" stroke="#fff" stroke-width="1"/>';
-    a0 = a1; leg += '<li><i style="background:' + c + '"></i>' + esc(k) + " <b>" + m[k] + "</b> (" + Math.round(frac * 100) + "%)</li>";
+    if (frac >= 0.9999) svg += '<circle class="kclk" data-kpd="' + dim + "|" + esc(k) + '" cx="60" cy="60" r="54" fill="' + c + '"/>';
+    else svg += '<path d="M60 60 L' + (60 + 54 * Math.cos(a0)).toFixed(2) + " " + (60 + 54 * Math.sin(a0)).toFixed(2) + " A54 54 0 " + (frac > 0.5 ? 1 : 0) + " 1 " + (60 + 54 * Math.cos(a1)).toFixed(2) + " " + (60 + 54 * Math.sin(a1)).toFixed(2) + ' Z" fill="' + c + '" stroke="#fff" stroke-width="1" class="kclk" data-kpd="' + dim + "|" + esc(k) + '"/>';
+    a0 = a1; leg += '<li class="kclk" role="button" tabindex="0" data-kpd="' + dim + "|" + esc(k) + '"><i style="background:' + c + '"></i>' + esc(k) + " <b>" + m[k] + "</b> (" + Math.round(frac * 100) + "%)</li>";
   });
   return '<div class="hb kpie"><h4>' + esc(title) + '</h4><svg viewBox="0 0 120 120" width="150" height="150" role="img" aria-label="' + esc(title) + '">' + svg + '</svg><ul class="kleg">' + leg + "</ul></div>";
 }
-function kLine(title, labels, vals) {
+function kLine(title, labels, vals, keys, kind) {
   var W = 320, H = 150, L = 26, R = 10, T = 14, B = 28, max = Math.max.apply(null, vals.concat([1])), n = vals.length;
   if (!n) return '<div class="hb"><h4>' + esc(title) + '</h4><p class="note">Belum ada data.</p></div>';
   var X = function (i) { return L + (n === 1 ? (W - L - R) / 2 : i * (W - L - R) / (n - 1)); }, Y = function (v) { return T + (H - T - B) * (1 - v / max); };
@@ -2919,18 +2926,18 @@ function kLine(title, labels, vals) {
   var step = Math.ceil(n / 6), g = "";
   for (var t = 0; t <= 2; t++) { var yv = max * t / 2, yy = Y(yv); g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#d9dee4" stroke-width="1"/><text x="' + (L - 4) + '" y="' + (yy + 3) + '" text-anchor="end" font-size="9" fill="#6b7480">' + (Math.round(yv * 10) / 10) + "</text>"; }
   labels.forEach(function (lb, i) { if (i % step === 0 || i === n - 1) g += '<text x="' + X(i).toFixed(1) + '" y="' + (H - 10) + '" text-anchor="middle" font-size="9" fill="#6b7480">' + esc(lb) + "</text>"; });
-  return '<div class="hb"><h4>' + esc(title) + '</h4><svg viewBox="0 0 ' + W + " " + H + '" width="100%" role="img" aria-label="' + esc(title) + '">' + g + '<polyline points="' + pts + '" fill="none" stroke="#2f6f73" stroke-width="2.5" stroke-linejoin="round"/>' + vals.map(function (v, i) { return '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(v).toFixed(1) + '" r="3.2" fill="#2f6f73"><title>' + esc(labels[i] + ": " + v) + "</title></circle>"; }).join("") + "</svg></div>";
+  return '<div class="hb"><h4>' + esc(title) + '</h4><svg viewBox="0 0 ' + W + " " + H + '" width="100%" role="img" aria-label="' + esc(title) + '">' + g + '<polyline points="' + pts + '" fill="none" stroke="#2f6f73" stroke-width="2.5" stroke-linejoin="round"/>' + vals.map(function (v, i) { return '<circle class="kclk" data-kpl="' + kind + "|" + keys[i] + '" cx="' + X(i).toFixed(1) + '" cy="' + Y(v).toFixed(1) + '" r="7" fill="#2f6f73"><title>' + esc(labels[i] + ": " + v) + "</title></circle>"; }).join("") + "</svg></div>";
 }
 function kSeries(ok, byMonth) {
   var keys = ok.map(function (x) { return byMonth ? x.tgl.slice(0, 7) : x.yr; }).sort(); if (!keys.length) return { l: [], v: [] };
   var out = [], cur = keys[0], end = keys[keys.length - 1];
   while (cur <= end) { out.push(cur); if (byMonth) { var y = +cur.slice(0, 4), m = +cur.slice(5); m++; if (m > 12) { m = 1; y++; } cur = y + "-" + (m < 10 ? "0" : "") + m; } else cur = String(+cur + 1); }
   var MN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-  return { l: out.map(function (k) { return byMonth ? MN[+k.slice(5) - 1] + " " + k.slice(2, 4) : k; }), v: out.map(function (k) { return ok.filter(function (x) { return (byMonth ? x.tgl.slice(0, 7) : x.yr) === k; }).length; }) };
+  return { k: out, l: out.map(function (k) { return byMonth ? MN[+k.slice(5) - 1] + " " + k.slice(2, 4) : k; }), v: out.map(function (k) { return ok.filter(function (x) { return (byMonth ? x.tgl.slice(0, 7) : x.yr) === k; }).length; }) };
 }
 function kpDemog(psl) {
   var ps = psl.map(function (o) { return o.p || o; }), ua = tally(ps, function (p) { return ageLbl(p.usia); });
-  return '<div class="dgrid">' + kPie("Jenis kelamin", tally(ps, function (p) { return p.jk; })) + kPie("Kelompok usia", ua, Object.keys(ua).sort(function (a, b) { return ageNum(a) - ageNum(b); })) + kPie("Status pernikahan", tally(ps, function (p) { return p.nikah; })) + "</div>";
+  return '<div class="dgrid kg">' + kPie("Jenis kelamin", tally(ps, function (p) { return p.jk; }), null, "jk") + kPie("Kelompok usia", ua, Object.keys(ua).sort(function (a, b) { return ageNum(a) - ageNum(b); }), "usia") + kPie("Status pernikahan", tally(ps, function (p) { return p.nikah; }), null, "nikah") + "</div>";
 }
 function kpBar(all) {
   var yrs = uniq(all.map(function (x) { return x.yr; })).sort().reverse(), pks = {}; all.forEach(function (x) { pks[x.key] = x.pk; });
@@ -2938,6 +2945,12 @@ function kpBar(all) {
   return '<div class="fil"><select id="kpYr" aria-label="Tahun"><option value="">Semua tahun</option>' + yrs.map(function (y) { return '<option value="' + y + '"' + (KP.yr === y ? " selected" : "") + ">" + y + "</option>"; }).join("") + '</select>' +
     '<select id="kpPk" aria-label="Paroki"><option value="">Semua paroki</option>' + pkk.map(function (k) { return '<option value="' + esc(k) + '"' + (KP.pk === k ? " selected" : "") + ">" + esc(pks[k]) + "</option>"; }).join("") + "</select>" +
     '<select id="kpSt" aria-label="Status"><option value="">Semua (tanpa batal)</option><option value="done"' + (KP.st === "done" ? " selected" : "") + '>Sudah berjalan</option><option value="nxt"' + (KP.st === "nxt" ? " selected" : "") + '>Terjadwal</option><option value="batal"' + (KP.st === "batal" ? " selected" : "") + ">Dibatalkan</option></select></div>";
+}
+function kpChips() {
+  var c = [];
+  if (KP.mo) c.push("Bulan " + KP.mo);
+  if (KP.dim) c.push(KDIM[KP.dim.t][0] + " = " + KP.dim.v);
+  return c.length ? '<div class="kchip">Filter: ' + esc(c.join(", ")) + ' <button type="button" data-kpclr="1">Hapus ✕</button></div>' : "";
 }
 function kpNav(all) {
   var t = [["home", "Ringkasan"], ["keg", "Kegiatan"], ["peserta", "Peserta"], ["par", "Paroki"]];
@@ -2982,16 +2995,16 @@ function renderKep() {
     h = '<button type="button" class="btn" data-kpv="' + (KP.from || "evd") + '">← Kembali</button><h2>' + esc(p.nama) + '</h2><div class="pan"><dl class="epk-dl">' + rows.map(function (r) { return "<dt>" + esc(r[0]) + "</dt><dd>" + esc(r[1] || "-") + "</dd>"; }).join("") + "</dl></div>";
   } else {
     h = '<h2>KEP</h2><p class="hint">Kegiatan KEP dan KEP Exe: di mana sudah berjalan, kapan, bagaimana trennya, dan siapa pesertanya. Pembekalan Pengajar tidak dihitung sebagai KEP.</p>' + kpNav(all);
-    if (KP.v === "home" || KP.v === "keg" || KP.v === "peserta") h += kpBar(all);
-    var psl = kpPs(f), prk = kpParoki(all);
+    if (KP.v === "home" || KP.v === "keg" || KP.v === "peserta") h += kpBar(all) + kpChips();
+    var psl = kpPs(f).filter(function (o) { return !KP.dim || KDIM[KP.dim.t][1](o.p) === KP.dim.v; }), prk = kpParoki(all);
     if (KP.v === "home") {
       var ok = f.filter(function (x) { return !x.batal; });
       h += '<div class="tiles">' + kpTile(f.length, "Kegiatan KEP", "klik untuk melihat daftar", "keg", KP.st) + kpTile(f.filter(function (x) { return x.done; }).length, "Sudah berjalan", "", "keg", "done") + kpTile(f.filter(function (x) { return x.nxt; }).length, "Terjadwal ke depan", "", "keg", "nxt") +
         kpTile(prk.sl.length, "Paroki sudah menjalankan", prk.belum.length + " paroki belum", "par") + kpTile(psl.length, "Peserta terdaftar", "klik untuk melihat daftar", "peserta") + "</div>";
       h += '<div class="pan"><h4>Infografis peserta</h4>' + (psl.length ? kpDemog(psl) : '<p class="note">Belum ada peserta tercatat untuk filter ini.</p>') + "</div>";
       var sy = kSeries(ok, false), sm = kSeries(ok, true);
-      h += '<div class="pan"><h4>Trend</h4>' + kLine("Kegiatan per tahun", sy.l, sy.v) + kLine("Kegiatan per bulan", sm.l, sm.v) + "</div>";
-      h += '<div class="pan"><h4>Per paroki</h4>' + kBars("Kegiatan per paroki", tally(ok, function (x) { return x.pk; })) + "</div>";
+      h += '<div class="pan"><h4>Trend <small class="note">· klik titik untuk melihat kegiatannya</small></h4>' + '<div class="dgrid kg">' + kLine("Kegiatan per tahun", sy.l, sy.v, sy.k, "y") + kLine("Kegiatan per bulan", sm.l, sm.v, sm.k, "m") + "</div></div>";
+      h += '<div class="pan"><h4>Per paroki</h4>' + kBars("Kegiatan per paroki", tally(ok, function (x) { return x.pk; }), null, "data-kppn") + "</div>";
     } else if (KP.v === "keg") {
       h += '<div class="evlist">' + (f.length ? f.slice().sort(function (a, b) { return b.tgl.localeCompare(a.tgl); }).map(kpEvCard).join("") : '<p class="note">Tidak ada kegiatan untuk filter ini.</p>') + "</div>";
     } else if (KP.v === "peserta") {
@@ -3005,8 +3018,12 @@ function renderKep() {
   el.innerHTML = h;
 }
 document.getElementById("tab-kep").addEventListener("click", function (e) {
-  var t = e.target.closest && e.target.closest("[data-kpv],[data-kpe],[data-kpp],[data-kppk]"); if (!t) return;
-  if (t.dataset.kpv) { KP.v = t.dataset.kpv; if (t.dataset.kpst !== undefined) KP.st = t.dataset.kpst; if (KP.v === "keg" && t.dataset.kpst === undefined && t.closest(".chips")) {} }
+  var t = e.target.closest && e.target.closest("[data-kpv],[data-kpe],[data-kpp],[data-kppk],[data-kpd],[data-kpl],[data-kppn],[data-kpclr]"); if (!t) return;
+  if (t.dataset.kpclr) { KP.mo = ""; KP.dim = null; }
+  else if (t.dataset.kpd) { var dd = t.dataset.kpd.split("|"); KP.dim = { t: dd[0], v: dd.slice(1).join("|") }; KP.v = "peserta"; }
+  else if (t.dataset.kpl) { var ll = t.dataset.kpl.split("|"); if (ll[0] === "m") { KP.mo = ll[1]; KP.yr = ""; } else { KP.yr = ll[1]; KP.mo = ""; } KP.v = "keg"; }
+  else if (t.dataset.kppn) { var hit = kpEvs().filter(function (x) { return x.pk === t.dataset.kppn; })[0]; if (hit) KP.pk = hit.key; KP.v = "keg"; }
+  else if (t.dataset.kpv) { if (t.classList.contains("tile")) { KP.mo = ""; KP.dim = null; } KP.v = t.dataset.kpv; if (t.dataset.kpst !== undefined) KP.st = t.dataset.kpst; if (KP.v === "keg" && t.dataset.kpst === undefined && t.closest(".chips")) {} }
   else if (t.dataset.kpe) { KP.sel = t.dataset.kpe; KP.v = "evd"; }
   else if (t.dataset.kpp) { KP.from = KP.v === "evd" ? "evd" : "peserta"; KP.ps = t.dataset.kpp; KP.v = "psd"; }
   else if (t.dataset.kppk) { KP.pk = t.dataset.kppk; KP.v = "keg"; }
