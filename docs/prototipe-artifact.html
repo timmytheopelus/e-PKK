@@ -125,7 +125,7 @@ td.nama { font-weight: 600; }
 .oc-mem { display: grid; gap: 9px; padding-top: 4px; }
 .oc-mem[hidden] { display: none; }
 .oc-v0 { color: var(--warn); }
-.pd-chip { display: inline-block; font-size: 11px; line-height: 1.5; padding: 0 7px; border-radius: 999px; margin-left: 4px; background: hsl(var(--h) 70% 92%); color: hsl(var(--h) 55% 28%); border: 1px solid hsl(var(--h) 55% 70%); vertical-align: middle; }
+.pd-chip { font-family: inherit; cursor: pointer; display: inline-block; font-size: 11px; line-height: 1.5; padding: 0 7px; border-radius: 999px; margin-left: 4px; background: hsl(var(--h) 70% 92%); color: hsl(var(--h) 55% 28%); border: 1px solid hsl(var(--h) 55% 70%); vertical-align: middle; }
 .oc-stack { display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 14px; position: relative; }
 .oc-stack::before { content: ""; position: absolute; top: 0; left: 50%; height: 100%; border-left: 2px solid var(--line); }
 .oc-stack > .oc-card, .oc-stack > .oc-sub > .oc-card { position: relative; }
@@ -954,8 +954,16 @@ function pstKey(jn, nama) { return /pastor/i.test(jn || "") ? (/hendra/i.test(na
 function pdColor(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; }
 function pdChip(p) {
   var n = p.dek && p.d && PDMAP[p.d.i]; if (!n) return "";
-  return ' <span class="pd-chip" style="--h:' + pdColor(n) + '">' + esc(n) + "</span>";
+  return ' <button type="button" class="pd-chip" data-pdname="' + esc(n) + '" style="--h:' + pdColor(n) + '" title="Lihat detail komunitas">' + esc(n) + "</button>";
 }
+function openPdByName(name, opener) {
+  var go = function () {
+    var k = keyOf(name), p = (D.pd || []).filter(function (x) { return keyOf(x.nama) === k; })[0];
+    if (p) openPd(p.id, opener); else openInfo(name, "Komunitas", '<p class="sub">Detail komunitas ini belum tersedia di data PD.</p>', opener);
+  };
+  if (D.pd) go(); else loadPd().then(go, go);
+}
+document.addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-pdname]"); if (b) { e.preventDefault(); openPdByName(b.getAttribute("data-pdname"), b); } });
 function loadPD() {
   if (!mcp) return;
   var ids = [], seen = {}, owner = {};
@@ -1259,7 +1267,10 @@ function loadContacts() {
   return Promise.all([pg, jb, od]).then(function (rs) {
     var recs = recsOf(rs[0]), map = {}, jabMap = {}, ord = payloadOf(rs[2]) || {};
     ORDER = { bidang: (ord.bidang || []).map(bAlias), seksi: (ord.seksi || []).map(function (x) { return x === "Sekretariat" ? "Kesekretariatan" : x; }), peran: ord.peran || [] };
-    (function () { var k = ORDER.bidang.indexOf("Kesekretariatan"); if (k < 0) k = ORDER.bidang.length - 1; ORDER.bidang = ORDER.bidang.filter(function (b) { return PROMO.indexOf(b) < 0; }); k = ORDER.bidang.indexOf("Kesekretariatan"); if (k < 0) k = ORDER.bidang.length - 1; Array.prototype.splice.apply(ORDER.bidang, [k + 1, 0].concat(PROMO)); })();
+    (function () { var k = ORDER.bidang.indexOf("Kesekretariatan"); if (k < 0) k = ORDER.bidang.length - 1; ORDER.bidang = ORDER.bidang.filter(function (b) { return PROMO.indexOf(b) < 0; }); k = ORDER.bidang.indexOf("Kesekretariatan"); if (k < 0) k = ORDER.bidang.length - 1; Array.prototype.splice.apply(ORDER.bidang, [k + 1, 0].concat(PROMO));
+      var DEK = ["Dekanat Timur", "Dekanat Barat", "Dekanat Selatan", "Dekanat Kepemudaan", "Dekanat Priangan 1", "Dekanat Priangan 2", "Dekanat Pantura"];
+      var di = ORDER.bidang.filter(function (b) { return /^dekanat/i.test(b); }), at = ORDER.bidang.findIndex(function (b) { return /^dekanat/i.test(b); });
+      if (at > -1) { di.sort(function (a, b) { var x = DEK.indexOf(a), y = DEK.indexOf(b); return (x < 0 ? 99 : x) - (y < 0 ? 99 : y); }); var rest = ORDER.bidang.filter(function (b) { return !/^dekanat/i.test(b); }); var pos = Math.min(at, rest.length); ORDER.bidang = rest.slice(0, pos).concat(di, rest.slice(pos)); } })();
     recsOf(rs[1]).forEach(function (r) {
       var v = r.cellValuesByFieldId || {};
       jabMap[r.id] = { nama: cellFirst(v[F_JAB.nama]), bidang: promoB(bAlias(selName(v[F_JAB.bidang])), selName(v[F_JAB.seksi])), seksi: seksiA(bAlias(selName(v[F_JAB.bidang])), selName(v[F_JAB.seksi])), peran: selName(v[F_JAB.peran]), sub: cellFirst(v[F_JAB.sub]), urut: typeof v[F_JAB.urut] === "number" ? v[F_JAB.urut] : 999 };
@@ -1883,7 +1894,7 @@ function viewPerson(id, name, opener) {
     KOMP.forEach(function (k) { var l = flat(v[k[1]]); if (l.length) komp += "<dt>Keahlian " + esc(k[0]) + "</dt><dd>" + tagsHtml(l) + "</dd>"; });
     var tgl = one(v[PV.tgl]);
     var html = '<dl class="dl">' + drow("Panggilan", esc(ph)) + drow("Nama baptis", esc(one(v[PV.baptis]))) +
-      drow("PD / Komunitas", esc(flat(v[UF.pd]).join(", "))) + drow("Jabatan di BPK", esc(one(v[PV.jabBpk]))) + drow("Jabatan di PD", esc(flat(v[PV.jabPd]).join(", "))) +
+      drow("PD / Komunitas", flat(v[UF.pd]).map(function (n) { return '<button type="button" class="linkbtn" data-pdname="' + esc(n) + '">' + esc(n) + "</button>"; }).join(", ")) + drow("Jabatan di BPK", esc(one(v[PV.jabBpk]))) + drow("Jabatan di PD", esc(flat(v[PV.jabPd]).join(", "))) +
       drow("Keterlibatan", tagsHtml(flat(v[PV.libat]))) + drow("Kualifikasi", esc(one(v[UF.kual]))) + drow("Peran", esc(peran.join(" · "))) + komp +
       drow("Hubungi", waLink(one(v[F.wa])) + (/^[^@\s]+@[^@\s]+$/.test(one(v[F.email])) ? ' <a class="act" href="mailto:' + esc(one(v[F.email])) + '"><span>Kirim email</span></a>' : "")) +
       drow("Usia", (function () { var u = ageOf(tgl); if (u == null && one(v[PV.umur])) u = one(v[PV.umur]); return u == null || u === "" ? "" : esc(u + " tahun"); })()) +
