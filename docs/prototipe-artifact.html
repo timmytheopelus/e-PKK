@@ -336,6 +336,11 @@ footer { color: var(--muted); font-size: 13px; }
 .hb { display: grid; gap: 4px; align-content: start; min-width: 0; } .hb h4 { margin: 0 0 2px; font-size: 14px; }
 .hbr { display: grid; grid-template-columns: minmax(80px, 38%) 1fr auto; gap: 8px; align-items: center; font-size: 13px; }
 .hbr span { overflow-wrap: anywhere; } .hbr i { display: block; height: 10px; border-radius: 5px; background: var(--accent); min-width: 2px; } .hbr em { font-style: normal; font-variant-numeric: tabular-nums; color: var(--muted); }
+.tr.clk, tr.clk { cursor: pointer; } tr.clk:hover td { background: var(--accent-soft); } tr.det td { background: var(--bg); }
+.hbr { font: inherit; font-size: 13px; color: var(--fg); background: none; border: 0; padding: 2px 0; text-align: left; cursor: pointer; width: 100%; } .hbr:hover span, .hbr.on span { color: var(--accent); font-weight: 600; }
+.drill { margin-top: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); } .drill h4 { margin: 0 0 8px; font-size: 14px; }
+.pdw { display: flex; flex-wrap: wrap; gap: 8px; } .pdi { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 4px 3px 12px; font-size: 13.5px; background: var(--surface); }
+.pdi .act { border-radius: 999px; padding: 5px 7px; }
 .tw { overflow-x: auto; } .tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; } .tbl th, .tbl td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); } .tbl .num { text-align: right; font-variant-numeric: tabular-nums; }
 </style>
 
@@ -2436,14 +2441,14 @@ document.getElementById("uaBody").addEventListener("click", function (e) {
 /* ---------- event ---------- */
 var T_PEND = "tbltiJ1qDJEwfWPLg";
 var PF = { ev: "flduf15moMpZSklGL", nama: "fld9ucFxEU0cUSHWw", pd: "fldMBf67dQxv51kY1", dek: "fldAZzqERt3oFHRRx", jk: "fldylW3JpqB1DJ0Fh", usia: "fldArgqtlZOnnRIvX", nikah: "fldmecbafGeLtqCSd", kat: "fldIgnkqdrDPz8gCV", st: "fldNGGEcwHqIsQPct", val: "fldqB6h9rzzC5VhKI", inap: "fldCqIqQmVnFXqrOU", hadir: "fldcpfpO2QvPGmgd7" };
-var EVX = { nama: "fld0d9tIyi4nyTZsM", tgl: "fldoIkx9wLMaKOa38", st: "fldHs8NnkUlEXDqLy", reg: "fldUqEnDI4GCqdwAk", jenis: "fldrYLgd8LCDjwmLZ", kel: "fldhgv2WlvqytF6zA", lokasi: "fldY0qw1v0a4fK9Sp" };
+var EVX = { nama: "fld0d9tIyi4nyTZsM", tgl: "fldoIkx9wLMaKOa38", st: "fldHs8NnkUlEXDqLy", reg: "fldUqEnDI4GCqdwAk", jenis: "fldrYLgd8LCDjwmLZ", kel: "fldhgv2WlvqytF6zA", lokasi: "fldY0qw1v0a4fK9Sp", link: "fldyZyxxhZXUjhrqa", msg: "fldbLYDWk87mIC9yV", pic: "fldROaJ8rPAZQPTED", telp: "fld4qestIo5EjWAvk" };
 var EV = { sel: "", waktu: "next", q: "", pdf: "", rq: "" };
 SRC_LABEL.evx = "Event"; SRC_LABEL.pend = "Pendaftaran event";
 function loadEvx() {
   return fetchAll(BASE, T_EVENTS, Object.keys(EVX).map(function (k) { return EVX[k]; })).then(function (recs) {
     D.evx = recs.map(function (r) {
       var v = r.cellValuesByFieldId || {};
-      return { id: r.id, nama: one(v[EVX.nama]), tgl: one(v[EVX.tgl]).slice(0, 10), st: one(v[EVX.st]), reg: one(v[EVX.reg]), jenis: one(v[EVX.jenis]), kel: one(v[EVX.kel]), lokasi: one(v[EVX.lokasi]) };
+      return { id: r.id, nama: one(v[EVX.nama]), tgl: one(v[EVX.tgl]).slice(0, 10), st: one(v[EVX.st]), reg: one(v[EVX.reg]), jenis: one(v[EVX.jenis]), kel: one(v[EVX.kel]), lokasi: one(v[EVX.lokasi]), link: (v[EVX.link] && /^https:\/\//.test(v[EVX.link].url || "")) ? v[EVX.link].url : "", msg: (typeof v[EVX.msg] === "string" ? v[EVX.msg].trim() : ""), pic: one(v[EVX.pic]), telp: one(v[EVX.telp]) };
     }).filter(function (e) { return e.nama && e.tgl; });
   });
 }
@@ -2476,10 +2481,10 @@ function evKind(e, n) {
   return "";
 }
 function tally(list, fn) { var m = {}; list.forEach(function (x) { var k = fn(x) || "Belum diisi"; m[k] = (m[k] || 0) + 1; }); return m; }
-function hbars(title, m, sorter) {
+function hbars(title, m, sorter, di) {
   var ks = Object.keys(m); ks.sort(sorter || function (a, b) { return m[b] - m[a] || cmpId(a, b); });
   var max = Math.max.apply(null, ks.map(function (k) { return m[k]; }).concat([1]));
-  return '<div class="hb"><h4>' + esc(title) + "</h4>" + ks.map(function (k) { return '<div class="hbr"><span>' + esc(k) + '</span><i style="width:' + (m[k] / max * 100).toFixed(1) + '%"></i><em>' + m[k] + "</em></div>"; }).join("") + "</div>";
+  return '<div class="hb"><h4>' + esc(title) + "</h4>" + ks.map(function (k) { return '<button type="button" class="hbr" data-dim="' + di + '" data-val="' + esc(k) + '"><span>' + esc(k) + '</span><i style="width:' + (m[k] / max * 100).toFixed(1) + '%"></i><em>' + m[k] + "</em></button>"; }).join("") + "</div>";
 }
 function renderEvent() {
   var box = document.getElementById("evList");
@@ -2505,33 +2510,47 @@ function renderEvent() {
   }).join("");
   renderEvDetail(list.filter(function (e) { return e.id === EV.sel; })[0], by[EV.sel] || []);
 }
+function personTags(l) {
+  return '<div class="chips">' + l.slice().sort(function (x, y) { return cmpId(x.nama, y.nama); }).map(function (p) {
+    return '<span class="tag alt" title="' + esc(p.pd) + '">' + esc(p.nama) + (p.usia ? " · " + esc(ageLbl(p.usia).split(" ")[0]) : "") + (/^(batal|dobel)/i.test(p.st) ? " · " + esc(p.st) : "") + "</span>";
+  }).join("") + "</div>";
+}
+var EVMSG = function (e, pd) {
+  var nm = pd.koor ? pd.koor.replace(/\s+/g, " ").trim() : "Koordinator";
+  var judul = e.nama.replace(/^\d{6}-/, "");
+  var info = e.msg || (fmtDate(e.tgl, { day: "numeric", month: "long", year: "numeric" }) + (e.lokasi ? "\n" + e.lokasi : ""));
+  return "Shalom " + nm + ",\n\nKami dari BPKPKK Bandung menginformasikan event:\n*" + judul + "*\n\n" + info + "\n\nSampai saat ini belum ada pendaftar dari " + pd.nama + ". Mohon informasikan kepada anggota PD dan ajak untuk mendaftar melalui link berikut:\n" + (e.link || "(link pendaftaran belum tersedia)") + "\n\n" +
+    (e.pic ? "Pertanyaan hubungi: " + e.pic + (e.telp ? " - " + e.telp : "") + "\n\n" : "") + "Terima kasih, Tuhan memberkati.\nBPKPKK Bandung";
+};
 function renderEvDetail(e, regs) {
   var el = document.getElementById("evDetail");
   var pdActive = (D.pd || []).filter(function (p) { return isAktif(p.status); });
   var keyOf = {}; pdActive.forEach(function (p) { keyOf[pdKey(p.nama)] = p; });
   var perPd = {}, other = {};
-  regs.forEach(function (p) { var k = pdKey(p.pd); if (keyOf[k]) (perPd[k] = perPd[k] || []).push(p); else other[p.pd || "Tanpa PD"] = (other[p.pd || "Tanpa PD"] || 0) + 1; });
+  regs.forEach(function (p) { var k = pdKey(p.pd); if (keyOf[k]) (perPd[k] = perPd[k] || []).push(p); else (other[p.pd || "Tanpa PD"] = other[p.pd || "Tanpa PD"] || []).push(p); });
   var done = pdActive.filter(function (p) { return perPd[pdKey(p.nama)]; }), miss = pdActive.filter(function (p) { return !perPd[pdKey(p.nama)]; });
   var bayar = regs.filter(function (p) { return /paid|confirm/i.test(p.st); }).length, vald = regs.filter(function (p) { return p.val; }).length;
   var batal = D.pend.filter(function (p) { return p.ev === e.id && !pAktif(p); }).length;
   var h = '<h3>' + esc(e.nama.replace(/^\d{6}-/, "")) + '</h3><p class="sub">' + esc(fmtDate(e.tgl, { weekday: "long", day: "numeric", month: "long", year: "numeric" })) + (e.lokasi ? " · " + esc(e.lokasi) : "") + "</p>";
   h += '<div class="tiles">' + tile(regs.length, "Pendaftar aktif", batal ? batal + " batal / dobel daftar tidak dihitung" : "") + tile(done.length, "PD sudah mendaftar", "dari " + pdActive.length + " PD aktif") + tile(miss.length, "PD belum mendaftar", "belum ada satu pun pendaftar") + tile(bayar, "Confirmed / Paid", "validasi bendahara: " + vald) + "</div>";
-  h += '<div class="pan"><h4>Per PD</h4><div class="tw"><table class="tbl"><thead><tr><th>PD / Komunitas</th><th>Dekanat</th><th class="num">Pendaftar</th></tr></thead><tbody>';
-  var rows = done.map(function (p) { return { n: p.nama, d: p.dekanat, c: perPd[pdKey(p.nama)].length }; });
-  Object.keys(other).forEach(function (k) { rows.push({ n: k, d: "(di luar daftar PD aktif)", c: other[k] }); });
-  rows.sort(function (a, b) { return b.c - a.c || cmpId(a.n, b.n); });
-  h += rows.map(function (r) { return "<tr><td>" + esc(r.n) + "</td><td>" + esc(r.d.replace(/^Dekanat /, "")) + '</td><td class="num">' + r.c + "</td></tr>"; }).join("") + "</tbody></table></div></div>";
-  h += '<div class="pan"><h4>PD aktif yang belum mendaftar (' + miss.length + ')</h4>' + (miss.length ? '<div class="chips">' + miss.map(function (p) { return '<span class="tag alt">' + esc(p.nama) + "</span>"; }).join("") + "</div>" : '<p class="note">Semua PD aktif sudah ada pendaftarnya.</p>') + "</div>";
-  var dekOf = function (p) { var x = keyOf[pdKey(p.pd)]; return (x ? x.dekanat : p.dek) || ""; };
-  h += '<div class="pan"><h4>Data demografis pendaftar</h4><div class="dgrid">' +
-    hbars("Jenis kelamin", tally(regs, function (p) { return p.jk; })) +
-    hbars("Kelompok usia", tally(regs, function (p) { return ageLbl(p.usia); }), function (a, b) { return ageNum(a) - ageNum(b); }) +
-    hbars("Status pernikahan", tally(regs, function (p) { return p.nikah; })) +
-    hbars("Kategori kepesertaan", tally(regs, function (p) { return p.kat; })) +
-    hbars("Menginap", tally(regs, function (p) { return p.inap; })) +
-    hbars("Status pendaftaran", tally(regs, function (p) { return p.st; })) +
-    hbars("Validasi bendahara", tally(regs, function (p) { return p.val ? "Sudah divalidasi" : "Belum divalidasi"; })) +
-    hbars("Dekanat", tally(regs, function (p) { return dekOf(p).replace(/^Dekanat /, ""); })) + "</div></div>";
+  var rows = done.map(function (p) { return { n: p.nama, d: p.dekanat, l: perPd[pdKey(p.nama)] }; });
+  Object.keys(other).forEach(function (k) { rows.push({ n: k, d: "(di luar daftar PD aktif)", l: other[k] }); });
+  rows.sort(function (a, b) { return b.l.length - a.l.length || cmpId(a.n, b.n); });
+  h += '<div class="pan"><h4>Per PD <small class="note">· klik baris untuk melihat nama pendaftar</small></h4><div class="tw"><table class="tbl"><thead><tr><th>PD / Komunitas</th><th>Dekanat</th><th class="num">Pendaftar</th></tr></thead><tbody>';
+  h += rows.map(function (r) { return '<tr class="clk" data-prow tabindex="0" aria-expanded="false"><td>▸ ' + esc(r.n) + "</td><td>" + esc(r.d.replace(/^Dekanat /, "")) + '</td><td class="num">' + r.l.length + '</td></tr><tr class="det" hidden><td colspan="3">' + personTags(r.l) + "</td></tr>"; }).join("") + "</tbody></table></div></div>";
+  h += '<div class="pan"><h4>PD aktif yang belum mendaftar (' + miss.length + ') <small class="note">· ikon WA mengirim info event dan ajakan mendaftar ke koordinator</small></h4>' +
+    (miss.length ? '<div class="pdw">' + miss.map(function (p, i) {
+      var num = waNumber(p.koorWa), name = esc(p.nama);
+      var wa = num ? '<a class="act wa" href="https://wa.me/' + num + "?text=" + encodeURIComponent(EVMSG(e, p)) + '" target="_blank" rel="noopener" aria-label="Kirim WA ke koordinator ' + name + '" title="WA koordinator' + (p.koor ? ": " + esc(p.koor.replace(/\s+/g, " ")) : "") + '">' + ICON_WA + "</a>" : '<button type="button" class="act" disabled title="Nomor WA koordinator belum ada" aria-label="Nomor WA koordinator ' + name + ' belum ada">' + ICON_WA + "</button>";
+      return '<span class="pdi"><span>' + name + "</span>" + wa + "</span>";
+    }).join("") + "</div>" : '<p class="note">Semua PD aktif sudah ada pendaftarnya.</p>') + "</div>";
+  var dekOf = function (p) { var x = keyOf[pdKey(p.pd)]; return ((x ? x.dekanat : p.dek) || "").replace(/^Dekanat /, ""); };
+  var dims = [
+    ["Jenis kelamin", function (p) { return p.jk; }], ["Kelompok usia", function (p) { return ageLbl(p.usia); }, function (a, b) { return ageNum(a) - ageNum(b); }],
+    ["Status pernikahan", function (p) { return p.nikah; }], ["Kategori kepesertaan", function (p) { return p.kat; }], ["Menginap", function (p) { return p.inap; }],
+    ["Status pendaftaran", function (p) { return p.st; }], ["Validasi bendahara", function (p) { return p.val ? "Sudah divalidasi" : "Belum divalidasi"; }], ["Dekanat", dekOf]];
+  el._dims = dims;
+  h += '<div class="pan"><h4>Data demografis pendaftar <small class="note">· klik batang untuk melihat siapa saja</small></h4><div class="dgrid">' + dims.map(function (d, i) { return hbars(d[0], tally(regs, function (p) { return d[1](p) || "Belum diisi"; }), d[2], i); }).join("") + '</div><div id="evDrill" class="drill" hidden></div></div>';
   var pdNames = uniq(regs.map(function (p) { return p.pd; })).sort(cmpId);
   h += '<div class="pan"><h4>Daftar pendaftar</h4><div class="fil"><input type="search" id="evRq" placeholder="Cari nama" autocomplete="off" aria-label="Cari pendaftar" value="' + esc(EV.rq) + '"><select id="evPd" aria-label="Filter PD"><option value="">Semua PD</option>' +
     pdNames.map(function (n) { return '<option value="' + esc(n) + '"' + (n === EV.pdf ? " selected" : "") + ">" + esc(n) + "</option>"; }).join("") + '</select></div><div id="evRegs"></div></div>';
@@ -2550,7 +2569,29 @@ document.getElementById("tab-event").addEventListener("click", function (e) {
   var b = e.target.closest && e.target.closest("[data-ev]");
   if (b) { EV.sel = b.getAttribute("data-ev"); EV.pdf = ""; EV.rq = ""; renderEvent(); }
   if (e.target.closest && e.target.closest("[data-act=srcretry]")) ensureEvt(true);
+  var tr = e.target.closest && e.target.closest("tr[data-prow]");
+  if (tr && !(e.target.closest("a"))) toggleRow(tr);
+  var hb = e.target.closest && e.target.closest(".hbr[data-dim]");
+  if (hb) drill(hb);
 });
+document.getElementById("tab-event").addEventListener("keydown", function (e) {
+  var tr = e.target.closest && e.target.closest("tr[data-prow]");
+  if (tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggleRow(tr); }
+});
+function toggleRow(tr) {
+  var d = tr.nextElementSibling, open = d.hidden;
+  d.hidden = !open; tr.setAttribute("aria-expanded", open ? "true" : "false");
+  tr.firstChild.textContent = tr.firstChild.textContent.replace(/^[▸▾]/, open ? "▾" : "▸");
+}
+function drill(btn) {
+  var el = document.getElementById("evDetail"), box = document.getElementById("evDrill"), d = el._dims[+btn.dataset.dim], val = btn.dataset.val;
+  var same = box.dataset.k === btn.dataset.dim + "|" + val && !box.hidden;
+  Array.prototype.forEach.call(el.querySelectorAll(".hbr.on"), function (x) { x.classList.remove("on"); });
+  if (same) { box.hidden = true; return; }
+  var l = el._regs.filter(function (p) { return (d[1](p) || "Belum diisi") === val; });
+  btn.classList.add("on"); box.dataset.k = btn.dataset.dim + "|" + val; box.hidden = false;
+  box.innerHTML = "<h4>" + esc(d[0]) + ": " + esc(val) + " (" + l.length + " pendaftar)</h4>" + personTags(l);
+}
 document.getElementById("tab-event").addEventListener("input", function (e) {
   if (e.target.id === "evQ") { EV.q = e.target.value; renderEvent(); }
   else if (e.target.id === "evRq") { EV.rq = e.target.value; renderEvRegs(); }
