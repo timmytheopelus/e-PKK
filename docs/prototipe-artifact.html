@@ -342,7 +342,7 @@ footer { color: var(--muted); font-size: 13px; }
 @media (prefers-reduced-motion: no-preference) { .side.tabs { transition: transform .2s; } }
 .evlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
 .evc { font: inherit; text-align: left; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 4px; cursor: pointer; min-width: 0; }
-.evc b { overflow-wrap: anywhere; } .evc span { color: var(--muted); font-size: 13px; } .evc em { font-style: normal; font-weight: 600; color: var(--accent); }
+.evc b { overflow-wrap: anywhere; } .evc span { color: var(--muted); font-size: 13px; } .evc span.tag { justify-self: start; width: auto; display: inline-block; } .evc em { font-style: normal; font-weight: 600; color: var(--accent); }
 .evc:hover, .evc.on { border-color: var(--accent); } .evc.on { background: var(--accent-soft); }
 .evdetail { display: grid; gap: 16px; min-width: 0; } .evdetail h3 { margin: 0; font-family: var(--font-display); font-size: 1.3rem; } .evdetail .sub { margin: 0; color: var(--muted); }
 .hb { display: grid; gap: 4px; align-content: start; min-width: 0; } .hb h4 { margin: 0 0 2px; font-size: 14px; }
@@ -356,6 +356,8 @@ footer { color: var(--muted); font-size: 13px; }
 .tile.go { font: inherit; color: inherit; text-align: left; cursor: pointer; width: 100%; } .tile.go:hover, .tile.go:focus-visible { border-color: var(--accent); }
 .bcol[data-nav] { cursor: pointer; } .bcol[data-nav]:hover .bl { color: var(--accent); }
 .hbr.ev { font: inherit; font-size: 13px; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; padding: 6px 0; cursor: pointer; } .hbr.ev span { flex: 1 1 100%; } .hbr.ev i { flex: 0 0 auto; max-width: calc(100% - 40px); } .hbr.ev:hover span { color: var(--accent); }
+.evr { display: block; padding: 8px 0; border-bottom: 1px solid var(--line); cursor: pointer; font-size: 13px; } .evr:last-child { border-bottom: 0; } .evr-t { overflow-wrap: anywhere; margin-bottom: 4px; } .evr:hover .evr-t { color: var(--accent); }
+.evr-b { display: flex; align-items: center; gap: 8px; } .evr-bar { flex: 1 1 auto; min-width: 0; height: 10px; background: var(--accent-soft); border-radius: 5px; overflow: hidden; } .evr-bar i { display: block; height: 100%; background: var(--accent); border-radius: 5px; } .evr em { font-style: normal; font-variant-numeric: tabular-nums; color: var(--muted); min-width: 22px; text-align: right; }
 .hbr small { font-size: 11.5px; }
 .row2 { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
 @media (max-width: 480px) {
@@ -390,6 +392,8 @@ footer { color: var(--muted); font-size: 13px; }
     <button type="button" class="tabbtn" role="tab" id="tabbtn-umat" aria-controls="tab-umat" aria-selected="false" tabindex="-1" data-tab="umat">Umat</button>
     <button type="button" class="tabbtn" role="tab" id="tabbtn-kalender" aria-controls="tab-kalender" aria-selected="false" tabindex="-1" data-tab="kalender">Kalender kegiatan</button>
     <button type="button" class="tabbtn" role="tab" id="tabbtn-event" aria-controls="tab-event" aria-selected="false" tabindex="-1" data-tab="event">Event &amp; pendaftar</button>
+    <button type="button" class="tabbtn" role="tab" id="tabbtn-kep" aria-controls="tab-kep" aria-selected="false" tabindex="-1" data-tab="kep">KEP</button>
+    <button type="button" class="tabbtn" role="tab" id="tabbtn-admin" aria-controls="tab-admin" aria-selected="false" tabindex="-1" data-tab="admin">Administrasi pengguna</button>
   </nav>
   <div class="sideback" id="sideBack"></div>
   <div class="main">
@@ -607,9 +611,24 @@ footer { color: var(--muted); font-size: 13px; }
     <div id="calBody"></div>
   </div>
 
+  <div id="tab-admin" class="tab" role="tabpanel" aria-labelledby="tabbtn-admin" hidden>
+    <h2>Administrasi pengguna</h2>
+    <p class="hint">Kelola siapa yang boleh masuk dan menu apa yang boleh mereka buka.</p>
+    <div class="fil" id="admBtns">
+      <button type="button" class="chip" id="admTambah">＋ Tambah pengguna</button>
+      <button type="button" class="chip" id="admKelola">Kelola pengguna</button>
+      <button type="button" class="chip" id="admLihat" hidden>Lihat sebagai…</button>
+    </div>
+  </div>
+
+  <div id="tab-kep" class="tab" role="tabpanel" aria-labelledby="tabbtn-kep" hidden>
+    <div id="kepRoot"><p class="hint">Memuat data KEP…</p></div>
+  </div>
+
   <div id="tab-event" class="tab" role="tabpanel" aria-labelledby="tabbtn-event" hidden>
     <div class="link" id="evLink" role="status"></div>
     <div id="evHome">
+    <div id="evDash"></div>
     <div class="fil">
       <input type="search" id="evQ" placeholder="Cari nama event" autocomplete="off" aria-label="Cari event">
       <select id="evWaktu" aria-label="Waktu event"><option value="next">Berjalan dan akan datang</option><option value="past">Sudah berlalu</option><option value="all">Semua</option></select>
@@ -1263,7 +1282,12 @@ document.getElementById("dlg").addEventListener("submit", function (e) {
 
 /* ---------- tab ---------- */
 var mcpState = "pending";
-var TABS = ["beranda", "pengurus", "pewarta", "luar", "pd", "umat", "kalender", "event"];
+var TABS = ["beranda", "pengurus", "pewarta", "luar", "pd", "umat", "kalender", "event", "kep", "admin"];
+document.addEventListener("click", function (e) {
+  var t = e.target.closest && e.target.closest("#admTambah,#admKelola,#admLihat"); if (!t) return;
+  var fn = { admTambah: "EPK_TAMBAH", admKelola: "EPK_KELOLA", admLihat: "EPK_LIHATSEBAGAI" }[t.id];
+  if (window[fn]) window[fn]();
+});
 function showTab(name) {
   if (TABS.indexOf(name) < 0) name = "beranda";
   TABS.forEach(function (t) {
@@ -1273,7 +1297,7 @@ function showTab(name) {
     b.tabIndex = t === name ? 0 : -1;
   });
   if (name === "kalender") calOpen();
-  else if (name === "event") { if (mcpState === "ready") ensureEvt(); }
+  else if (name === "event" || name === "kep") { if (mcpState === "ready") ensureEvt(); }
   else if (mcpState === "ready") { ensureData(); if (name === "umat") ensureUa(false); if (name === "beranda" && navOk("event")) ensureEvt(); }
 }
 Array.prototype.forEach.call(document.querySelectorAll(".tabbtn"), function (b) {
@@ -1372,7 +1396,7 @@ function calOpen() {
   else if (mcpState === "none") { cal.state = "unavailable"; calStatus(); }
   else { cal.state = "loading"; calStatus(); }
 }
-function onMcp() { ensureData(true); if (navOk("event")) ensureEvt(true); if (!document.getElementById('tab-event').hidden) ensureEvt(true); if (!document.getElementById('tab-umat').hidden) ensureUa(true); }
+function onMcp() { ensureData(true); if (navOk("event") || navOk("kep")) ensureEvt(true); if (!document.getElementById('tab-event').hidden) ensureEvt(true); if (!document.getElementById('tab-umat').hidden) ensureUa(true); }
 document.getElementById("calStatus").addEventListener("click", function (e) {
   if (e.target.closest && e.target.closest("[data-act=calretry]")) loadEvents();
 });
@@ -1860,7 +1884,7 @@ function renderEvDash() {
   var max = Math.max.apply(null, l.map(function (e) { return by[e.id] || 0; }).concat([1]));
   el.innerHTML = l.length ? '<div class="hb">' + l.map(function (e) {
     var n = by[e.id] || 0;
-    return '<div role="button" tabindex="0" class="hbr ev" data-nav="evt:' + esc(e.id) + '"><span>' + esc(e.nama.replace(/^\d{6}-/, "")) + '<small class="note"> · ' + esc(fmtDate(e.tgl, { day: "numeric", month: "short" })) + '</small></span><i style="width:' + (n / max * 100).toFixed(1) + '%"></i><em>' + n + "</em></div>";
+    return '<div role="button" tabindex="0" class="evr" data-nav="evt:' + esc(e.id) + '"><div class="evr-t">' + esc(e.nama.replace(/^\d{6}-/, "")) + '<small class="note"> · ' + esc(fmtDate(e.tgl, { day: "numeric", month: "short" })) + '</small></div><div class="evr-b"><span class="evr-bar"><i style="width:' + Math.max(n / max * 100, n ? 2 : 0).toFixed(1) + '%"></i></span><em>' + n + "</em></div></div>";
   }).join("") + "</div>" : '<p class="hint">Tidak ada event berjalan.</p>';
 }
 function pbars(title, m, order, key) {
@@ -2753,7 +2777,8 @@ function pAktif(p) { return !/^(batal|dobel)/i.test(p.st); }
 function evKind(e, n) {
   if (/batal|libur/i.test(e.st) || e.jenis === "Rutin" || /libur/i.test(e.jenis)) return "";
   var open = /open/i.test(e.reg);
-  if (/aktif|scheduled/i.test(e.st) && (open || n > 0 || e.kel !== "BPK")) return "next";
+  if (/^(KEP|KEP Exe|SSK)$/.test(e.kel)) return "";
+  if (/aktif|scheduled/i.test(e.st) && (open || n > 0)) return "next";
   if (/berlalu/i.test(e.st) && n > 0) return "past";
   return "";
 }
@@ -2762,6 +2787,17 @@ function hbars(title, m, sorter, di) {
   var ks = Object.keys(m); ks.sort(sorter || function (a, b) { return m[b] - m[a] || cmpId(a, b); });
   var max = Math.max.apply(null, ks.map(function (k) { return m[k]; }).concat([1]));
   return '<div class="hb"><h4>' + esc(title) + "</h4>" + ks.map(function (k) { return '<button type="button" class="hbr" data-dim="' + di + '" data-val="' + esc(k) + '"><span>' + esc(k) + '</span><i style="width:' + (m[k] / max * 100).toFixed(1) + '%"></i><em>' + m[k] + "</em></button>"; }).join("") + "</div>";
+}
+function evDashHtml(by) {
+  var run = D.evx.filter(function (e) { return evKind(e, (by[e.id] || []).length) === "next"; }).sort(function (a, b) { return a.tgl.localeCompare(b.tgl); });
+  var tot = 0, buka = 0; run.forEach(function (e) { tot += (by[e.id] || []).length; if (/open/i.test(e.reg)) buka++; });
+  var nx = run.filter(function (e) { return e.tgl >= TODAY; })[0];
+  var past = D.evx.filter(function (e) { return evKind(e, (by[e.id] || []).length) === "past"; }).length;
+  var max = Math.max.apply(null, run.map(function (e) { return (by[e.id] || []).length; }).concat([1]));
+  var h = '<div class="pan"><h4>Event berjalan <small class="note">· ringkasan pendaftaran saat ini</small></h4><div class="tiles">' + tile(run.length, "Event berjalan / akan datang", "yang memakai sistem pendaftaran") + tile(buka, "Pendaftaran masih dibuka", "") + tile(tot, "Total pendaftar aktif", "di semua event berjalan") +
+    tile(nx ? fmtDate(nx.tgl, { day: "numeric", month: "short" }) : "-", "Event terdekat", nx ? nx.nama.replace(/^\d{6}-/, "") : "Belum ada") + tile(past, "Event sudah berlalu", "dengan data pendaftar") + "</div>";
+  if (run.length) h += '<div class="hb"><h4>Pendaftar per event</h4>' + run.map(function (e) { var n = (by[e.id] || []).length; return '<button type="button" class="hbr" data-ev="' + esc(e.id) + '"><span>' + esc(e.nama.replace(/^\d{6}-/, "")) + '</span><i style="width:' + (n / max * 100).toFixed(1) + '%"></i><em>' + n + "</em></button>"; }).join("") + "</div>";
+  return h + '<p class="note">Event SSK dan KEP tidak ditampilkan di sini (SSK hanya di Kalender, KEP punya menu sendiri).</p></div><h4>Detail event</h4>';
 }
 function renderEvent() {
   var box = document.getElementById("evList");
@@ -2772,6 +2808,7 @@ function renderEvent() {
   document.getElementById("evDetail").hidden = !EV.open;
   var by = {};
   D.pend.forEach(function (p) { if (pAktif(p)) (by[p.ev] = by[p.ev] || []).push(p); });
+  document.getElementById("evDash").innerHTML = EV.open ? "" : evDashHtml(by);
   var q = EV.q.toLowerCase(), list = D.evx.filter(function (e) {
     var k = evKind(e, (by[e.id] || []).length);
     if (!k) return false;
@@ -2793,6 +2830,39 @@ function renderEvent() {
       '</span><span class="tag' + (open ? "" : " alt") + '">' + (open ? "Pendaftaran dibuka" : "Pendaftaran ditutup") + '</span><em>' + n + " pendaftar</em></button>";
   }).join("");
   renderEvDetail(list.filter(function (e) { return e.id === EV.sel; })[0], by[EV.sel] || []);
+}
+
+/* ---------- KEP ---------- */
+function kepEvents() { return (D.evx || []).filter(function (e) { return e.kel === "KEP" || e.kel === "KEP Exe"; }); }
+function kepBars(title, m, order) {
+  var ks = order || Object.keys(m).sort(function (a, b) { return m[b] - m[a]; });
+  var max = Math.max.apply(null, ks.map(function (k) { return m[k]; }).concat([1]));
+  return '<div class="hb"><h4>' + esc(title) + "</h4>" + ks.map(function (k) { return '<div class="hbr"><span>' + esc(k) + '</span><i style="width:' + (m[k] / max * 100).toFixed(1) + '%"></i><em>' + m[k] + "</em></div>"; }).join("") + "</div>";
+}
+function renderKep() {
+  var el = document.getElementById("kepRoot"); if (!el) return;
+  if (!D.evx || !D.pend) { el.innerHTML = '<p class="hint">Memuat data KEP…</p>'; return; }
+  var all = kepEvents(), by = {};
+  D.pend.forEach(function (p) { if (pAktif(p)) by[p.ev] = (by[p.ev] || 0) + 1; });
+  var batal = function (e) { return /batal/i.test(e.st); };
+  var ok = all.filter(function (e) { return !batal(e); }), done = ok.filter(function (e) { return e.tgl < TODAY || /berlalu/i.test(e.st); }), nxt = ok.filter(function (e) { return e.tgl >= TODAY && !/berlalu/i.test(e.st); }).sort(function (a, b) { return a.tgl.localeCompare(b.tgl); });
+  var peserta = 0; ok.forEach(function (e) { peserta += by[e.id] || 0; });
+  var yr = {}, mo = {}, loc = {}, tipe = {};
+  ok.forEach(function (e) { var y = e.tgl.slice(0, 4); yr[y] = (yr[y] || 0) + 1; var m = e.tgl.slice(0, 7); mo[m] = (mo[m] || 0) + 1; var l = (e.lokasi || "Belum diisi").replace(/\s+/g, " ").trim(); loc[l] = (loc[l] || 0) + 1; tipe[e.kel] = (tipe[e.kel] || 0) + 1; });
+  var h = '<h2>KEP</h2><p class="hint">Ringkasan kegiatan KEP dan KEP Exe: di mana sudah berjalan, bagaimana, kapan, dan trennya.</p>';
+  h += '<div class="tiles">' + tile(ok.length, "Kegiatan KEP tercatat", (all.length - ok.length) + " dibatalkan tidak dihitung") + tile(done.length, "Sudah berjalan", "") + tile(nxt.length, "Terjadwal ke depan", nxt[0] ? "Berikutnya " + fmtDate(nxt[0].tgl, { day: "numeric", month: "short", year: "numeric" }) : "Belum ada") + tile(Object.keys(loc).length, "Lokasi / paroki berbeda", "") + tile(peserta, "Pendaftar tercatat", "di sistem pendaftaran") + "</div>";
+  h += '<div class="pan"><h4>Trend per tahun</h4>' + kepBars("Jumlah kegiatan per tahun", yr, Object.keys(yr).sort()) + "</div>";
+  var ms = Object.keys(mo).sort();
+  h += '<div class="pan"><h4>Kapan saja berjalan <small class="note">· jumlah kegiatan per bulan</small></h4>' + kepBars("Per bulan", mo, ms) + "</div>";
+  h += '<div class="pan"><h4>Di mana saja</h4>' + kepBars("Lokasi / paroki", loc) + kepBars("Jenis", tipe) + "</div>";
+  if (nxt.length) h += '<div class="pan"><h4>Terjadwal ke depan</h4>' + kepRows(nxt, by) + "</div>";
+  h += '<div class="pan"><h4>Detail semua kegiatan <small class="note">· terbaru di atas</small></h4>' + kepRows(all.slice().sort(function (a, b) { return b.tgl.localeCompare(a.tgl); }), by) + "</div>";
+  el.innerHTML = h;
+}
+function kepRows(l, by) {
+  return '<div class="tw"><table class="tbl"><thead><tr><th>Kegiatan</th><th>Tanggal</th><th>Lokasi</th><th>Status</th><th class="num">Pendaftar</th></tr></thead><tbody>' + l.map(function (e) {
+    return "<tr><td>" + esc(e.nama.replace(/^\d{6}-/, "")) + "</td><td>" + esc(fmtDate(e.tgl, { day: "numeric", month: "short", year: "numeric" })) + "</td><td>" + esc(e.lokasi || "-") + "</td><td>" + esc(/batal/i.test(e.st) ? "Dibatalkan" : e.tgl < TODAY ? "Sudah berjalan" : "Terjadwal") + '</td><td class="num">' + (by[e.id] || 0) + "</td></tr>";
+  }).join("") + "</tbody></table></div>";
 }
 function personTags(l) {
   return '<div class="chips">' + l.slice().sort(function (x, y) { return cmpId(x.nama, y.nama); }).map(function (p) {
@@ -2888,7 +2958,7 @@ document.getElementById("tab-event").addEventListener("change", function (e) {
   else if (e.target.id === "evPd") { EV.pdf = e.target.value; renderEvRegs(); }
 });
 
-function refreshViews() { renderEvent(); renderBeranda(); renderPewarta(); renderLuar(); renderTamu(); renderPd(); renderUmat(); }
+function refreshViews() { renderEvent(); renderKep(); renderBeranda(); renderPewarta(); renderLuar(); renderTamu(); renderPd(); renderUmat(); }
 
 (function boot() {
   var c = window.claude;

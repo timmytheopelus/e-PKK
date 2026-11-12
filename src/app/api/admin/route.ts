@@ -13,6 +13,7 @@ export async function POST(req: Request) {
   try {
     const acc = await getAccess(email);
     if (!acc || acc.status !== "Disetujui" || !["Superadmin", "Admin"].includes(acc.level)) throw new HttpError(403, "Khusus Superadmin atau Admin.");
+    if (!acc.tabs.includes("Administrasi")) throw new HttpError(403, "Anda tidak punya akses menu Administrasi pengguna.");
     const b = await req.json();
     return NextResponse.json(await adminCall(String(b?.action), b?.input, email, { level: acc.level, tabs: acc.tabs }));
   } catch (e: any) {

@@ -8,7 +8,11 @@ export const TAB_IDS: Record<string, string> = {
   Umat: "umat",
   Kalender: "kalender",
   Event: "event",
+  KEP: "kep",
+  Administrasi: "admin",
 };
+/** Tab yang harus diberikan eksplisit, tidak otomatis untuk Superadmin. */
+export const EXPLICIT_TABS = ["Administrasi"];
 export const ALL_TABS = Object.keys(TAB_IDS);
 
 export const BASE_BPK = "appIGR8Duhj3Vsz48";
@@ -58,11 +62,11 @@ export const TABLES: Record<string, Spec> = {
     update: { tabs: ["Pengurus", "Pewarta"], fields: PERSON },
     create: { tabs: ["PD"], fields: [PERSON[0], PERSON[2], "fldrHJ6q3HZvApccl"] },
   },
-  [T.events]: { base: BASE_BPK, read: ["Kalender", "Dashboard", "Event"], create: { tabs: ["Kalender"], fields: EF } },
+  [T.events]: { base: BASE_BPK, read: ["Kalender", "Dashboard", "Event", "KEP"], create: { tabs: ["Kalender"], fields: EF } },
   [T.pd]: { base: BASE_BPK, read: ["PD", "Dashboard", "Event"], update: { tabs: ["PD"], fields: ["fldagyoKQyhfenB7u"] } },
   [T.smpEvents]: { base: BASE_SMP, read: ["Dashboard", "Pewarta luar kota"] },
   [T.smpKui]: { base: BASE_SMP, read: ["Dashboard"] },
-  [T.pendaftaran]: { base: BASE_BPK, read: ["Event"], readFields: PEND_READ },
+  [T.pendaftaran]: { base: BASE_BPK, read: ["Event", "KEP"], readFields: PEND_READ },
   [T.pewartaBpk]: { base: BASE_SMP, read: ["Pewarta", "Pewarta luar kota", "Dashboard"], update: { tabs: ["Pewarta"], fields: PWB_EDIT } },
 };
 

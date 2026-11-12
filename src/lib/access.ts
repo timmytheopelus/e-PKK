@@ -1,5 +1,5 @@
 // Daftar pengguna yang disetujui, disimpan di tabel "Pengguna Dashboard" (Airtable).
-import { Access, ALL_TABS, BASE_BPK, T } from "./policy";
+import { Access, ALL_TABS, BASE_BPK, EXPLICIT_TABS, T } from "./policy";
 import { at, listPage } from "./airtable";
 import { notifySuperadmins } from "./mail";
 
@@ -25,7 +25,7 @@ async function fetchUser(email: string) {
   if (!r) return { v: null as Access | null };
   const f = r.fields;
   const level = f[AF.level] || "View";
-  const tabs = level === "Superadmin" ? [...ALL_TABS] : ((f[AF.tabs] as string[]) || []).filter((t) => ALL_TABS.includes(t));
+  const tabs = level === "Superadmin" ? ALL_TABS.filter((t) => !EXPLICIT_TABS.includes(t)).concat(((f[AF.tabs] as string[]) || []).filter((t) => EXPLICIT_TABS.includes(t))) : ((f[AF.tabs] as string[]) || []).filter((t) => ALL_TABS.includes(t));
   return { id: r.id, v: { email: norm(email), nama: f[AF.nama] || "", status: f[AF.status] || "Menunggu", level, tabs, jabatan: jabatanOf(f), login: f[AF.login] || "" } as Access };
 }
 
