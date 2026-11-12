@@ -40,41 +40,94 @@ async function boot() {
   await new Promise((r) => setTimeout(r, 30));
   return w;
 }
-const stats = (w: any) => [...w.document.querySelectorAll(".keu-n")].map((e: any) => e.textContent.replace(/\s+/g, " "));
+const cards = (w: any) => [...w.document.querySelectorAll(".keu-card")].map((e: any) => ({ label: e.querySelector(".l").textContent, value: e.querySelector(".n").textContent }));
 const digits = (s: string) => s.replace(/[^\d]/g, "");
+const tab = (w: any, name: string) => [...w.document.querySelectorAll(".keu-tab")].find((b: any) => b.textContent === name) as any;
+const click = (w: any, el: any) => el.dispatchEvent(new w.Event("click", { bubbles: true }));
 
-describe("laporan keuangan", () => {
-  it("default tahun terbaru: saldo seluruh periode, pemasukan/pengeluaran tahun 2026, transaksi dihapus diabaikan", async () => {
+describe("laporan keuangan: halaman depan", () => {
+  it("hanya Ringkasan: 4 kartu berbahasa awam, default tahun terbaru, transaksi dihapus diabaikan", async () => {
     const w = await boot();
-    const s = stats(w);
-    expect(digits(s[0])).toBe("1610000"); // 1.000.000 + 500.000 - 200.000 + 300.000 + 10.000
-    expect(digits(s[1])).toBe("800000");
-    expect(digits(s[2])).toBe("200000");
-    expect(digits(s[3])).toBe("600000");
+    const c = cards(w);
+    expect(c.map((x: any) => x.label)).toEqual(["Saldo kas saat ini", "Uang masuk", "Uang keluar", "Selisih"]);
+    expect(digits(c[0].value)).toBe("1610000"); // 1.000.000 + 500.000 - 200.000 + 300.000 + 10.000
+    expect(digits(c[1].value)).toBe("800000");
+    expect(digits(c[2].value)).toBe("200000");
+    expect(digits(c[3].value)).toBe("600000");
+    expect(w.document.querySelector("table")).toBeNull(); // tabel rinci tidak muncul di halaman depan
     expect(w.document.body.textContent).not.toContain("Salah input");
-    expect(w.document.body.textContent).not.toContain("Tahun lalu"); // beda tahun, terfilter
+    expect([...w.document.querySelectorAll(".keu-tab")].map((b: any) => b.textContent)).toEqual(["Ringkasan", "Transaksi", "Per Bulan", "Per Bidang", "Per Rekening"]);
   });
-  it("filter bulan mempersempit angka periode tetapi saldo tetap seluruh periode", async () => {
+  it("nomor urut di depan nama bidang dibuang untuk tampilan", async () => {
     const w = await boot();
-    const bulan = w.document.querySelectorAll(".keu-bar select")[1];
+    const t = w.document.querySelector(".keu-panels").textContent;
+    expect(t).toContain("Operasional");
+    expect(t).not.toContain("1-Operasional");
+  });
+  it("memilih bulan mempersempit kartu periode, saldo kas tetap seluruh periode", async () => {
+    const w = await boot();
+    const bulan = w.document.querySelectorAll(".keu-per select")[1];
     bulan.value = "11"; bulan.dispatchEvent(new w.Event("change"));
-    const s = stats(w);
-    expect(digits(s[0])).toBe("1610000");
-    expect(digits(s[1])).toBe("300000");
-    expect(s[2]).toBe("Rp 0");
+    const c = cards(w);
+    expect(digits(c[0].value)).toBe("1610000");
+    expect(digits(c[1].value)).toBe("300000");
+    expect(c[2].value).toBe("Rp 0");
   });
-  it("rincian per bidang dan account, nama account dirapikan", async () => {
+});
+
+describe("laporan keuangan: klik kartu membuka rincian", () => {
+  it("kartu Uang keluar membuka tab Transaksi hanya berisi uang keluar", async () => {
     const w = await boot();
-    const t = w.document.body.textContent;
-    expect(t).toContain("5-Doa");
-    expect(t).toContain("1-Operasional");
-    expect(t).toContain("32-Pendaftaran (event)");
+    click(w, w.document.querySelectorAll(".keu-card")[2]);
+    expect(tab(w, "Transaksi").getAttribute("aria-selected")).toBe("true");
+    const rows = [...w.document.querySelectorAll("tbody tr")].map((r: any) => r.textContent);
+    expect(rows.length).toBe(1);
+    expect(rows[0]).toContain("Konsumsi");
+    expect(rows[0]).toContain("Uang keluar");
   });
-  it("CSV: header, tanda minus untuk keluar, dan sel teks tidak bisa jadi rumus", async () => {
+  it("kartu Saldo kas membuka Per Rekening dengan saldo tiap rekening", async () => {
+    const w = await boot();
+    click(w, w.document.querySelectorAll(".keu-card")[0]);
+    const t = w.document.querySelector("table").textContent;
+    expect(t).toContain("Utama (BCA)");
+    expect(t).toContain("Lama");
+    expect(digits(w.document.querySelector("tfoot").textContent)).toContain("1610000");
+  });
+  it("baris transaksi bisa diklik untuk melihat detail lengkap", async () => {
+    const w = await boot();
+    let titleShown = "";
+    w.EPK.modal = (t: string, body: any) => { titleShown = t + "|" + body.textContent; return {}; };
+    click(w, tab(w, "Transaksi"));
+    const row = [...w.document.querySelectorAll("tbody tr")].find((r: any) => r.textContent.includes("Konsumsi"));
+    click(w, row);
+    expect(titleShown).toContain("Detail transaksi");
+    expect(titleShown).toContain("Konsumsi");
+    expect(titleShown).toContain("Bidang");
+  });
+  it("Per Bidang: bisa ganti ke kategori dan nama kategori dirapikan", async () => {
+    const w = await boot();
+    click(w, tab(w, "Per Bidang"));
+    expect(w.document.querySelector("table").textContent).toContain("Doa");
+    click(w, w.document.querySelectorAll(".keu-seg button")[1]);
+    expect(w.document.querySelector("table").textContent).toContain("Pendaftaran (event)");
+  });
+  it("Per Bulan: baris bulan memfilter Transaksi ke bulan itu", async () => {
+    const w = await boot();
+    click(w, tab(w, "Per Bulan"));
+    const row = [...w.document.querySelectorAll("tbody tr")].find((r: any) => r.textContent.includes("November 2026"));
+    click(w, row);
+    const rows = [...w.document.querySelectorAll("tbody tr")].map((r: any) => r.textContent);
+    expect(rows.length).toBe(1);
+    expect(rows[0]).toContain("Janji iman");
+  });
+});
+
+describe("laporan keuangan: ekspor dan galat", () => {
+  it("CSV: header berbahasa Indonesia, minus untuk uang keluar, transaksi dihapus tidak ikut", async () => {
     const w = await boot();
     const csv: string = w.EPK_KEU_CSV();
     expect(csv.charCodeAt(0)).toBe(0xfeff);
-    expect(csv).toContain("Nominal (+masuk / -keluar)");
+    expect(csv).toContain("Jumlah (+ masuk / - keluar)");
     expect(csv).toContain(",-200000,");
     expect(csv).not.toContain("Salah input");
   });
@@ -85,6 +138,7 @@ describe("laporan keuangan", () => {
     w.EPK = { el: (t: string, p: any = {}, k: any[] = []) => { const e = w.document.createElement(t); if (p.text) e.textContent = p.text; if (p.class) e.className = p.class; k.forEach((c: any) => c && e.appendChild(c)); return e; } };
     w.eval(KEUANGAN_JS); w.EPK_KEU_OPEN();
     await new Promise((r) => setTimeout(r, 30));
-    expect(w.document.body.textContent).toContain("Gagal memuat laporan keuangan");
+    expect(w.document.body.textContent).toContain("belum bisa dimuat");
+    expect(w.document.body.textContent).toContain("Coba lagi");
   });
 });
