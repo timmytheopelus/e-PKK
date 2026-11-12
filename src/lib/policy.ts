@@ -11,8 +11,6 @@ export const TAB_IDS: Record<string, string> = {
   KEP: "kep",
   Administrasi: "admin",
 };
-/** Tab yang harus diberikan eksplisit, tidak otomatis untuk Superadmin. */
-export const EXPLICIT_TABS = ["Administrasi"];
 export const ALL_TABS = Object.keys(TAB_IDS);
 
 export const BASE_BPK = "appIGR8Duhj3Vsz48";
