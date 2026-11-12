@@ -358,6 +358,8 @@ footer { color: var(--muted); font-size: 13px; }
 .hbr.ev { font: inherit; font-size: 13px; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; padding: 6px 0; cursor: pointer; } .hbr.ev span { flex: 1 1 100%; } .hbr.ev i { flex: 0 0 auto; max-width: calc(100% - 40px); } .hbr.ev:hover span { color: var(--accent); }
 #admBtns .chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
 #admPane { margin-top: 12px; }
+.sepfoot { display: none; justify-content: center; align-items: center; gap: 24px; padding: 28px 0 12px; } body.sep .sepfoot { display: flex; } .sepfoot img { height: 64px; width: auto; opacity: .9; }
+.kpie svg { display: block; margin: 4px 0; } .kleg { list-style: none; margin: 0; padding: 0; font-size: 13px; } .kleg li { display: flex; gap: 6px; align-items: center; margin: 2px 0; } .kleg i { width: 12px; height: 12px; border-radius: 3px; flex: none; }
 .evr { display: block; padding: 8px 0; border-bottom: 1px solid var(--line); cursor: pointer; font-size: 13px; } .evr:last-child { border-bottom: 0; } .evr-t { overflow-wrap: anywhere; margin-bottom: 4px; } .evr:hover .evr-t { color: var(--accent); }
 .evr-b { display: flex; align-items: center; gap: 8px; } .evr-bar { flex: 1 1 auto; min-width: 0; height: 10px; background: var(--accent-soft); border-radius: 5px; overflow: hidden; } .evr-bar i { display: block; height: 100%; background: var(--accent); border-radius: 5px; } .evr em { font-style: normal; font-variant-numeric: tabular-nums; color: var(--muted); min-width: 22px; text-align: right; }
 .hbr small { font-size: 11.5px; }
@@ -376,10 +378,10 @@ footer { color: var(--muted); font-size: 13px; }
 
 <div class="wrap">
   <header class="brand">
-    <a href="#beranda" id="logoHome" aria-label="Kembali ke dashboard utama" title="Dashboard utama" style="display:flex;flex:none"><img class="logo" src="/logo.png" alt="Logo BPK Keuskupan Bandung" width="92" height="92"></a>
+    <a href="#beranda" id="logoHome" aria-label="Kembali ke dashboard utama" title="Dashboard utama" style="display:flex;flex:none"><img class="logo" id="brandLogo" src="/logo.png" alt="Logo BPK Keuskupan Bandung" width="92" height="92"></a>
     <div>
-      <h1>BPKPKK Bandung</h1>
-      <p>Data pengurus dan kalender kegiatan, dibaca dari Airtable BPK Bandung.</p>
+      <h1 id="brandH1">BPKPKK Bandung</h1>
+      <p id="brandSub">Data pengurus dan kalender kegiatan, dibaca dari Airtable BPK Bandung.</p>
     </div>
   </header>
 
@@ -627,6 +629,7 @@ footer { color: var(--muted); font-size: 13px; }
   <div id="tab-kep" class="tab" role="tabpanel" aria-labelledby="tabbtn-kep" hidden>
     <div class="link" id="kepLink" role="status"></div>
     <div id="kepRoot"><p class="hint">Memuat data KEP…</p></div>
+    <div class="sepfoot"><img src="/logo.png" alt="Logo BPK Keuskupan Bandung"></div>
   </div>
 
   <div id="tab-event" class="tab" role="tabpanel" aria-labelledby="tabbtn-event" hidden>
@@ -643,7 +646,6 @@ footer { color: var(--muted); font-size: 13px; }
     <div class="evdetail" id="evDetail"></div>
   </div>
 
-  <footer>Tombol Edit menyimpan langsung ke tabel MasterData TeamUmat di Airtable, dan nomor WA dibaca dari Airtable saat halaman dibuka. Kalender menambah baris di tabel Events; penggantian koordinator PD dan penambahan umat baru juga menulis ke Airtable. Selebihnya hanya membaca. Daftar dikelompokkan menurut seksi atau bidang. Tim Inti Koordinator otomatis dihitung sebagai anggota Grup Harian. Satu orang dapat memegang lebih dari satu jabatan dan ditampilkan di kelompok jabatan utamanya.</footer>
   </div>
   </div>
 </div>
@@ -1292,8 +1294,16 @@ document.addEventListener("click", function (e) {
   var fn = { admTambah: "EPK_TAMBAH", admKelola: "EPK_KELOLA", admRingkas: "EPK_RINGKAS" }[t.id];
   if (window[fn]) window[fn]();
 });
+function brandFor(sep) {
+  var l = document.getElementById("brandLogo"), a = document.getElementById("brandH1"), b = document.getElementById("brandSub");
+  l.src = sep ? "/logo-elshaddai.png" : "/logo.png"; l.alt = sep ? "Logo El Shaddai Training Center" : "Logo BPK Keuskupan Bandung";
+  a.textContent = sep ? "@SEP" : "BPKPKK Bandung"; b.textContent = sep ? "SISTEM INFORMASI EVANGELISASI PRIBADI" : "Data pengurus dan kalender kegiatan, dibaca dari Airtable BPK Bandung.";
+  document.title = sep ? "@SEP" : "Pengurus BPKPKK Bandung";
+  document.body.classList.toggle("sep", !!sep);
+}
 function showTab(name) {
   if (TABS.indexOf(name) < 0) name = "beranda";
+  brandFor(name === "kep");
   if (name === "admin" && window.EPK_ADMIN_OPEN) setTimeout(window.EPK_ADMIN_OPEN, 0);
   TABS.forEach(function (t) {
     document.getElementById("tab-" + t).hidden = t !== name;
@@ -2856,12 +2866,15 @@ function kepEvents() {
   return (D.evx || []).filter(function (e) { return (e.kel === "KEP" || e.kel === "KEP Exe") && !/pembekalan\s+pengajar/i.test(e.nama); });
 }
 /** Kunci paroki: nama di judul/lokasi dicocokkan ke tabel Penyelenggara KEP (nama paroki atau lokasi-nya) agar penulisan berbeda menyatu. */
+function kpMaster(lok) { var c = kpCanon(lok); return c ? (D.kpar || []).filter(function (p) { return kpCanon(p.nama) === c; })[0] : null; }
 function kpKey(e) {
+  if (e.kel === "KEP Exe" || !/paroki/i.test(e.nama)) return { key: "_nonparoki", name: "KEP non paroki" };
   var m = /paroki\s+(.+?)\s+angkatan/i.exec(e.nama), raw = m ? m[1] : e.lokasi || e.nama;
   var c = kpCanon(raw), cl = kpCanon(e.lokasi);
   var pen = (D.kpen || []).filter(function (p) { var a = kpCanon(p.nama), b = kpCanon(p.lok); return (c && (a === c || b === c)) || (cl && (a === cl || b === cl)); })[0];
-  if (pen) return { key: kpCanon(pen.nama), name: pen.nama.replace(/^Paroki\s+/i, "") };
-  return { key: c || "(belum diisi)", name: c ? kpTitle(c) : "Belum diisi" };
+  if (pen) { var ms = kpMaster(pen.lok); return { key: kpCanon(pen.nama), name: ms ? ms.nama : pen.nama }; }
+  var ms2 = kpMaster(raw) || kpMaster(e.lokasi); if (ms2) return { key: kpCanon(ms2.nama), name: ms2.nama };
+  return { key: c || "(belum diisi)", name: c ? "Paroki " + kpTitle(c) : "Belum diisi" };
 }
 function kpEvs() {
   var by = {}; (D.pend || []).forEach(function (p) { if (pAktif(p)) (by[p.ev] = by[p.ev] || []).push(p); });
@@ -2885,10 +2898,39 @@ function kBars(title, m, order, attr) {
 }
 function kpTile(num, label, sub, v, st) { return '<button type="button" class="tile go" data-kpv="' + v + '"' + (st !== undefined ? ' data-kpst="' + st + '"' : "") + "><b>" + num + "</b><span>" + esc(label) + "</span><small>" + esc(sub || "") + "</small></button>"; }
 function kpPs(list) { var a = []; list.forEach(function (x) { x.ps.forEach(function (p) { a.push({ p: p, x: x }); }); }); return a; }
+var KCOL = ["#2f6f73", "#c28b2c", "#4a63a8", "#b5504a", "#7a8f3c", "#8a6bb0", "#8a8f98"];
+function kPie(title, m, order) {
+  var ks = order || Object.keys(m).sort(function (a, b) { return m[b] - m[a]; }), tot = ks.reduce(function (t, k) { return t + m[k]; }, 0);
+  if (!tot) return '<div class="hb"><h4>' + esc(title) + '</h4><p class="note">Belum ada data.</p></div>';
+  var a0 = -Math.PI / 2, svg = "", leg = "";
+  ks.forEach(function (k, i) {
+    var frac = m[k] / tot, a1 = a0 + frac * 2 * Math.PI, c = KCOL[i % KCOL.length];
+    if (frac >= 0.9999) svg += '<circle cx="60" cy="60" r="54" fill="' + c + '"/>';
+    else svg += '<path d="M60 60 L' + (60 + 54 * Math.cos(a0)).toFixed(2) + " " + (60 + 54 * Math.sin(a0)).toFixed(2) + " A54 54 0 " + (frac > 0.5 ? 1 : 0) + " 1 " + (60 + 54 * Math.cos(a1)).toFixed(2) + " " + (60 + 54 * Math.sin(a1)).toFixed(2) + ' Z" fill="' + c + '" stroke="#fff" stroke-width="1"/>';
+    a0 = a1; leg += '<li><i style="background:' + c + '"></i>' + esc(k) + " <b>" + m[k] + "</b> (" + Math.round(frac * 100) + "%)</li>";
+  });
+  return '<div class="hb kpie"><h4>' + esc(title) + '</h4><svg viewBox="0 0 120 120" width="150" height="150" role="img" aria-label="' + esc(title) + '">' + svg + '</svg><ul class="kleg">' + leg + "</ul></div>";
+}
+function kLine(title, labels, vals) {
+  var W = 320, H = 150, L = 26, R = 10, T = 14, B = 28, max = Math.max.apply(null, vals.concat([1])), n = vals.length;
+  if (!n) return '<div class="hb"><h4>' + esc(title) + '</h4><p class="note">Belum ada data.</p></div>';
+  var X = function (i) { return L + (n === 1 ? (W - L - R) / 2 : i * (W - L - R) / (n - 1)); }, Y = function (v) { return T + (H - T - B) * (1 - v / max); };
+  var pts = vals.map(function (v, i) { return X(i).toFixed(1) + "," + Y(v).toFixed(1); }).join(" ");
+  var step = Math.ceil(n / 6), g = "";
+  for (var t = 0; t <= 2; t++) { var yv = max * t / 2, yy = Y(yv); g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#d9dee4" stroke-width="1"/><text x="' + (L - 4) + '" y="' + (yy + 3) + '" text-anchor="end" font-size="9" fill="#6b7480">' + (Math.round(yv * 10) / 10) + "</text>"; }
+  labels.forEach(function (lb, i) { if (i % step === 0 || i === n - 1) g += '<text x="' + X(i).toFixed(1) + '" y="' + (H - 10) + '" text-anchor="middle" font-size="9" fill="#6b7480">' + esc(lb) + "</text>"; });
+  return '<div class="hb"><h4>' + esc(title) + '</h4><svg viewBox="0 0 ' + W + " " + H + '" width="100%" role="img" aria-label="' + esc(title) + '">' + g + '<polyline points="' + pts + '" fill="none" stroke="#2f6f73" stroke-width="2.5" stroke-linejoin="round"/>' + vals.map(function (v, i) { return '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(v).toFixed(1) + '" r="3.2" fill="#2f6f73"><title>' + esc(labels[i] + ": " + v) + "</title></circle>"; }).join("") + "</svg></div>";
+}
+function kSeries(ok, byMonth) {
+  var keys = ok.map(function (x) { return byMonth ? x.tgl.slice(0, 7) : x.yr; }).sort(); if (!keys.length) return { l: [], v: [] };
+  var out = [], cur = keys[0], end = keys[keys.length - 1];
+  while (cur <= end) { out.push(cur); if (byMonth) { var y = +cur.slice(0, 4), m = +cur.slice(5); m++; if (m > 12) { m = 1; y++; } cur = y + "-" + (m < 10 ? "0" : "") + m; } else cur = String(+cur + 1); }
+  var MN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+  return { l: out.map(function (k) { return byMonth ? MN[+k.slice(5) - 1] + " " + k.slice(2, 4) : k; }), v: out.map(function (k) { return ok.filter(function (x) { return (byMonth ? x.tgl.slice(0, 7) : x.yr) === k; }).length; }) };
+}
 function kpDemog(psl) {
-  var ps = psl.map(function (o) { return o.p || o; });
-  return '<div class="dgrid">' + kBars("Jenis kelamin", tally(ps, function (p) { return p.jk; })) + kBars("Kelompok usia", tally(ps, function (p) { return ageLbl(p.usia); }), Object.keys(tally(ps, function (p) { return ageLbl(p.usia); })).sort(function (a, b) { return ageNum(a) - ageNum(b); })) +
-    kBars("Status pernikahan", tally(ps, function (p) { return p.nikah; })) + "</div>";
+  var ps = psl.map(function (o) { return o.p || o; }), ua = tally(ps, function (p) { return ageLbl(p.usia); });
+  return '<div class="dgrid">' + kPie("Jenis kelamin", tally(ps, function (p) { return p.jk; })) + kPie("Kelompok usia", ua, Object.keys(ua).sort(function (a, b) { return ageNum(a) - ageNum(b); })) + kPie("Status pernikahan", tally(ps, function (p) { return p.nikah; })) + "</div>";
 }
 function kpBar(all) {
   var yrs = uniq(all.map(function (x) { return x.yr; })).sort().reverse(), pks = {}; all.forEach(function (x) { pks[x.key] = x.pk; });
@@ -2907,13 +2949,13 @@ function kpEvCard(x) {
 }
 function kpPersonRows(psl) {
   if (!psl.length) return '<p class="note">Belum ada peserta tercatat di sistem pendaftaran.</p>';
-  return '<div class="tw"><table class="tbl"><thead><tr><th>Nama</th><th>PD / Komunitas</th><th>Kegiatan</th></tr></thead><tbody>' + psl.slice().sort(function (a, b) { return cmpId(a.p.nama, b.p.nama); }).slice(0, 300).map(function (o) {
-    return '<tr class="clk" data-kpp="' + esc(o.p.id) + '" tabindex="0"><td>' + esc(o.p.nama) + "</td><td>" + esc(o.p.pd || "-") + "</td><td>" + esc(o.x.pk) + " " + esc(o.x.yr) + "</td></tr>";
+  return '<div class="tw"><table class="tbl"><thead><tr><th>Nama</th><th>Kegiatan</th></tr></thead><tbody>' + psl.slice().sort(function (a, b) { return cmpId(a.p.nama, b.p.nama); }).slice(0, 300).map(function (o) {
+    return '<tr class="clk" data-kpp="' + esc(o.p.id) + '" tabindex="0"><td>' + esc(o.p.nama) + "</td><td>" + esc(o.x.pk) + " " + esc(o.x.yr) + "</td></tr>";
   }).join("") + "</tbody></table></div>" + (psl.length > 300 ? '<p class="note">300 pertama ditampilkan, persempit dengan filter.</p>' : "");
 }
 function kpParoki(all) {
-  var sudah = {}; all.filter(function (x) { return !x.batal; }).forEach(function (x) { var s = sudah[x.key] = sudah[x.key] || { nama: x.pk, n: 0, last: "", ps: 0 }; s.n++; s.ps += x.ps.length; if (x.tgl > s.last) s.last = x.tgl; });
-  (D.kpen || []).forEach(function (p) { var k = kpCanon(p.nama); if (!sudah[k]) sudah[k] = { nama: p.nama.replace(/^Paroki\s+/i, ""), n: 0, last: "", ps: 0, legacy: true }; });
+  var sudah = {}; all.filter(function (x) { return !x.batal && x.key !== "_nonparoki"; }).forEach(function (x) { var s = sudah[x.key] = sudah[x.key] || { nama: x.pk, n: 0, last: "", ps: 0 }; s.n++; s.ps += x.ps.length; if (x.tgl > s.last) s.last = x.tgl; });
+  (D.kpen || []).forEach(function (p) { var k = kpCanon(p.nama); if (!sudah[k]) sudah[k] = { nama: (kpMaster(p.lok) || p).nama, n: 0, last: "", ps: 0, legacy: true }; });
   var known = {}; Object.keys(sudah).forEach(function (k) { known[k] = 1; });
   (D.kpen || []).forEach(function (p) { known[kpCanon(p.lok)] = 1; });
   all.forEach(function (x) { known[kpCanon(x.e.lokasi)] = 1; });
@@ -2929,27 +2971,26 @@ function renderKep() {
   if (KP.v === "evd") {
     var x = all.filter(function (a) { return a.id === KP.sel; })[0];
     if (!x) { KP.v = "keg"; return renderKep(); }
-    var pdc = tally(x.ps, function (p) { return p.pd; });
     h = back.replace("data-kpv=\"home\"", 'data-kpv="keg"').replace("Kembali", "Kembali ke daftar kegiatan") + "<h2>" + esc(x.nama) + '</h2><p class="sub">' + esc(fmtDate(x.tgl, { weekday: "long", day: "numeric", month: "long", year: "numeric" })) + " · " + esc(x.pk) + (x.e.lokasi ? " · " + esc(x.e.lokasi) : "") + " · " + (x.batal ? "Dibatalkan" : x.done ? "Sudah berjalan" : "Terjadwal") + "</p>" +
-      '<div class="tiles">' + tile(x.ps.length, "Peserta terdaftar", "") + tile(Object.keys(pdc).filter(function (k) { return k !== "Belum diisi"; }).length, "PD asal peserta", "") + "</div>" +
-      '<div class="pan"><h4>Profil peserta</h4>' + kpDemog(x.ps) + "</div>" + '<div class="pan"><h4>Peserta per PD</h4>' + kBars("PD / Komunitas", pdc) + "</div>" +
+      '<div class="tiles">' + tile(x.ps.length, "Peserta terdaftar", "") + "</div>" +
+      '<div class="pan"><h4>Profil peserta</h4>' + kpDemog(x.ps) + "</div>" +
       '<div class="pan"><h4>Daftar peserta <small class="note">· klik nama untuk detail</small></h4>' + kpPersonRows(x.ps.map(function (p) { return { p: p, x: x }; })) + "</div>";
   } else if (KP.v === "psd") {
     var pr = null; kpPs(all).forEach(function (o) { if (o.p.id === KP.ps) pr = o; });
     if (!pr) { KP.v = "peserta"; return renderKep(); }
-    var p = pr.p, rows = [["PD / Komunitas", p.pd], ["Dekanat", (p.dek || "").replace(/^Dekanat /, "")], ["Jenis kelamin", p.jk], ["Kelompok usia", ageLbl(p.usia)], ["Status pernikahan", p.nikah], ["Kategori kepesertaan", p.kat], ["Status pendaftaran", p.st], ["Kegiatan", pr.x.nama + " (" + fmtDate(pr.x.tgl, { day: "numeric", month: "long", year: "numeric" }) + ")"]];
+    var p = pr.p, rows = [["Jenis kelamin", p.jk], ["Kelompok usia", ageLbl(p.usia)], ["Status pernikahan", p.nikah], ["Kategori kepesertaan", p.kat], ["Status pendaftaran", p.st], ["Kegiatan", pr.x.nama + " (" + fmtDate(pr.x.tgl, { day: "numeric", month: "long", year: "numeric" }) + ")"]];
     h = '<button type="button" class="btn" data-kpv="' + (KP.from || "evd") + '">← Kembali</button><h2>' + esc(p.nama) + '</h2><div class="pan"><dl class="epk-dl">' + rows.map(function (r) { return "<dt>" + esc(r[0]) + "</dt><dd>" + esc(r[1] || "-") + "</dd>"; }).join("") + "</dl></div>";
   } else {
     h = '<h2>KEP</h2><p class="hint">Kegiatan KEP dan KEP Exe: di mana sudah berjalan, kapan, bagaimana trennya, dan siapa pesertanya. Pembekalan Pengajar tidak dihitung sebagai KEP.</p>' + kpNav(all);
     if (KP.v === "home" || KP.v === "keg" || KP.v === "peserta") h += kpBar(all);
     var psl = kpPs(f), prk = kpParoki(all);
     if (KP.v === "home") {
-      var ok = f.filter(function (x) { return !x.batal; }), pdIn = psl.filter(function (o) { return o.p.pd; }).length;
+      var ok = f.filter(function (x) { return !x.batal; });
       h += '<div class="tiles">' + kpTile(f.length, "Kegiatan KEP", "klik untuk melihat daftar", "keg", KP.st) + kpTile(f.filter(function (x) { return x.done; }).length, "Sudah berjalan", "", "keg", "done") + kpTile(f.filter(function (x) { return x.nxt; }).length, "Terjadwal ke depan", "", "keg", "nxt") +
-        kpTile(prk.sl.length, "Paroki sudah menjalankan", prk.belum.length + " paroki belum", "par") + kpTile(psl.length, "Peserta terdaftar", "klik untuk melihat daftar", "peserta") + kpTile(psl.length ? Math.round(pdIn / psl.length * 100) + "%" : "-", "Peserta anggota PD", pdIn + " dari " + psl.length + " peserta", "peserta") + "</div>";
+        kpTile(prk.sl.length, "Paroki sudah menjalankan", prk.belum.length + " paroki belum", "par") + kpTile(psl.length, "Peserta terdaftar", "klik untuk melihat daftar", "peserta") + "</div>";
       h += '<div class="pan"><h4>Infografis peserta</h4>' + (psl.length ? kpDemog(psl) : '<p class="note">Belum ada peserta tercatat untuk filter ini.</p>') + "</div>";
-      var yr = tally(ok, function (x) { return x.yr; }), mo = tally(ok, function (x) { return x.tgl.slice(0, 7); });
-      h += '<div class="pan"><h4>Trend</h4>' + kBars("Kegiatan per tahun", yr, Object.keys(yr).sort()) + kBars("Kegiatan per bulan", mo, Object.keys(mo).sort()) + "</div>";
+      var sy = kSeries(ok, false), sm = kSeries(ok, true);
+      h += '<div class="pan"><h4>Trend</h4>' + kLine("Kegiatan per tahun", sy.l, sy.v) + kLine("Kegiatan per bulan", sm.l, sm.v) + "</div>";
       h += '<div class="pan"><h4>Per paroki</h4>' + kBars("Kegiatan per paroki", tally(ok, function (x) { return x.pk; })) + "</div>";
     } else if (KP.v === "keg") {
       h += '<div class="evlist">' + (f.length ? f.slice().sort(function (a, b) { return b.tgl.localeCompare(a.tgl); }).map(kpEvCard).join("") : '<p class="note">Tidak ada kegiatan untuk filter ini.</p>') + "</div>";
@@ -2958,7 +2999,7 @@ function renderKep() {
     } else if (KP.v === "par") {
       h += '<div class="pan"><h4>Paroki yang sudah menjalankan KEP (' + prk.sl.length + ')</h4><div class="tw"><table class="tbl"><thead><tr><th>Paroki</th><th class="num">Angkatan/kegiatan</th><th>Terakhir</th></tr></thead><tbody>' + prk.sl.map(function (k) { var s = prk.sudah[k];
         return '<tr class="clk" data-kppk="' + esc(k) + '" tabindex="0"><td>' + esc(s.nama) + '</td><td class="num">' + s.n + "</td><td>" + (s.last ? esc(fmtDate(s.last, { month: "short", year: "numeric" })) : "-") + "</td></tr>"; }).join("") + "</tbody></table></div></div>";
-      h += '<div class="pan"><h4>Paroki yang belum menjalankan KEP (' + prk.belum.length + ')</h4><p class="note">Dicocokkan dari daftar paroki dan nama/lokasi penyelenggara KEP. Penulisan nama yang berbeda bisa membuat paroki tampil di sini padahal sudah pernah; mohon dikoreksi bila ada.</p><div class="chips">' + prk.belum.map(function (p) { return '<span class="tag alt">' + esc(p.nama.replace(/^Paroki\s+/i, "")) + "</span>"; }).join("") + "</div></div>";
+      h += '<div class="pan"><h4>Paroki yang belum menjalankan KEP (' + prk.belum.length + ')</h4><p class="note">Dicocokkan dari daftar paroki dan nama/lokasi penyelenggara KEP. Penulisan nama yang berbeda bisa membuat paroki tampil di sini padahal sudah pernah; mohon dikoreksi bila ada.</p><div class="chips">' + prk.belum.map(function (p) { return '<span class="tag alt">' + esc(p.nama) + "</span>"; }).join("") + "</div></div>";
     }
   }
   el.innerHTML = h;
