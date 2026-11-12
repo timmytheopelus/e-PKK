@@ -34,7 +34,7 @@ const PWB_YT = "fldJGTPgfN00lAdMo";
 export const JAB = { bidang: "fldCCi0hV9yTL091P", seksi: "fldAAyRg1kko5YgrK", peran: "fldI8J3VXZDyjWa3f" };
 
 export type Access = { email: string; nama: string; status: string; level: string; tabs: string[]; jabatan?: string; login?: string; viewAs?: string };
-export const canEdit = (a: Access) => a.level === "Edit" || a.level === "Superadmin";
+export const canEdit = (a: Access) => a.level === "Edit" || a.level === "Admin" || a.level === "Superadmin";
 
 type Spec = {
   base: string;

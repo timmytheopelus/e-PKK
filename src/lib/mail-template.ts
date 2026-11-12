@@ -13,7 +13,7 @@ export const FITUR: { tab: string; judul: string; isi: string }[] = [
 ];
 
 export function welcomeHtml(o: { nama: string; email: string; level: string; tabs: string[]; url: string }) {
-  const lv = o.level === "Edit" ? "Edit (boleh mengubah data)" : o.level === "Superadmin" ? "Superadmin" : o.level === "Admin" ? "Admin (melihat dan menambah pengguna View)" : "Hanya lihat";
+  const lv = o.level === "Edit" ? "Edit (boleh mengubah data)" : o.level === "Superadmin" ? "Superadmin" : o.level === "Admin" ? "Admin (mengubah data dan menambah pengguna View)" : "Hanya lihat";
   const fitur = FITUR.filter((f) => o.tabs.includes(f.tab));
   const rows = fitur.map((f) => `<tr><td style="padding:10px 0;border-bottom:1px solid #e6ebf0"><div style="font-weight:700;color:#14344b">${f.judul}</div><div style="color:#55687a;font-size:14px;line-height:1.45">${f.isi}</div></td></tr>`).join("");
   return `<!doctype html><html lang="id"><body style="margin:0;background:#f2f5f8;font-family:Segoe UI,Arial,sans-serif;color:#1d2b38">

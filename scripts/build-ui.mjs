@@ -93,7 +93,7 @@ var EPK = {
   },
   menuClose: function () { Array.prototype.forEach.call(document.querySelectorAll(".epk-pop"), function (x) { x.hidden = true; }); },
   profile: function () {
-    var me = window.__ME__, rows = [["Nama", me.nama || "-"], ["Email", me.email], ["Level", me.level === "Superadmin" ? "Superadmin" : me.level === "Edit" ? "Edit" : "Hanya lihat"], ["Jabatan", me.jabatan || "-"],
+    var me = window.__ME__, rows = [["Nama", me.nama || "-"], ["Email", me.email], ["Level", me.level === "Superadmin" ? "Superadmin" : me.level === "Edit" ? "Edit" : me.level === "Admin" ? "Admin" : "Hanya lihat"], ["Jabatan", me.jabatan || "-"],
       ["Tab yang bisa dibuka", me.tabNames.join(", ") || "-"], ["Login terakhir", me.login ? new Date(me.login).toLocaleString("id-ID") : "-"]];
     var dl = EPK.el("dl", { class: "epk-dl" }); rows.forEach(function (r) { dl.appendChild(EPK.el("dt", { text: r[0] })); dl.appendChild(EPK.el("dd", { text: r[1] })); });
     EPK.modal("Profil saya", dl);
@@ -104,7 +104,7 @@ function applyMe() {
   ["beranda", "pengurus", "pewarta", "luar", "pd", "umat", "kalender", "event"].forEach(function (t) {
     var b = document.getElementById("tabbtn-" + t); if (b && me.tabs.indexOf(t) < 0) b.hidden = true;
   });
-  if (me.level !== "Edit" && me.level !== "Superadmin") document.body.classList.add("ro");
+  if (["Edit","Admin","Superadmin"].indexOf(me.level) < 0) document.body.classList.add("ro");
   var el = document.getElementById("me"); if (!el) return;
   var menu = EPK.el("div", { class: "epk-pop", hidden: "" }, [
     EPK.el("button", { type: "button", text: "Profil saya", onclick: function () { EPK.menuClose(); EPK.profile(); } }),
