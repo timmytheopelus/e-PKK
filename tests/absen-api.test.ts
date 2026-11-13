@@ -33,3 +33,11 @@ describe("/api/absen", () => {
     expect((await call({ aksi: "link", event: "recEVENT00000000A" })).status).toBe(403);
   });
 });
+
+describe("/api/absen go show", () => {
+  it("cari dan goshow: 403 tanpa menu Absensi, 200 dengan menu Absensi", async () => {
+    akun.tabs = ["Event"];
+    expect((await call({ aksi: "cari", token: "x", q: "ab" })).status).toBe(403);
+    expect((await call({ aksi: "goshow", token: "x", umat: "recUMAT0000000002" })).status).toBe(403);
+  });
+});

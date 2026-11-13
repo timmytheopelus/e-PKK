@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { effectiveAccess, AS_COOKIE } from "@/lib/viewas";
-import { bolehAbsen, buatToken, infoAbsen, simpanHadir } from "@/lib/absen";
+import { bolehAbsen, buatToken, cariGoShow, infoAbsen, simpanHadir, tambahGoShow } from "@/lib/absen";
 import { HttpError } from "@/lib/policy";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +24,12 @@ export async function POST(req: Request) {
     if (b?.aksi === "simpan") {
       const r = await simpanHadir(String(b.token || ""), Array.isArray(b.perubahan) ? b.perubahan.map((c: any) => ({ pendaftaran: String(c?.pendaftaran || ""), hadir: c?.hadir === true })) : []);
       console.log("ABSEN", email, "+" + r.ditambah, "-" + r.dihapus);
+      return NextResponse.json(r);
+    }
+    if (b?.aksi === "cari") return NextResponse.json(await cariGoShow(String(b.token || ""), String(b.q || "")));
+    if (b?.aksi === "goshow") {
+      const r = await tambahGoShow(String(b.token || ""), b.baru ? { baru: { nama: String(b.baru.nama || ""), wa: String(b.baru.wa || ""), email: String(b.baru.email || "") } } : { umat: String(b.umat || "") });
+      console.log("ABSEN goshow", email, r.baru ? "baru" : "umat");
       return NextResponse.json(r);
     }
     throw new HttpError(400, "Aksi tidak dikenal.");

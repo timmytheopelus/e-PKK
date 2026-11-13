@@ -47,3 +47,42 @@ describe("halaman absensi", () => {
     expect(d.getElementById("sv").hidden).toBe(true);
   });
 });
+
+describe("go show di halaman absensi", () => {
+  async function bukaGs(respons: (b: any) => any) {
+    const res = await GET(new Request("http://t.test/absen/tok"), { params: Promise.resolve({ token: "tok" }) });
+    const posts: any[] = [];
+    const dom = new JSDOM(await res.text(), { runScripts: "dangerously", url: "http://t.test/absen/tok", beforeParse(w: any) {
+      w.fetch = async (_u: string, init: any) => { const b = JSON.parse(init.body); posts.push(b); const j = b.aksi === "daftar" ? data : respons(b); return { ok: !j.error, json: async () => (j.error ? { message: j.error } : j) }; };
+    } });
+    await new Promise((r) => setTimeout(r, 20));
+    return { w: dom.window as any, posts };
+  }
+  it("cari nama lalu tap: dicatat hadir langsung, masuk daftar Sudah hadir, total bertambah", async () => {
+    const { w, posts } = await bukaGs((b) => b.aksi === "cari"
+      ? { sumber: "pengurus", hasil: [{ id: "recUMAT0000000002", nama: "Cantik Pengurus", info: "Litbang" }] }
+      : { baru: false, peserta: { id: "recNEW", nama: "Cantik Pengurus", pgl: "", wa: "", seksi: "Litbang", asal: "", hadir: true } });
+    const d = w.document;
+    expect(d.getElementById("gsb").hidden).toBe(false);
+    d.getElementById("gsb").click();
+    d.getElementById("gq").value = "can"; d.getElementById("gq").dispatchEvent(new w.Event("input"));
+    await new Promise((r) => setTimeout(r, 300));
+    expect(d.getElementById("gr").textContent).toContain("Cantik Pengurus");
+    d.querySelector('#gr .row').click();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(posts.find((p) => p.aksi === "goshow")).toMatchObject({ umat: "recUMAT0000000002" });
+    expect(d.getElementById("nt").textContent).toBe("3");
+    expect(d.getElementById("lh").textContent).toContain("Cantik Pengurus");
+    expect(d.getElementById("sv").hidden).toBe(true); // sudah tersimpan, bukan perubahan tertunda
+  });
+  it("tambah baru: kirim Nama, WA, Email; kesalahan server ditampilkan", async () => {
+    const { w, posts } = await bukaGs(() => ({ error: "Nama ini sudah ada di data umat. Cari dan pilih dari daftar." }));
+    const d = w.document;
+    d.getElementById("gnb").click();
+    d.getElementById("gn").value = "Eko Baru"; d.getElementById("gw").value = "0812345678"; d.getElementById("ge").value = "e@x.com";
+    d.getElementById("gadd").click();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(posts.find((p) => p.aksi === "goshow")).toMatchObject({ baru: { nama: "Eko Baru", wa: "0812345678", email: "e@x.com" } });
+    expect(d.getElementById("gm").textContent).toContain("sudah ada di data umat");
+  });
+});

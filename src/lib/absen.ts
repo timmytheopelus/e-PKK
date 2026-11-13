@@ -1,7 +1,7 @@
 // Absensi kehadiran event lewat link publik bertanda tangan (HMAC). Memakai tabel KehadiranEvent yang sudah ada.
 import crypto from "node:crypto";
 import { Access, BASE_BPK, HttpError, T } from "./policy";
-import { at, getRecord, listUntil, resolveLinks } from "./airtable";
+import { at, getRecord, listPage, listUntil, resolveLinks } from "./airtable";
 import { pengurusAktif } from "./seksi-hadir";
 
 export const T_HADIR = "tblQgU4DawCAXIRdi";
@@ -38,6 +38,8 @@ export function dalamJendela(tgl: string, now = new Date()): boolean {
   return hari <= JENDELA_HARI;
 }
 
+/** Acara internal pengurus: nama go show dipilih dari Pengurus BPK, bukan seluruh umat. */
+const RAPAT_BPK = /rapat|raker|pleno|tim (inti|kerja)/i;
 const esc = (s: string) => String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 const one = (v: any) => String(Array.isArray(v) ? v[0] ?? "" : v ?? "").replace(/\s+/g, " ").trim();
 const sel = (v: any) => String(typeof v === "object" && v ? v.name ?? "" : v ?? "");
@@ -72,13 +74,15 @@ async function muat(token: string) {
   const sub = aktif.map((r) => ({ id: r.id, fields: { [PD.kom]: r.fields[PD.kom] } as Record<string, any> })).filter((r) => r.fields[PD.kom]);
   if (!kep && sub.length) { try { (await resolveLinks(BASE_BPK, T.pendaftaran, sub)).forEach((r) => namaPd.set(r.id, one((r.fields[PD.kom] as any[])?.[0]?.name))); } catch {} }
   const seksiOf = new Map<string, string>(orang.map((o) => [o.umat, [...new Set(o.jab.map((j) => j.seksi).filter(Boolean))].join(", ")]));
+  const umatPend = new Map<string, string>(); // id umat -> id pendaftaran aktif
   const peserta = aktif
     .map((r) => {
       const uid = ((r.fields[PD.umat] as string[]) || [])[0] || "";
+      if (uid) umatPend.set(uid, r.id);
       return { id: r.id, nama: one(r.fields[PD.nama]), pgl: one(r.fields[PD.pgl]), wa: waDigits(r.fields[PD.wa]), seksi: seksiOf.get(uid) || "", asal: kep ? one(r.fields[PD.paroki]) : namaPd.get(r.id) || "", hadir: hadir.has(r.id) };
     })
     .sort((a, b) => a.nama.localeCompare(b.nama, "id"));
-  return { id, nama, tgl, kep, buka: dalamJendela(tgl), peserta, hadir };
+  return { id, nama, tgl, kep, buka: dalamJendela(tgl), peserta, hadir, umatPend, orang, bpk: !kep && RAPAT_BPK.test(nama) };
 }
 
 /** Data untuk halaman absensi. Nomor WA hanya dipakai membentuk tombol; tidak ditampilkan sebagai teks. */
@@ -121,4 +125,63 @@ export async function acaraAbsensi(now = new Date()) {
     .map((r) => ({ id: r.id, nama: String(r.fields[EVF.nama] || "").replace(/^\d{6}-/, ""), tgl: String(r.fields[EVF.tgl] || "").slice(0, 10), st: sel(r.fields[F.st]) }))
     .filter((e) => e.nama && e.tgl && !/batal/i.test(e.st) && dalamJendela(e.tgl, now))
     .map((e) => ({ ...e, token: buatToken(e.id) }));
+}
+
+const UM = { nama: "fldIpQTSkFB9sU0lo", pgl: "fld469PYR80nAUNIF", wa: "fldzY1Z2QvIIEkYXR", email: "fldAaQ3zmiLBhp4z9", pd: "fldrHJ6q3HZvApccl", pdNama: "fldOovF470MdN2fMg", paroki: "fldv0BCQFNy6Dm5pH" };
+
+/** Cari nama untuk go show. Rapat BPK: dari Pengurus BPK; acara lain: dari seluruh Team Umat. Yang sudah terdaftar tidak ditampilkan. */
+export async function cariGoShow(token: string, q: string) {
+  const m = await muat(token);
+  const kata = String(q || "").replace(/\s+/g, " ").trim().toLowerCase();
+  if (kata.length < 2) return { sumber: m.bpk ? "pengurus" : "umat", hasil: [] as { id: string; nama: string; info: string }[] };
+  if (m.bpk) {
+    const hasil = m.orang.filter((o) => !m.umatPend.has(o.umat) && o.nama.toLowerCase().includes(kata))
+      .slice(0, 15).map((o) => ({ id: o.umat, nama: o.nama, info: [...new Set(o.jab.map((j) => j.seksi).filter(Boolean))].join(", ") }));
+    return { sumber: "pengurus", hasil };
+  }
+  const { records } = await listPage(BASE_BPK, T.umat, { fieldIds: [UM.nama, UM.pgl, UM.pdNama, UM.paroki], pageSize: 20, formula: `SEARCH("${esc(kata)}", LOWER({${UM.nama}}))` });
+  const hasil = records.filter((r) => !m.umatPend.has(r.id) && one(r.fields[UM.nama])).slice(0, 15)
+    .map((r) => ({ id: r.id, nama: one(r.fields[UM.nama]), info: one(m.kep ? r.fields[UM.paroki] : r.fields[UM.pdNama]) }));
+  return { sumber: "umat", hasil };
+}
+
+/** Go show: orang yang datang tanpa daftar. Dipilih dari daftar (umat) atau dibuat baru (Nama, WA, Email), lalu langsung didaftarkan dan ditandai hadir. */
+export async function tambahGoShow(token: string, o: { umat?: string; baru?: { nama?: string; wa?: string; email?: string } }) {
+  const m = await muat(token);
+  if (!m.buka) throw new HttpError(403, `Absensi hanya dibuka ${JENDELA_HARI} hari sebelum sampai sesudah tanggal acara.`);
+  let umatId = "", nama = "", pgl = "", wa = "", pdId = "", asal = "", baru = false;
+  if (o.baru) {
+    nama = String(o.baru.nama || "").replace(/\s+/g, " ").trim();
+    const email = String(o.baru.email || "").trim(), noWa = String(o.baru.wa || "").trim();
+    if (nama.length < 2 || nama.length > 120) throw new HttpError(400, "Nama wajib diisi.");
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400, "Format email tidak benar.");
+    if (noWa && !waDigits(noWa)) throw new HttpError(400, "Nomor WA tidak benar. Contoh: 0812xxxxxxx.");
+    const ada = await listPage(BASE_BPK, T.umat, { fieldIds: [UM.nama], pageSize: 1, formula: `LOWER({${UM.nama}})="${esc(nama.toLowerCase())}"` });
+    if (ada.records.length) throw new HttpError(409, "Nama ini sudah ada di data umat. Cari dan pilih dari daftar.");
+    const f: Record<string, string> = { [UM.nama]: nama };
+    if (noWa) f[UM.wa] = noWa;
+    if (email) f[UM.email] = email;
+    const r = await at(`/v0/${BASE_BPK}/${T.umat}`, { method: "POST", body: JSON.stringify({ records: [{ fields: f }] }) });
+    umatId = r?.records?.[0]?.id; baru = true; wa = waDigits(noWa);
+    if (!umatId) throw new HttpError(502, "Gagal menyimpan umat baru.", "upstream_error");
+  } else {
+    umatId = String(o.umat || "");
+    if (!REC.test(umatId)) throw new HttpError(400, "Pilih nama dari daftar.");
+    const u = await getRecord(BASE_BPK, T.umat, umatId).catch(() => null);
+    if (!u) throw new HttpError(404, "Umat tidak ditemukan.");
+    nama = one(u.fields[UM.nama]); pgl = one(u.fields[UM.pgl]); wa = waDigits(u.fields[UM.wa]); pdId = ((u.fields[UM.pd] as string[]) || [])[0] || ""; asal = one(m.kep ? u.fields[UM.paroki] : u.fields[UM.pdNama]);
+  }
+  let pendId = m.umatPend.get(umatId) || "";
+  if (!pendId) {
+    const f: Record<string, any> = { [PD.event]: [m.id], [PD.umat]: [umatId], [PD.st]: "Daftar" };
+    if (pdId) f[PD.kom] = [pdId];
+    const r = await at(`/v0/${BASE_BPK}/${T.pendaftaran}`, { method: "POST", body: JSON.stringify({ records: [{ fields: f }] }) });
+    pendId = r?.records?.[0]?.id;
+    if (!pendId) throw new HttpError(502, "Gagal mendaftarkan.", "upstream_error");
+  }
+  if (!m.hadir.has(pendId))
+    await at(`/v0/${BASE_BPK}/${T_HADIR}`, { method: "POST", body: JSON.stringify({ records: [{ fields: { [KH.event]: [m.id], [KH.pend]: [pendId], [KH.status]: "Hadir" } }] }) });
+  const seksi = m.orang.find((x) => x.umat === umatId);
+  const peserta = { id: pendId, nama, pgl, wa, seksi: seksi ? [...new Set(seksi.jab.map((j) => j.seksi).filter(Boolean))].join(", ") : "", asal, hadir: true };
+  return { baru, peserta };
 }
