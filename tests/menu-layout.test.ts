@@ -156,3 +156,12 @@ describe("menu Program Kerja (tab proker)", () => {
     expect(renderDashboard(acc2)).toMatch(re);
   });
 });
+
+describe("link absensi di detail Event", () => {
+  it("tombol meminta token ke server, tidak membuatnya di browser", () => {
+    const html = require("node:fs").readFileSync("docs/prototipe-artifact.html", "utf8");
+    expect(html).toContain("data-absen=");
+    expect(html).toContain('aksi: "link"');
+    expect(html).not.toContain("AUTH_SECRET");
+  });
+});

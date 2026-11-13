@@ -3450,6 +3450,12 @@ document.getElementById("tab-kep").addEventListener("click", function (e) {
     if (!confirm((id === "apOk" ? "Setujui " : "Tolak ") + ids.length + " pendaftar?")) return;
     t.disabled = true; say("apMsg", "Menyimpan…");
     sepPost("decide", { ids: ids, decision: id === "apOk" ? "Disetujui" : "Ditolak" }).then(function () { sepReload(); }, function (er) { t.disabled = false; say("apMsg", er.message, true); });
+  } else if (t.dataset && t.dataset.absen) {
+    var ab = t.dataset.absen, am = document.getElementById("absenMsg");
+    fetch("/api/absen", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ aksi: "link", event: ab }) }).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.message || "Gagal."); return j; }); }).then(function (j) {
+      var u = location.origin + "/absen/" + j.token;
+      try { navigator.clipboard.writeText(u); if (am) am.textContent = "Link tersalin: " + u + " (dibuka 7 hari sebelum sampai sesudah acara)"; } catch (x) { prompt("Salin link absensi:", u); }
+    }, function (x) { if (am) am.textContent = x.message; });
   } else if (t.dataset && t.dataset.kpcopy) { try { navigator.clipboard.writeText(t.dataset.kpcopy); t.textContent = "Tersalin ✓"; } catch (x) { prompt("Salin link:", t.dataset.kpcopy); } }
   else if (t.dataset && t.dataset.kpfin) {
     if (!confirm("Tandai kegiatan ini SELESAI? Status tidak bisa diubah lagi dan pendaftaran ditutup.")) return;
@@ -3487,6 +3493,7 @@ function renderEvDetail(e, regs) {
   var bayar = regs.filter(function (p) { return /paid|confirm/i.test(p.st); }).length, vald = regs.filter(function (p) { return p.val; }).length;
   var batal = D.pend.filter(function (p) { return p.ev === e.id && !pAktif(p); }).length;
   var h = '<h3>' + esc(e.nama.replace(/^\d{6}-/, "")) + '</h3><p class="sub">' + esc(fmtDate(e.tgl, { weekday: "long", day: "numeric", month: "long", year: "numeric" })) + (e.lokasi ? " · " + esc(e.lokasi) : "") + "</p>";
+  h += '<p><button type="button" class="chip" data-absen="' + esc(e.id) + '">Link absensi kehadiran</button> <span class="note" id="absenMsg"></span></p>';
   h += '<div class="tiles">' + tile(regs.length, "Pendaftar aktif", batal ? batal + " batal / dobel daftar tidak dihitung" : "") + tile(done.length, "PD sudah mendaftar", "dari " + pdActive.length + " PD aktif") + tile(miss.length, "PD belum mendaftar", "belum ada satu pun pendaftar") + tile(bayar, "Confirmed / Paid", "validasi bendahara: " + vald) + "</div>";
   var rows = done.map(function (p) { return { n: p.nama, d: p.dekanat, l: perPd[pdKey(p.nama)] }; });
   Object.keys(other).forEach(function (k) { rows.push({ n: k, d: "(di luar daftar PD aktif)", l: other[k] }); });

@@ -1,0 +1,65 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+const calls: any[] = [];
+let kehadiran: any[] = [];
+vi.mock("@/lib/airtable", async () => ({
+  at: vi.fn(async (path: string, init: any) => { calls.push({ path, init }); return {}; }),
+  getRecord: vi.fn(async () => ({ id: "recEVENT00000000A", fields: { fld0d9tIyi4nyTZsM: "261114-Rapat Pleno 3", fldoIkx9wLMaKOa38: new Date().toISOString().slice(0, 10) } })),
+  listUntil: vi.fn(async (_b: string, table: string) => table === "tblQgU4DawCAXIRdi"
+    ? { records: kehadiran }
+    : { records: [
+        { id: "recPEND00000000B1", fields: { flduf15moMpZSklGL: ["recEVENT00000000A"], fld9ucFxEU0cUSHWw: ["Budi"], fldvpJTg8KbPblIBu: ["PD A"], fldNGGEcwHqIsQPct: { name: "Confirmed" } } },
+        { id: "recPEND00000000B2", fields: { flduf15moMpZSklGL: ["recEVENT00000000A"], fld9ucFxEU0cUSHWw: ["Ani"], fldNGGEcwHqIsQPct: { name: "Batal" } } },
+        { id: "recPEND00000000B3", fields: { flduf15moMpZSklGL: ["recLAIN000000000X"], fld9ucFxEU0cUSHWw: ["Cici"] } },
+      ] }),
+}));
+import { buatToken, bacaToken, dalamJendela, infoAbsen, tandaiHadir } from "@/lib/absen";
+
+beforeEach(() => { process.env.AUTH_SECRET = "rahasia"; calls.length = 0; kehadiran = []; });
+
+describe("token absensi", () => {
+  it("token sah dibaca kembali; token diubah ditolak", () => {
+    const t = buatToken("recEVENT00000000A");
+    expect(bacaToken(t)).toBe("recEVENT00000000A");
+    expect(bacaToken(t.replace("recEVENT00000000A", "recEVENT00000000B"))).toBeNull();
+    expect(bacaToken("sembarang")).toBeNull();
+  });
+});
+describe("jendela waktu", () => {
+  it("±7 hari dari tanggal acara", () => {
+    const now = new Date("2026-11-14T03:00:00Z");
+    expect(dalamJendela("2026-11-14", now)).toBe(true);
+    expect(dalamJendela("2026-11-21", now)).toBe(true);
+    expect(dalamJendela("2026-11-22", now)).toBe(false);
+    expect(dalamJendela("2026-11-06", now)).toBe(false);
+  });
+});
+describe("infoAbsen dan tandaiHadir", () => {
+  const T = () => buatToken("recEVENT00000000A");
+  it("hanya peserta aktif event ini, tanpa kontak", async () => {
+    const r = await infoAbsen(T());
+    expect(r.peserta.map((p) => p.nama)).toEqual(["Budi"]);
+    expect(JSON.stringify(r)).not.toMatch(/wa|email/i);
+  });
+  it("tandai hadir membuat baris Kehadiran dengan Status Hadir", async () => {
+    await tandaiHadir(T(), "recPEND00000000B1", true);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].init.method).toBe("POST");
+    expect(JSON.parse(calls[0].init.body).records[0].fields).toEqual({ fldrIFO5fehaqaS2u: ["recEVENT00000000A"], fldTuFsmLgiZoHXEf: ["recPEND00000000B1"], fldudT9j1X2vkQCqD: "Hadir" });
+  });
+  it("tandai dua kali tidak membuat baris ganda", async () => {
+    kehadiran = [{ id: "recKH0000000000001", fields: { fldrIFO5fehaqaS2u: ["recEVENT00000000A"], fldTuFsmLgiZoHXEf: ["recPEND00000000B1"] } }];
+    await tandaiHadir(T(), "recPEND00000000B1", true);
+    expect(calls).toHaveLength(0);
+  });
+  it("batal tanda menghapus baris kehadiran itu", async () => {
+    kehadiran = [{ id: "recKH0000000000001", fields: { fldrIFO5fehaqaS2u: ["recEVENT00000000A"], fldTuFsmLgiZoHXEf: ["recPEND00000000B1"] } }];
+    await tandaiHadir(T(), "recPEND00000000B1", false);
+    expect(calls[0].init.method).toBe("DELETE");
+    expect(calls[0].path).toContain("recKH0000000000001");
+  });
+  it("peserta event lain atau yang batal ditolak", async () => {
+    await expect(tandaiHadir(T(), "recPEND00000000B3", true)).rejects.toThrow(/tidak terdaftar/);
+    await expect(tandaiHadir(T(), "recPEND00000000B2", true)).rejects.toThrow(/tidak terdaftar/);
+  });
+});
