@@ -7,7 +7,7 @@ const P = (nama: string, status: string, total: number) => ({ id: "rec" + nama, 
   mode: "Total", totalPemasukan: 0, totalPengeluaran: total, baris: [], keputusan: [], baru: false, aksi: [], seksiAksi: [] });
 
 async function boot(programs: any[], extraHtml = "", bisaSetuju = false) {
-  const dom = new JSDOM(`<body><div id="proTiles"></div><p id="proMsg"></p><table><tbody id="proBody"></tbody></table><section id="proDashCard" hidden><div id="proDashBody"></div></section>${extraHtml}</body>`, { runScripts: "outside-only", url: "https://e.test/" });
+  const dom = new JSDOM(`<body><div id="proTiles"></div><p id="proMsg"></p><table><thead><tr><th>Program</th><th>Seksi</th><th>Mulai</th><th>Status</th><th>Anggaran</th><th>Sisa</th></tr></thead><tbody id="proBody"></tbody></table><section id="proDashCard" hidden><div id="proDashBody"></div></section>${extraHtml}</body>`, { runScripts: "outside-only", url: "https://e.test/" });
   const w: any = dom.window;
   w.__ME__ = { viewAs: false };
   w.fetch = vi.fn(async (_u: string, init: any) => {
@@ -127,6 +127,27 @@ describe("popup detail program: realisasi anggaran", () => {
   });
   it("program yang belum disetujui tidak menampilkan bagian realisasi", async () => {
     const w = await boot([{ ...R, status: "Menunggu Sekjen", terpakai: 0, sisa: 0, realisasi: [] }]); w.EPK_PROKER_OPEN(); await wait();
+    click(w, w.document.querySelector("#proBody tr")); await wait();
+    expect(w.document.querySelector("#modal").textContent).not.toContain("Realisasi anggaran");
+  });
+});
+
+describe("daftar & tile: sisa anggaran langsung terlihat", () => {
+  const M = (nama: string, status: string, total: number, sisa: number | null) => ({ ...P(nama, status, total), terpakai: sisa == null ? null : total - sisa, sisa, milik: sisa != null, realisasi: [] });
+  it("kolom Sisa di tiap baris; '-' bila bukan milik seksi atau belum disetujui", async () => {
+    const w = await boot([M("A", "Disetujui", 1000000, 400000), M("B", "Disetujui", 500000, null), M("C", "Menunggu Sekjen", 300000, null)]); w.EPK_PROKER_OPEN(); await wait();
+    const r = rows(w);
+    expect(digits(r[0])).toContain("400000");
+    expect(r[1].endsWith("-")).toBe(true); expect(r[2].endsWith("-")).toBe(true);
+  });
+  it("tile Disetujui dan berjalan menampilkan jumlah sisa hanya dari program yang sisanya diketahui", async () => {
+    const w = await boot([M("A", "Disetujui", 1000000, 400000), M("B", "Berjalan", 500000, 100000), M("C", "Disetujui", 900000, null)]); w.EPK_PROKER_OPEN(); await wait();
+    const t = tile(w, "berjalan").textContent;
+    expect(digits(t)).toContain("500000"); // sisa 400000 + 100000
+    expect(t).toContain("sisa");
+  });
+  it("popup tanpa bagian realisasi bila sisa tidak diketahui", async () => {
+    const w = await boot([M("B", "Disetujui", 500000, null)]); w.EPK_PROKER_OPEN(); await wait();
     click(w, w.document.querySelector("#proBody tr")); await wait();
     expect(w.document.querySelector("#modal").textContent).not.toContain("Realisasi anggaran");
   });

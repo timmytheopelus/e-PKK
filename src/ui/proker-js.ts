@@ -29,9 +29,11 @@ export const PROKER_JS = String.raw`
     ["selesai", "berjalan", "menunggu"].forEach(function (g) {
       var ls = items.filter(function (p) { return GRUP[g].indexOf(p.status) >= 0; });
       var nilai = ls.reduce(function (s, p) { return s + (Number(p.totalPengeluaran) || 0); }, 0);
+      var dgSisa = ls.filter(function (p) { return p.sisa != null; });
+      var adaSisa = dgSisa.length > 0, sisaTot = dgSisa.reduce(function (s, p) { return s + Number(p.sisa || 0); }, 0);
       var on = filt.grup === g;
       var t = EPK.el("button", { type: "button", class: "tile go" + (on ? " on" : ""), "data-grup": g, "aria-pressed": on ? "true" : "false", onclick: function () { filt.grup = filt.grup === g ? "" : g; draw(); } },
-        [EPK.el("b", { text: String(ls.length) }), EPK.el("span", { text: GRUP_LBL[g] }), EPK.el("small", { text: rp(nilai) })]);
+        [EPK.el("b", { text: String(ls.length) }), EPK.el("span", { text: GRUP_LBL[g] }), EPK.el("small", { text: rp(nilai) + (g === "menunggu" || !adaSisa ? "" : " · sisa " + rp(sisaTot)) })]);
       box.appendChild(t);
     });
     if (!bisaSetuju) return; // hanya Sekjen / Koordinator BPK yang menyetujui program
@@ -47,14 +49,15 @@ export const PROKER_JS = String.raw`
       return (!filt.st || p.status === filt.st) && (!filt.grup || GRUP[filt.grup].indexOf(p.status) >= 0) && (!q || (p.nama + " " + p.seksiPengaju + " " + p.bidang).toLowerCase().indexOf(q) >= 0);
     });
     body.textContent = "";
-    if (!rows.length) { body.appendChild(EPK.el("tr", {}, [EPK.el("td", { colspan: "5", text: loaded ? "Belum ada program." : "Memuat…" })])); return; }
+    if (!rows.length) { body.appendChild(EPK.el("tr", {}, [EPK.el("td", { colspan: "6", text: loaded ? "Belum ada program." : "Memuat…" })])); return; }
     rows.forEach(function (p) {
       var nama = EPK.el("td", {}, [p.nama]);
       if (p.baru) nama.appendChild(EPK.el("span", { class: "chip", text: "Baru", style: "margin-left:6px" }));
       if (p.aksi.length) nama.appendChild(EPK.el("span", { class: "chip", text: "Perlu tindakan", style: "margin-left:6px" }));
       body.appendChild(EPK.el("tr", { class: "clk", tabindex: "0", onclick: function () { detail(p.id); }, onkeydown: function (e) { if (e.key === "Enter") detail(p.id); } }, [
         nama, EPK.el("td", { text: p.seksiPengaju }), EPK.el("td", { text: mulai(p.mulai) }), EPK.el("td", { text: p.status }),
-        EPK.el("td", { class: "num", text: rp(p.totalPengeluaran) })]));
+        EPK.el("td", { class: "num", text: rp(p.totalPengeluaran) }),
+        EPK.el("td", { class: "num", text: p.sisa == null ? "-" : rp(p.sisa) })]));
     });
   }
 
@@ -77,7 +80,7 @@ export const PROKER_JS = String.raw`
       p.baris.forEach(function (b) { tb.appendChild(EPK.el("tr", {}, [EPK.el("td", { text: b.keterangan }), EPK.el("td", { text: b.jenis }), EPK.el("td", { class: "num", text: rp(b.nominal) })])); });
       box.appendChild(EPK.el("div", { class: "tw tablebox" }, [EPK.el("table", {}, [EPK.el("thead", {}, [EPK.el("tr", {}, [EPK.el("th", { text: "Keterangan" }), EPK.el("th", { text: "Jenis" }), EPK.el("th", { text: "Nominal" })])]), tb])]));
     }
-    if (p.status === "Disetujui" || p.status === "Berjalan" || p.status === "Selesai") {
+    if (p.sisa != null && (p.status === "Disetujui" || p.status === "Berjalan" || p.status === "Selesai")) {
       box.appendChild(EPK.el("h4", { text: "Realisasi anggaran" }));
       box.appendChild(EPK.el("p", { text: "Terpakai " + rp(p.terpakai || 0) + " · sisa " + rp(p.sisa || 0) }));
       if ((p.realisasi || []).length) {

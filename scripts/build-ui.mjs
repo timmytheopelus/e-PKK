@@ -44,7 +44,7 @@ const PROKER_HTML = `  <div id="tab-proker" class="tab" role="tabpanel" aria-lab
         <div class="fil"><select id="proSt" aria-label="Status"><option value="">Semua status</option></select></div>
       </div>
       <p class="hint" id="proMsg">Memuat…</p>
-      <div class="tw tablebox"><table id="proTbl"><thead><tr><th>Program</th><th>Seksi</th><th>Mulai</th><th>Status</th><th class="num">Anggaran</th></tr></thead><tbody id="proBody"></tbody></table></div>
+      <div class="tw tablebox"><table id="proTbl"><thead><tr><th>Program</th><th>Seksi</th><th>Mulai</th><th>Status</th><th class="num">Anggaran</th><th class="num">Sisa</th></tr></thead><tbody id="proBody"></tbody></table></div>
     </div>
     <div id="proSecAjukan" hidden>
       <form id="proForm" novalidate>
