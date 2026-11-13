@@ -504,16 +504,16 @@ body.sep img.logo { width: 120px; height: 120px; object-fit: contain; } @media (
   <div id="tab-pewarta" class="tab" role="tabpanel" aria-labelledby="tabbtn-pewarta" hidden>
     <div class="tiles" id="pwTiles"></div>
     <div class="link" id="pwLink" role="status"></div>
-    <div class="vchips" id="pwViews" role="group" aria-label="Tampilan pewarta">
-      <button type="button" class="chip" data-pv="ring" aria-pressed="true">Ringkasan</button>
-      <button type="button" class="chip" data-pv="daftar" aria-pressed="false">Daftar</button>
-      <button type="button" class="chip" data-pv="pd" aria-pressed="false">Per PD</button>
-      <button type="button" class="chip" data-pv="modul" aria-pressed="false">Per modul</button>
-      <button type="button" class="chip" data-pv="pastor" aria-pressed="false">Pastor &amp; suster</button>
-      <button type="button" class="chip" data-pv="lk" aria-pressed="false">Permohonan &amp; tema</button>
-      <button type="button" class="chip" data-pv="kui" aria-pressed="false">Kuesioner</button>
+    <div class="rtabs" id="pwRptTabs" role="tablist" aria-label="Laporan pewarta">
+      <button type="button" class="chip" role="tab" data-pv="daftar" aria-selected="true">Daftar</button>
+      <button type="button" class="chip" role="tab" data-pv="pd" aria-selected="false">Per PD</button>
+      <button type="button" class="chip" role="tab" data-pv="modul" aria-selected="false">Per modul</button>
+      <button type="button" class="chip" role="tab" data-pv="pastor" aria-selected="false">Pastor &amp; suster</button>
+      <button type="button" class="chip" role="tab" data-pv="lk" aria-selected="false">Permohonan &amp; tema</button>
+      <button type="button" class="chip" role="tab" data-pv="kui" aria-selected="false">Kuesioner</button>
+      <button type="button" class="chip" role="tab" data-pv="ring" aria-selected="false">Grafik</button>
     </div>
-    <section id="pwSecRing" style="display:grid;gap:16px" aria-label="Ringkasan pewarta"><div class="dgrid" id="pwRing"></div></section>
+    <section id="pwSecRing" style="display:grid;gap:16px" aria-label="Ringkasan pewarta" hidden><div class="dgrid" id="pwRing"></div></section>
     <section id="pwSecLk" style="display:grid;gap:16px" aria-label="Permohonan dan tema" hidden>
       <section class="pan full" aria-labelledby="h-lk">
         <div class="row2"><h3 id="h-lk">Permohonan pewarta luar kota</h3>
@@ -532,6 +532,9 @@ body.sep img.logo { width: 120px; height: 120px; object-fit: contain; } @media (
     <section id="pwSecDaftar" style="display:grid;gap:12px" aria-label="Daftar pewarta">
       <div class="sel2">
         <input type="search" id="pwQ" placeholder="Cari nama atau PD" autocomplete="off" aria-label="Cari">
+        <button type="button" class="btn" id="pwFilterBtn" aria-expanded="false" aria-controls="pwFilterBox">Filter</button>
+      </div>
+      <div class="sel2" id="pwFilterBox" hidden>
         <select id="pwStatus" aria-label="Status"><option value="aktif">Pewarta aktif</option><option value="calon">Calon pewarta</option><option value="nonaktif">Tidak aktif / mundur</option><option value="">Semua status</option></select>
         <select id="pwUsia" aria-label="Kelompok usia"></select>
         <select id="pwModul" aria-label="Modul"></select>
@@ -540,7 +543,7 @@ body.sep img.logo { width: 120px; height: 120px; object-fit: contain; } @media (
       </div>
       <p class="count" id="pwAge"></p>
       <p class="count" id="pwCount"></p>
-      <div class="tablebox">
+      <div class="tw tablebox">
         <table><thead><tr><th>Nama (BPK Bandung)</th><th>Status</th><th>Usia</th><th>Modul</th><th>PD / Komunitas</th></tr></thead><tbody id="pwBody"></tbody></table>
         <div class="empty" id="pwNone" hidden>Tidak ada data yang cocok dengan filter ini.</div>
       </div>
@@ -553,17 +556,18 @@ body.sep img.logo { width: 120px; height: 120px; object-fit: contain; } @media (
         <button type="button" class="chip" data-pdf="sudah" aria-pressed="false">Sudah punya pewarta</button>
       </div>
       <p class="count" id="pwPdCount"></p>
-      <div class="tablebox">
+      <div class="tw tablebox">
         <table><thead><tr><th>PD / Komunitas</th><th>Dekanat</th><th>Pewarta aktif</th><th>Nama pewarta</th></tr></thead><tbody id="pwPdBody"></tbody></table>
       </div>
       <p class="hint" id="pwPdOrphan" style="margin:0;color:var(--muted);font-size:13px"></p>
     </section>
     <section id="pwSecModul" style="display:grid;gap:12px" aria-label="Pengajar per modul" hidden>
-      <div id="pwModulBox" style="display:grid;gap:12px"></div>
+      <div class="tw tablebox"><table><thead><tr><th>Modul</th><th>Jumlah</th><th>Nama pewarta</th></tr></thead><tbody id="pwModulBody"></tbody></table></div>
+      <p class="hint" id="pwModulHint" style="margin:0;color:var(--muted);font-size:13px"></p>
     </section>
     <section id="pwSecPastor" style="display:grid;gap:12px" aria-label="Pastor dan suster" hidden>
       <p class="count" id="pwPaCount"></p>
-      <div class="tablebox">
+      <div class="tw tablebox">
         <table><thead><tr><th>Nama</th><th>Status</th><th>Paroki / PD</th><th>Modul</th></tr></thead><tbody id="pwPaBody"></tbody></table>
       </div>
     </section>
@@ -2503,7 +2507,7 @@ function pwActs(o) {
 function nameBtn(o) { return '<button type="button" class="linkbtn" data-pw="view" data-id="' + o.id + '">' + esc(o.nama) + "</button>" + (o.age != null ? ' <span class="note">' + o.age + " th</span>" : ""); }
 function modulTags(o) { return o.modul.length ? o.modul.map(function (m) { return '<span class="jab">' + esc(m) + "</span>"; }).join("") : '<span class="note">–</span>'; }
 
-var pw = { q: "", status: "aktif", usia: "", modul: "", kat: "", pd: "", limit: 120, view: "ring", pdf: "semua" };
+var pw = { q: "", status: "aktif", usia: "", modul: "", kat: "", pd: "", limit: 120, view: "daftar", pdf: "semua" };
 function pwFiltered() {
   return pwSet("bandung").filter(function (o) {
     if (pw.status === "aktif" && !isAktif(o.sp)) return false;
@@ -2524,11 +2528,10 @@ function renderPewarta() {
   var kq = D.kui, kAll = 0, kTot = 0; if (kq) kq.forEach(function (g) { g.rv.forEach(function (r) { kTot += r.skor; kAll++; }); });
   var nowK = monthKey(NOW.getFullYear(), NOW.getMonth()), lkN = D.smp ? D.smp.filter(function (o) { return o.luar && o.tgl.slice(0, 7) === nowK; }).length : "–";
   document.getElementById("pwTiles").innerHTML = tile(n(function (o) { return isAktif(o.sp); }), "Pewarta aktif", "BPK Bandung, tanpa pastor", "pwf:status|Aktif") + tile(n(function (o) { return o.calon; }), "Calon pewarta", "belum tetap", "pwf:status|Calon") +
-    tile(n(function (o) { return isAktif(o.sg); }), "Pengajar aktif", "lihat per modul", "pwf:modul|x") + tile(n(function (o) { return isAktif(o.sk); }), "Konselor aktif", "BPK Bandung") +
-    tile(all ? pwSet("pastor").filter(function (o) { return isAktif(o.sp); }).length : "–", "Pastor & suster aktif", "dipisah dari pewarta", "pwf:pastor|x") +
-    tile(kq ? (kAll ? Math.round(kTot / kAll) : 0) + "/100" : "–", "Skor kuesioner", kq ? kAll + " ulasan" : "", "pwf:kui|x");
+    tile(n(function (o) { return isAktif(o.sg); }), "Pengajar aktif", "lihat per modul", "pwf:modul|x") +
+    tile(all ? pwSet("pastor").filter(function (o) { return isAktif(o.sp); }).length : "–", "Pastor & suster aktif", "dipisah dari pewarta", "pwf:pastor|x");
   ["ring", "daftar", "pd", "modul", "pastor", "lk", "kui"].forEach(function (v) { document.getElementById("pwSec" + v.charAt(0).toUpperCase() + v.slice(1)).hidden = pw.view !== v; });
-  Array.prototype.forEach.call(document.getElementById("pwViews").children, function (x) { x.setAttribute("aria-pressed", x.dataset.pv === pw.view ? "true" : "false"); });
+  Array.prototype.forEach.call(document.getElementById("pwRptTabs").children, function (x) { x.setAttribute("aria-selected", x.dataset.pv === pw.view ? "true" : "false"); });
   if (pw.view === "lk") { renderLk(); renderTema(); return; }
   if (pw.view === "kui") { renderKui(); return; }
   if (pw.view === "ring") { renderPwRing(); return; }
@@ -2570,13 +2573,14 @@ function renderPwPd() {
 }
 function renderPwModul() {
   var bd = pwSet("bandung").filter(function (o) { return isAktif(o.sp) || isAktif(o.sg); });
-  var box = document.getElementById("pwModulBox");
-  var sec = function (title, list, hint) {
-    return '<section class="pan"><h3>' + esc(title) + ' <span class="pill ' + (list.length ? "ok" : "bad") + '">' + list.length + "</span></h3>" + (hint ? '<p class="hint">' + esc(hint) + "</p>" : "") +
-      '<div class="lst">' + (list.sort(function (a, b) { return cmpId(a.nama, b.nama); }).map(function (o) { return '<div class="li w2"><span><span class="nm">' + nameBtn(o) + '</span><span class="mt">' + esc(o.pd || "") + '</span></span><span class="rt">' + ageTag(o) + "</span></div>"; }).join("") || '<p class="hint">Belum ada pengajar.</p>') + "</div></section>";
+  var row = function (title, list) {
+    list = list.slice().sort(function (a, b) { return cmpId(a.nama, b.nama); });
+    return "<tr><td><strong>" + esc(title) + '</strong></td><td><span class="pill ' + (list.length ? "ok" : "bad") + '">' + list.length + "</span></td><td>" +
+      (list.map(function (o) { return '<span class="nm">' + nameBtn(o) + "</span>" + (o.pd ? ' <span class="mt">(' + esc(o.pd) + ")</span>" : ""); }).join(", ") || '<span class="hint">Belum ada</span>') + "</td></tr>";
   };
-  box.innerHTML = MODUL.map(function (m) { return sec("Modul " + m, bd.filter(function (o) { return o.modul.indexOf(m) >= 0; })); }).join("") +
-    sec("Belum diisi modulnya", bd.filter(function (o) { return !o.modul.length; }), "Pewarta aktif BPK Bandung yang belum tercatat menguasai modul. Isi lewat tombol Edit.");
+  document.getElementById("pwModulBody").innerHTML = MODUL.map(function (m) { return row("Modul " + m, bd.filter(function (o) { return o.modul.indexOf(m) >= 0; })); }).join("") +
+    row("Belum diisi modulnya", bd.filter(function (o) { return !o.modul.length; }));
+  document.getElementById("pwModulHint").textContent = "Baris “Belum diisi modulnya”: pewarta aktif BPK Bandung yang belum tercatat menguasai modul. Isi lewat tombol Edit.";
 }
 function renderPwPastor() {
   var l = pwSet("pastor").sort(function (a, b) { return cmpId(a.nama, b.nama); });
@@ -2663,8 +2667,9 @@ function pwClick(e) {
   var b = e.target.closest && e.target.closest("[data-pw]"); if (!b || b.disabled) return;
   if (b.dataset.pw === "view") viewPwb(b.dataset.id, b); else if (b.dataset.pw === "edit") pbOpen(b.dataset.id, b);
 }
-["pwBody", "pwPdBody", "pwModulBox", "pwPaBody", "tmBody"].forEach(function (id) { document.getElementById(id).addEventListener("click", pwClick); });
-document.getElementById("pwViews").addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-pv]"); if (!b) return; pw.view = b.dataset.pv; renderPewarta(); });
+["pwBody", "pwPdBody", "pwModulBody", "pwPaBody", "tmBody"].forEach(function (id) { document.getElementById(id).addEventListener("click", pwClick); });
+document.getElementById("pwRptTabs").addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-pv]"); if (!b) return; pw.view = b.dataset.pv; renderPewarta(); });
+document.getElementById("pwFilterBtn").addEventListener("click", function () { var bx = document.getElementById("pwFilterBox"); bx.hidden = !bx.hidden; this.setAttribute("aria-expanded", bx.hidden ? "false" : "true"); });
 document.getElementById("pwPdChips").addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-pdf]"); if (!b) return; pw.pdf = b.dataset.pdf; renderPewarta(); });
 [["pwStatus", "status"], ["pwUsia", "usia"], ["pwModul", "modul"], ["pwKat", "kat"], ["pwPd", "pd"]].forEach(function (p) {
   document.getElementById(p[0]).addEventListener("change", function (e) { pw[p[1]] = e.target.value; pw.limit = 120; renderPewarta(); });
