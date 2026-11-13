@@ -264,3 +264,20 @@ describe("daftarProgram cakupan", () => {
     expect((await daftarProgram(acc)).length).toBe(4);
   });
 });
+
+describe("ringkasanProgram", () => {
+  const p = (id: string, status: string, bidang: string, total: number) => ({ id, fields: {
+    [PK.nama]: id, [PK.seksiPengaju]: "X", [PK.bidang]: bidang, [PK.seksiTerlibat]: "X", [PK.status]: status, [PK.dibuatOleh]: "z@x.com",
+    [PK.modeAnggaran]: "Total", [PK.totalAnggaran]: total, [PK.waktuDibuat]: new Date().toISOString() } });
+  const seedR = () => { db[T_PROGRAM] = [p("recAAAAAAAAAAAAAA", "Disetujui", "Kesekretariatan", 200), p("recBBBBBBBBBBBBBB", "Berjalan", "Inreach (El Shaddai)", 300), p("recCCCCCCCCCCCCCC", "Menunggu Sekjen", "Kesekretariatan", 50)]; };
+  it("ditolak 403 untuk Koordinator Seksi biasa", async () => {
+    seedR(); peran = { ...emptyPeran, koordSeksi: ["Forkom 1"] };
+    const { ringkasanProgram } = await import("../src/lib/proker");
+    await expect(ringkasanProgram(acc)).rejects.toMatchObject({ status: 403 });
+  });
+  it.each(["sekjen", "pimpinan", "bendahara"])("%s mendapat angka lintas bidang", async (k) => {
+    seedR(); peran = { ...emptyPeran, [k]: true }; rows = [];
+    const { ringkasanProgram } = await import("../src/lib/proker");
+    expect(await ringkasanProgram(acc)).toMatchObject({ berjalan: { n: 2, nilai: 500 }, menunggu: { n: 1, nilai: 50 }, selesai: { n: 0, nilai: 0 }, menungguSekjen: 1 });
+  });
+});

@@ -5,6 +5,7 @@ import { T_PROGRAM, T_ANGGARAN, T_SETUJU, PK, AG, ST, JENIS } from "./proker-sch
 import { peranOf, rowsOf, semuaSeksi, seksiBidang, emailsWhere } from "./proker-roles";
 import { canAct, nextStatus, seksiKolaborasi, type Keputusan, type Tahap } from "./proker-flow";
 import { buatNotif } from "./notif";
+import { hitungRingkas, type Ringkas } from "./proker-ringkas";
 
 const REC = /^rec[A-Za-z0-9]{14}$/;
 const TAHAP: Tahap[] = ["Koord Bidang", "Kolaborasi", "Sekjen"];
@@ -176,7 +177,10 @@ export function dalamCakupan(p: { bidang: string; seksiPengaju: string; seksiTer
   return [p.seksiPengaju, ...p.seksiTerlibat].some((s) => ctx.seksiSaya.has(norm(s)));
 }
 
-export async function daftarProgram(acc: Access) {
+export async function daftarProgram(acc: Access) { return muatProgram(acc, true); }
+
+/** Semua program (saring=false) atau hanya yang dalam cakupan akun (saring=true). */
+async function muatProgram(acc: Access, saring: boolean) {
   if (acc.level !== "Superadmin" && !acc.tabs.includes("Program Kerja")) throw new HttpError(403, "Tidak punya akses ke menu Program Kerja.");
   const [peran, rows] = await Promise.all([peranOf(acc), rowsOf(acc.email)]);
   const [pr, ag, st] = await Promise.all([
@@ -193,7 +197,7 @@ export async function daftarProgram(acc: Access) {
   const out = [];
   for (const rec of pr.records) {
     const p = toProg(rec);
-    if (!dalamCakupan(p, ctx)) continue;
+    if (saring && !dalamCakupan(p, ctx)) continue;
     const baris = ag.records.filter((r) => r.fields[AG.programId] === p.id);
     const sum = (j: string) => baris.filter((r) => sel(r.fields[AG.jenis]) === j).reduce((s, r) => s + Number(r.fields[AG.nominal] || 0), 0);
     const aksi: Tahap[] = [];
@@ -210,6 +214,14 @@ export async function daftarProgram(acc: Access) {
     });
   }
   return out;
+}
+
+/** Angka ringkasan seluruh program untuk dashboard Pimpinan, Sekjen, dan Bendahara. */
+export async function ringkasanProgram(acc: Access): Promise<Ringkas & { menungguSekjen: number }> {
+  const peran = await peranOf(acc);
+  if (!(peran.sekjen || peran.pimpinan || peran.bendahara || acc.level === "Superadmin")) throw new HttpError(403, "Tidak punya akses ke ringkasan program.");
+  const semua = await muatProgram({ ...acc, tabs: [...acc.tabs, "Program Kerja"] }, false);
+  return { ...hitungRingkas(semua), menungguSekjen: semua.filter((p) => p.status === "Menunggu Sekjen").length };
 }
 
 /** Isian formulir: seksi yang boleh dipilih sebagai pengaju (seksiPilihan), apakah perlu memilih, dan semua seksi untuk dicentang sebagai terlibat. */
