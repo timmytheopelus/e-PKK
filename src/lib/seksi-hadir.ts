@@ -45,7 +45,15 @@ const PD = { event: "flduf15moMpZSklGL", umat: "fldqvA9dTUmWLfRr2", st: "fldNGGE
 const KH = { event: "fldrIFO5fehaqaS2u", pend: "fldTuFsmLgiZoHXEf", status: "fldudT9j1X2vkQCqD" };
 const EVF = { nama: "fld0d9tIyi4nyTZsM", tgl: "fldoIkx9wLMaKOa38" };
 
-export async function pengurusAktif(): Promise<Orang[]> {
+let pengurusCache: { at: number; v: Promise<Orang[]> } | null = null;
+export function pengurusAktif(): Promise<Orang[]> {
+  if (pengurusCache && Date.now() - pengurusCache.at < 300_000) return pengurusCache.v;
+  const v = muatPengurus();
+  pengurusCache = { at: Date.now(), v };
+  v.catch(() => { pengurusCache = null; });
+  return v;
+}
+async function muatPengurus(): Promise<Orang[]> {
   const [jab, pg] = await Promise.all([
     listUntil(BASE_BPK, T.jabatan, { fieldIds: [JAB.bidang, JAB.seksi, JAB.peran], want: Infinity, maxPages: 10 }),
     listUntil(BASE_BPK, T.pengurus, { fieldIds: [PGR.umat, PGR.nama, PGR.jabatan, PGR.periode], want: Infinity, maxPages: 30 }),

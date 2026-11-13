@@ -7,7 +7,7 @@ vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined })
 vi.mock("@/lib/viewas", () => ({ AS_COOKIE: "epk_as", effectiveAccess: async () => ({ real: akun, acc: akun }) }));
 vi.mock("@/lib/absen", async (orig) => {
   const m: any = await orig();
-  return { ...m, infoAbsen: vi.fn(async () => ({ nama: "Rapat", tgl: "2026-11-14", buka: true, peserta: [] })), tandaiHadir: vi.fn(async () => ({ ok: true })) };
+  return { ...m, infoAbsen: vi.fn(async () => ({ nama: "Rapat", tgl: "2026-11-14", buka: true, peserta: [] })), simpanHadir: vi.fn(async () => ({ ok: true, ditambah: 1, dihapus: 0 })) };
 });
 import { POST } from "@/app/api/absen/route";
 
@@ -19,11 +19,11 @@ describe("/api/absen", () => {
   it("login tanpa menu Absensi: 403 untuk daftar dan tandai", async () => {
     akun.tabs = ["Event"];
     expect((await call({ aksi: "daftar", token: "x" })).status).toBe(403);
-    expect((await call({ aksi: "tandai", token: "x", pendaftaran: "recPEND00000000B1", hadir: true })).status).toBe(403);
+    expect((await call({ aksi: "simpan", token: "x", perubahan: [{ pendaftaran: "recPEND00000000B1", hadir: true }] })).status).toBe(403);
   });
   it("dengan menu Absensi: daftar dan tandai berhasil", async () => {
     expect((await call({ aksi: "daftar", token: "x" })).status).toBe(200);
-    expect((await call({ aksi: "tandai", token: "x", pendaftaran: "recPEND00000000B1", hadir: true })).status).toBe(200);
+    expect((await call({ aksi: "simpan", token: "x", perubahan: [{ pendaftaran: "recPEND00000000B1", hadir: true }] })).status).toBe(200);
   });
   it("membuat link: boleh untuk menu Event atau Absensi, tidak untuk yang lain", async () => {
     akun.tabs = ["Event"];

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { effectiveAccess, AS_COOKIE } from "@/lib/viewas";
-import { bolehAbsen, buatToken, infoAbsen, tandaiHadir } from "@/lib/absen";
+import { bolehAbsen, buatToken, infoAbsen, simpanHadir } from "@/lib/absen";
 import { HttpError } from "@/lib/policy";
 
 export const dynamic = "force-dynamic";
@@ -21,9 +21,9 @@ export async function POST(req: Request) {
     // Daftar nama dan tandai hadir: hanya akun dengan menu Absensi.
     if (!bolehAbsen(real) || acc?.viewAs) throw new HttpError(403, "Akun Anda belum punya akses menu Absensi. Hubungi sekretariat.");
     if (b?.aksi === "daftar") return NextResponse.json(await infoAbsen(String(b.token || "")));
-    if (b?.aksi === "tandai") {
-      const r = await tandaiHadir(String(b.token || ""), String(b.pendaftaran || ""), b.hadir === true);
-      console.log("ABSEN", email, b.pendaftaran, b.hadir === true ? "hadir" : "batal");
+    if (b?.aksi === "simpan") {
+      const r = await simpanHadir(String(b.token || ""), Array.isArray(b.perubahan) ? b.perubahan.map((c: any) => ({ pendaftaran: String(c?.pendaftaran || ""), hadir: c?.hadir === true })) : []);
+      console.log("ABSEN", email, "+" + r.ditambah, "-" + r.dihapus);
       return NextResponse.json(r);
     }
     throw new HttpError(400, "Aksi tidak dikenal.");
