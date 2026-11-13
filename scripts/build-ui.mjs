@@ -54,6 +54,7 @@ const PROKER_HTML = `  <div id="tab-proker" class="tab" role="tabpanel" aria-lab
           <select id="proMulaiMode" aria-label="Bentuk perkiraan mulai"><option value="bln">Bulan dan tahun</option><option value="tgl">Tanggal lengkap</option></select>
           <input type="month" id="proMulaiBln" aria-label="Bulan mulai"><input type="date" id="proMulaiTgl" aria-label="Tanggal mulai" hidden>
         </div>
+        <div id="proPengajuBox" class="fil" hidden></div>
         <h4>Seksi terlibat</h4>
         <div id="proSeksi" class="epk-picklist"></div>
         <h4>Anggaran</h4>

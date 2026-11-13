@@ -2,7 +2,7 @@
 import { Access, BASE_BPK, HttpError } from "./policy";
 import { at, listUntil } from "./airtable";
 import { T_PROGRAM, T_ANGGARAN, T_SETUJU, PK, AG, ST, JENIS } from "./proker-schema";
-import { peranOf, rowsOf, semuaSeksi, emailsWhere } from "./proker-roles";
+import { peranOf, rowsOf, semuaSeksi, seksiBidang, emailsWhere } from "./proker-roles";
 import { canAct, nextStatus, seksiKolaborasi, type Keputusan, type Tahap } from "./proker-flow";
 import { buatNotif } from "./notif";
 
@@ -26,6 +26,32 @@ const rupiah = (n: any, label: string) => {
   return n;
 };
 
+type Pengaju = { seksi: string; bidang: string };
+/** Seksi yang boleh dipakai akun sebagai pengaju: milik sendiri (Ketua/Wakil) + yang diizinkan peran istimewa. */
+async function seksiPengajuBoleh(acc: Access): Promise<{ boleh: Pengaju[]; bisaPilih: boolean }> {
+  const [rows, peran] = await Promise.all([rowsOf(acc.email), peranOf(acc)]);
+  const milik: Pengaju[] = rows.filter((r) => (r.peran === "Ketua" || r.peran === "Wakil") && r.seksi).map((r) => ({ seksi: r.seksi, bidang: r.bidang }));
+  const semua = acc.level === "Superadmin" || peran.pimpinan;
+  if (!semua && !peran.koordBidang.length) return { boleh: milik, bisaPilih: false };
+  const peta = await seksiBidang();
+  const boleh = new Map<string, Pengaju>(milik.map((m) => [m.seksi, m]));
+  for (const [seksi, bidang] of peta) {
+    if (semua || peran.koordBidang.some((b) => norm(b) === norm(bidang))) boleh.set(seksi, { seksi, bidang });
+  }
+  return { boleh: [...boleh.values()].sort((a, b) => a.seksi.localeCompare(b.seksi, "id")), bisaPilih: true };
+}
+async function tentukanPengaju(acc: Access, diminta?: string): Promise<Pengaju> {
+  const { boleh } = await seksiPengajuBoleh(acc);
+  if (!boleh.length) throw new HttpError(403, "Hanya Ketua/Wakil seksi, Koordinator, atau Superadmin yang dapat mengajukan program.");
+  if (diminta !== undefined) {
+    const f = boleh.find((r) => norm(r.seksi) === norm(String(diminta)));
+    if (!f) throw new HttpError(403, "Anda tidak boleh mengajukan atas nama seksi tersebut.");
+    return f;
+  }
+  if (boleh.length > 1) throw new HttpError(400, "Pilih seksi pengaju.");
+  return boleh[0];
+}
+
 export async function ajukanProgram(acc: Access, input: AjukanInput): Promise<{ id: string }> {
   guard(acc);
   const nama = String(input?.nama || "").trim();
@@ -34,15 +60,9 @@ export async function ajukanProgram(acc: Access, input: AjukanInput): Promise<{ 
   const mulai = String(input?.mulai || "");
   if (!/^\d{4}-(0[1-9]|1[0-2])(-(0[1-9]|[12]\d|3[01]))?$/.test(mulai)) throw new HttpError(400, "Perkiraan mulai harus berformat tanggal (YYYY-MM-DD) atau bulan (YYYY-MM).");
 
-  // Seksi pengaju: hanya seksi tempat akun menjabat sebagai Ketua/Wakil; input dari browser tidak dipercaya.
-  const milik = (await rowsOf(acc.email)).filter((r) => (r.peran === "Ketua" || r.peran === "Wakil") && r.seksi);
-  if (!milik.length) throw new HttpError(403, "Hanya Ketua/Wakil seksi yang dapat mengajukan program.");
-  let pilih = milik[0];
-  if (input.seksiPengaju !== undefined) {
-    const f = milik.find((r) => norm(r.seksi) === norm(String(input.seksiPengaju)));
-    if (!f) throw new HttpError(403, "Anda hanya dapat mengajukan atas nama seksi Anda sendiri.");
-    pilih = f;
-  } else if (new Set(milik.map((r) => r.seksi)).size > 1) throw new HttpError(400, "Pilih seksi pengaju.");
+  // Seksi pengaju: seksi tempat akun menjabat sebagai Ketua/Wakil. Superadmin dan grup koordinator (Pimpinan/Koordinator)
+  // boleh memilih seksi mana pun; Koordinator Bidang hanya seksi di bidangnya. Input dari browser tidak dipercaya.
+  const pilih = await tentukanPengaju(acc, input.seksiPengaju);
 
   const dikenal = await semuaSeksi();
   const terlibat = [pilih.seksi];
@@ -181,9 +201,12 @@ export async function daftarProgram(acc: Access) {
   return out;
 }
 
-/** Isian formulir: seksi tempat akun boleh mengajukan, dan semua seksi yang dikenal (untuk dicentang sebagai terlibat). */
+/** Isian formulir: seksi yang boleh dipilih sebagai pengaju (seksiPilihan), apakah perlu memilih, dan semua seksi untuk dicentang sebagai terlibat. */
 export async function infoProgram(acc: Access) {
   guard(acc);
-  const rows = (await rowsOf(acc.email)).filter((r) => (r.peran === "Ketua" || r.peran === "Wakil") && r.seksi);
-  return { seksiSaya: [...new Set(rows.map((r) => r.seksi))], semuaSeksi: [...(await semuaSeksi())].sort((a, b) => a.localeCompare(b, "id")) };
+  const { boleh, bisaPilih } = await seksiPengajuBoleh(acc);
+  return {
+    seksiSaya: [...new Set(boleh.map((r) => r.seksi))].slice(0, bisaPilih ? 0 : 50), seksiPilihan: boleh.map((r) => r.seksi),
+    bisaPilih: bisaPilih || boleh.length > 1, semuaSeksi: [...(await semuaSeksi())].sort((a, b) => a.localeCompare(b, "id")),
+  };
 }

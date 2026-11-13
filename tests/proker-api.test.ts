@@ -12,6 +12,7 @@ vi.mock("../src/lib/proker-roles", () => ({
   peranOf: async () => peran,
   rowsOf: async () => rows,
   semuaSeksi: async () => new Set(["Forkom 1", "Forkom 2", "Sekolah", "Pimpinan Kesekretariatan"]),
+  seksiBidang: async () => new Map([["Forkom 1", "Kesekretariatan"], ["Forkom 2", "Kesekretariatan"], ["Sekolah", "Inreach (El Shaddai)"]]),
   emailsWhere: async () => ["koord@x.com"],
 }));
 vi.mock("../src/lib/notif", () => ({ buatNotif: async (to: string[], pesan: string, tautan: string) => { notifs.push({ to, pesan, tautan }); } }));
@@ -193,5 +194,39 @@ describe("infoProgram", () => {
     expect(r.seksiSaya).toEqual(["Forkom 1"]);
     expect(r.semuaSeksi).toContain("Sekolah");
     await expect(infoProgram({ ...acc, tabs: [] })).rejects.toMatchObject({ status: 403 });
+  });
+});
+
+describe("Superadmin dan grup koordinator boleh mengajukan", () => {
+  it("Superadmin tanpa jabatan seksi memilih seksi pengaju; bidang diambil dari master", async () => {
+    rows = [];
+    const { ajukanProgram } = await import("../src/lib/proker");
+    const su = { ...acc, level: "Superadmin" };
+    await expect(ajukanProgram(su, baru)).rejects.toMatchObject({ status: 400 }); // belum memilih seksi
+    await expect(ajukanProgram(su, { ...baru, seksiPengaju: "Seksi Hantu" })).rejects.toMatchObject({ status: 403 });
+    const { id } = await ajukanProgram(su, { ...baru, seksiPengaju: "Sekolah", anggaran: { mode: "Total", total: 5 } });
+    const f = db[T_PROGRAM].find((r) => r.id === id).fields;
+    expect(f[PK.seksiPengaju]).toBe("Sekolah");
+    expect(f[PK.bidang]).toBe("Inreach (El Shaddai)");
+    expect(f[PK.seksiTerlibat]).toBe("Sekolah");
+  });
+  it("grup koordinator (pimpinan) boleh memilih seksi mana pun", async () => {
+    rows = []; peran = { ...emptyPeran, pimpinan: true };
+    const { ajukanProgram } = await import("../src/lib/proker");
+    const { id } = await ajukanProgram(acc, { ...baru, seksiPengaju: "Forkom 2" });
+    expect(db[T_PROGRAM].find((r) => r.id === id).fields[PK.seksiPengaju]).toBe("Forkom 2");
+  });
+  it("Koordinator Bidang hanya untuk seksi di bidangnya", async () => {
+    rows = []; peran = { ...emptyPeran, koordBidang: ["Kesekretariatan"] };
+    const { ajukanProgram } = await import("../src/lib/proker");
+    await expect(ajukanProgram(acc, { ...baru, seksiPengaju: "Sekolah" })).rejects.toMatchObject({ status: 403 });
+    await expect(ajukanProgram(acc, { ...baru, seksiPengaju: "Forkom 1" })).resolves.toHaveProperty("id");
+  });
+  it("info memberi pilihan seksi pengaju untuk Superadmin", async () => {
+    rows = [];
+    const { infoProgram } = await import("../src/lib/proker");
+    const r: any = await infoProgram({ ...acc, level: "Superadmin" });
+    expect(r.bisaPilih).toBe(true);
+    expect(r.seksiPilihan).toEqual(expect.arrayContaining(["Forkom 1", "Sekolah"]));
   });
 });

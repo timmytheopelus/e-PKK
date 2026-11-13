@@ -95,15 +95,20 @@ export const PROKER_JS = String.raw`
   }
 
   /* ---------- formulir ---------- */
+  function pengaju() {
+    var sel = $("proPengajuSel"); if (sel) return sel.value;
+    return info && info.seksiPilihan.length === 1 ? info.seksiPilihan[0] : "";
+  }
   function seksiBoxes() {
     var box = $("proSeksi"); if (!box || !info) return;
+    var cur = pengaju(), terpilih = {};
+    Array.prototype.forEach.call(box.querySelectorAll("input:checked:not(:disabled)"), function (c) { terpilih[c.value] = 1; });
     box.textContent = "";
-    var mine = info.seksiSaya || [];
     info.semuaSeksi.forEach(function (s) {
-      var own = mine.indexOf(s) >= 0 && mine.length === 1;
-      var cb = EPK.el("input", { type: "checkbox", value: s, checked: own ? "" : null, disabled: own ? "" : null });
-      if (own) cb.checked = true;
-      box.appendChild(EPK.el("label", { class: "chk" }, [cb, " " + s + (own ? " (seksi Anda)" : "")]));
+      var own = s === cur;
+      var cb = EPK.el("input", { type: "checkbox", value: s, disabled: own ? "" : null });
+      if (own || terpilih[s]) cb.checked = true;
+      box.appendChild(EPK.el("label", { class: "chk" }, [cb, " " + s + (own ? " (seksi pengaju)" : "")]));
     });
   }
   function rincianRow(r) {
@@ -123,6 +128,8 @@ export const PROKER_JS = String.raw`
     var modeTgl = f.querySelector("#proMulaiMode").value === "tgl";
     var mulaiV = modeTgl ? f.querySelector("#proMulaiTgl").value : f.querySelector("#proMulaiBln").value;
     if (!mulaiV) return bad("Perkiraan mulai wajib diisi.");
+    var pilihSel = $("proPengajuSel");
+    if (pilihSel && !pilihSel.value) return bad("Pilih seksi pengaju.");
     var terlibat = Array.prototype.slice.call(f.querySelectorAll("#proSeksi input:checked:not(:disabled)")).map(function (c) { return c.value; });
     var anggaran;
     if (f.querySelector("#proAgMode").value === "Total") {
@@ -136,7 +143,7 @@ export const PROKER_JS = String.raw`
       anggaran = { mode: "Rincian", baris: baris };
     }
     out.textContent = "Mengirim…"; out.className = "epk-msg";
-    api({ aksi: "ajukan", nama: nama, detail: f.querySelector("#proDetail").value, mulai: mulaiV, seksiTerlibat: terlibat, anggaran: anggaran })
+    api({ aksi: "ajukan", nama: nama, detail: f.querySelector("#proDetail").value, seksiPengaju: pilihSel ? pilihSel.value : undefined, mulai: mulaiV, seksiTerlibat: terlibat, anggaran: anggaran })
       .then(function () { f.reset(); toggles(); out.textContent = "Program diajukan dan menunggu persetujuan Koordinator Bidang."; out.className = "epk-msg"; return load(); })
       .then(function () { if (window.__PROKER_TABS) window.__PROKER_TABS("daftar"); })
       .catch(function (e) { bad(e.message); });
@@ -155,8 +162,16 @@ export const PROKER_JS = String.raw`
     f.querySelector("#proTambah").addEventListener("click", function () { $("proRincian").appendChild(rincianRow()); });
     $("proRincian").appendChild(rincianRow());
     toggles();
-    api({ aksi: "info" }).then(function (j) { info = j; seksiBoxes();
-      if (!j.seksiSaya.length) { $("proFormMsg").textContent = "Hanya Ketua/Wakil seksi yang dapat mengajukan program."; $("proFormMsg").className = "epk-msg bad"; f.querySelector("button[type=submit]").disabled = true; }
+    api({ aksi: "info" }).then(function (j) {
+      info = j;
+      if (j.bisaPilih && j.seksiPilihan.length) {
+        var sel = EPK.el("select", { id: "proPengajuSel", "aria-label": "Seksi pengaju" }, [EPK.el("option", { value: "", text: "Pilih seksi pengaju" })]);
+        j.seksiPilihan.forEach(function (x) { sel.appendChild(EPK.el("option", { value: x, text: x })); });
+        sel.addEventListener("change", seksiBoxes);
+        var wrap = $("proPengajuBox"); wrap.textContent = ""; wrap.appendChild(sel); wrap.hidden = false;
+      }
+      seksiBoxes();
+      if (!j.seksiPilihan.length) { $("proFormMsg").textContent = "Hanya Ketua/Wakil seksi, Koordinator, atau Superadmin yang dapat mengajukan program."; $("proFormMsg").className = "epk-msg bad"; f.querySelector("button[type=submit]").disabled = true; }
     }).catch(function (e) { $("proFormMsg").textContent = e.message; $("proFormMsg").className = "epk-msg bad"; });
   }
 

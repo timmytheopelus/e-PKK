@@ -18,16 +18,16 @@ export function peranFromRows(rows: JabRow[], sekjen: boolean): Peran {
   const koordBidang: string[] = [], koordSeksi: string[] = [];
   let pimpinan = false, bendahara = false;
   for (const r of rows) {
-    if (r.peran === "Pimpinan" || r.peran === "Penasihat") pimpinan = true;
+    if (/^(pimpinan|koordinator|penasihat)$/i.test(r.peran) || /^(pimpinan|koordinator)$/i.test(r.bidang)) pimpinan = true; // "Pimpinan" kini bernama "Koordinator"
     if (/bendahara/i.test(r.seksi)) bendahara = true;
     if (r.peran !== "Ketua") continue;
-    if (/^pimpinan\s+/i.test(r.seksi)) koordBidang.push(r.bidang);
+    if (/^(pimpinan|koordinator)\s+/i.test(r.seksi)) koordBidang.push(r.bidang);
     else koordSeksi.push(r.seksi);
   }
   return { koordBidang: uniq(koordBidang), koordSeksi: uniq(koordSeksi), sekjen, bendahara, pimpinan };
 }
 
-type Peta = { byEmail: Map<string, JabRow[]>; seksi: Set<string>; sekjen: Set<string> };
+type Peta = { byEmail: Map<string, JabRow[]>; seksi: Set<string>; seksiBidang: Map<string, string>; sekjen: Set<string> };
 let petaCache: { at: number; v: Promise<Peta> } | null = null;
 
 /** Peta email akun -> baris jabatan (Pengurus periode 2026), daftar seksi master, dan email Sekretaris Jenderal. Cache 5 menit. */
@@ -41,6 +41,8 @@ function muatPeta(): Promise<Peta> {
     ]);
     const master = new Map<string, JabRow>(jab.records.map((r) => [r.id, { bidang: sel(r.fields[JAB.bidang]), seksi: sel(r.fields[JAB.seksi]), peran: sel(r.fields[JAB.peran]) }]));
     const seksi = new Set<string>([...master.values()].map((m) => m.seksi).filter(Boolean));
+    const seksiBidang = new Map<string, string>();
+    for (const m of master.values()) if (m.seksi && m.bidang && !seksiBidang.has(m.seksi)) seksiBidang.set(m.seksi, m.bidang);
     const rowsByUmat = new Map<string, JabRow[]>();
     for (const r of pg.records) {
       const ptxt = sel(r.fields[PGR.periode]);
@@ -59,7 +61,7 @@ function muatPeta(): Promise<Peta> {
       byEmail.set(email, rows);
       if (/sekretaris jenderal/i.test(JSON.stringify(r.fields[AF.jabLk] ?? ""))) sekjen.add(email);
     }
-    return { byEmail, seksi, sekjen };
+    return { byEmail, seksi, seksiBidang, sekjen };
   })();
   petaCache = { at: Date.now(), v };
   v.catch(() => { petaCache = null; });
@@ -78,6 +80,9 @@ export async function peranOf(acc: Pick<Access, "email" | "level" | "jabatan">):
 
 /** Nama seksi yang dikenal di master Jabatan. */
 export async function semuaSeksi(): Promise<Set<string>> { return (await muatPeta()).seksi; }
+
+/** Peta seksi -> bidang dari master Jabatan. */
+export async function seksiBidang(): Promise<Map<string, string>> { return (await muatPeta()).seksiBidang; }
 
 /** Email akun yang peran turunannya memenuhi pred; sekjen=true menambahkan pemegang jabatan Sekretaris Jenderal. */
 export async function emailsWhere(pred: (p: Peran) => boolean): Promise<string[]> {
