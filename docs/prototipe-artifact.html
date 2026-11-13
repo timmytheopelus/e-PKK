@@ -3599,10 +3599,22 @@ function renderEvRegs() {
   var chip = document.getElementById("evDimChip");
   if (chip) chip.innerHTML = dm ? '<p class="count"><span class="tag">Filter: ' + esc(dm[0]) + " = " + esc(EV.dv) + '</span> <button type="button" class="btn" data-evclr="1">Hapus filter ✕</button></p>' : "";
   Array.prototype.forEach.call(el.querySelectorAll(".hbr[data-dim]"), function (x) { x.classList.toggle("on", !!dm && +x.dataset.dim === EV.dim && x.dataset.val === EV.dv); });
-  box.innerHTML = '<p class="count">' + l.length + ' pendaftar</p><div class="tw"><table class="tbl"><thead><tr><th>Nama</th><th>PD</th><th>Usia</th><th>Status</th><th>Kehadiran</th></tr></thead><tbody>' +
-    l.map(function (p) { return "<tr><td>" + esc(p.nama) + "</td><td>" + esc(p.pd) + "</td><td>" + esc(ageLbl(p.usia)) + "</td><td>" + esc(p.st) + (p.val ? " ✓" : "") + "</td><td>" + esc(p.hadir) + "</td></tr>"; }).join("") + "</tbody></table></div>";
+  var me = window.__ME__ || {}, canDel = (me.level === "Admin" || me.level === "Superadmin") && !me.viewAs;
+  box.innerHTML = '<p class="count">' + l.length + ' pendaftar</p><div class="tw"><table class="tbl"><thead><tr><th>Nama</th><th>PD</th><th>Usia</th><th>Status</th><th>Kehadiran</th>' + (canDel ? "<th></th>" : "") + "</tr></thead><tbody>" +
+    l.map(function (p) { return "<tr><td>" + esc(p.nama) + "</td><td>" + esc(p.pd) + "</td><td>" + esc(ageLbl(p.usia)) + "</td><td>" + esc(p.st) + (p.val ? " ✓" : "") + "</td><td>" + esc(p.hadir) + "</td>" + (canDel ? '<td><button type="button" class="btn" data-pdel="' + esc(p.id) + '" data-nm="' + esc(p.nama) + '">Hapus</button></td>' : "") + "</tr>"; }).join("") + "</tbody></table></div>" + (canDel ? '<p class="note" id="pdelMsg" role="status">Hapus = ditandai Batal: hilang dari hitungan, barisnya tetap ada di Airtable.</p>' : "");
 }
 document.getElementById("tab-event").addEventListener("click", function (e) {
+  var pdl = e.target.closest && e.target.closest("[data-pdel]");
+  if (pdl) {
+    var pid = pdl.getAttribute("data-pdel"), pnm = pdl.getAttribute("data-nm"), pm = document.getElementById("pdelMsg");
+    if (!window.confirm("Hapus " + pnm + " dari event ini? Pendaftarnya ditandai Batal dan tidak dihitung lagi.")) return;
+    pdl.disabled = true;
+    fetch("/api/event-pendaftar", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ aksi: "batal", event: EV.sel, id: pid }) })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.message || "Gagal."); return j; }); })
+      .then(function () { D.pend.forEach(function (p) { if (p.id === pid) p.st = "Batal"; }); renderEvent(); var m2 = document.getElementById("pdelMsg"); if (m2) m2.textContent = pnm + " dihapus dari event (status Batal)."; },
+        function (x) { pdl.disabled = false; if (pm) pm.textContent = x.message; });
+    return;
+  }
   var skf = e.target.closest && e.target.closest("[data-skf]");
   if (skf) { var nf = skf.getAttribute("data-skf"); SK.f = SK.f === nf && skf.classList.contains("tile") ? "" : nf; skDraw(SK.eid); var an = document.getElementById("skList"); if (an && SK.f && skf.classList.contains("tile")) an.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
   var sk = e.target.closest && e.target.closest("[data-seksi]");

@@ -262,3 +262,17 @@ describe("link absensi di mode Lihat sebagai", () => {
     expect(html).toContain("Tidak tersedia di mode Lihat sebagai");
   });
 });
+
+describe("hapus pendaftar event (Admin/Superadmin)", () => {
+  const html = require("node:fs").readFileSync("docs/prototipe-artifact.html", "utf8");
+  it("tombol Hapus hanya untuk Admin/Superadmin di akun asli; klik memanggil API batal setelah konfirmasi", () => {
+    expect(html).toContain('(me.level === "Admin" || me.level === "Superadmin") && !me.viewAs');
+    const a = html.indexOf('getElementById("tab-event").addEventListener("click"');
+    const b = html.indexOf('getElementById("tab-event").addEventListener("keydown"');
+    const h = html.slice(a, b);
+    expect(h).toContain('closest("[data-pdel]")');
+    expect(h).toContain("window.confirm(");
+    expect(h).toContain('"/api/event-pendaftar"');
+    expect(h).toContain('aksi: "batal"');
+  });
+});
