@@ -2,7 +2,7 @@
 // Semua tindakan lewat /api/proker; hak (siapa boleh menyetujui) ditentukan server dan hanya ditampilkan di sini.
 export const PROKER_JS = String.raw`
 (function () {
-  var items = [], info = null, loaded = false, filt = { q: "", st: "" }, tabsBuilt = false;
+  var items = [], info = null, loaded = false, filt = { q: "", st: "", grup: "" }, tabsBuilt = false;
   var ST = ["Draft", "Menunggu Koord Bidang", "Menunggu Kolaborasi", "Menunggu Sekjen", "Disetujui", "Berjalan", "Selesai", "Ditolak"];
   var BLN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
   function $(id) { return document.getElementById(id); }
@@ -17,14 +17,25 @@ export const PROKER_JS = String.raw`
   }
   function msg(t, bad) { var e = $("proMsg"); if (!e) return; e.textContent = t || ""; e.className = "hint" + (bad ? " bad" : ""); }
 
+  var GRUP = {
+    selesai: ["Selesai"],
+    berjalan: ["Disetujui", "Berjalan"],
+    menunggu: ["Menunggu Koord Bidang", "Menunggu Kolaborasi", "Menunggu Sekjen"]
+  };
+  var GRUP_LBL = { selesai: "Selesai", berjalan: "Disetujui dan berjalan", menunggu: "Menunggu persetujuan" };
   function tiles() {
     var box = $("proTiles"); if (!box) return;
-    var tunggu = items.filter(function (p) { return p.aksi.length; }).length;
-    var jalan = items.filter(function (p) { return p.status === "Berjalan" || p.status === "Disetujui"; }).length;
     box.textContent = "";
-    [["Program", items.length], ["Menunggu tindakan saya", tunggu], ["Disetujui/berjalan", jalan]].slice(0, 2).forEach(function (x) {
-      box.appendChild(EPK.el("div", { class: "tile" }, [EPK.el("div", { class: "num", text: String(x[1]) }), EPK.el("div", { class: "lbl", text: x[0] })]));
+    ["selesai", "berjalan", "menunggu"].forEach(function (g) {
+      var ls = items.filter(function (p) { return GRUP[g].indexOf(p.status) >= 0; });
+      var nilai = ls.reduce(function (s, p) { return s + (Number(p.totalPengeluaran) || 0); }, 0);
+      var on = filt.grup === g;
+      var t = EPK.el("button", { type: "button", class: "tile go" + (on ? " on" : ""), "data-grup": g, "aria-pressed": on ? "true" : "false", onclick: function () { filt.grup = filt.grup === g ? "" : g; draw(); } },
+        [EPK.el("b", { text: String(ls.length) }), EPK.el("span", { text: GRUP_LBL[g] }), EPK.el("small", { text: rp(nilai) })]);
+      box.appendChild(t);
     });
+    var tunggu = items.filter(function (p) { return p.aksi.length; }).length;
+    box.appendChild(EPK.el("div", { class: "tile" }, [EPK.el("b", { text: String(tunggu) }), EPK.el("span", { text: "Menunggu tindakan saya" })]));
   }
 
   function draw() {
@@ -32,7 +43,7 @@ export const PROKER_JS = String.raw`
     var body = $("proBody"); if (!body) return;
     var q = filt.q.toLowerCase();
     var rows = items.filter(function (p) {
-      return (!filt.st || p.status === filt.st) && (!q || (p.nama + " " + p.seksiPengaju + " " + p.bidang).toLowerCase().indexOf(q) >= 0);
+      return (!filt.st || p.status === filt.st) && (!filt.grup || GRUP[filt.grup].indexOf(p.status) >= 0) && (!q || (p.nama + " " + p.seksiPengaju + " " + p.bidang).toLowerCase().indexOf(q) >= 0);
     });
     body.textContent = "";
     if (!rows.length) { body.appendChild(EPK.el("tr", {}, [EPK.el("td", { colspan: "5", text: loaded ? "Belum ada program." : "Memuat…" })])); return; }
