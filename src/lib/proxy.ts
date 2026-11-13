@@ -3,7 +3,7 @@ import { Access, EV_OLEH, HttpError, INV, JAB, KEU, REK, T, TABLES, checkRead, c
 import { canEditEvent, sekretariatEmails } from "./event-edit";
 import { WATCH, diffEvent, logEventChange } from "./event-log";
 import { notifyOwner } from "./mail";
-import { at, clearCaches, getSchema, listPage, listUntil, resolveLinks, Rec } from "./airtable";
+import { at, clearCaches, getRecord, getSchema, listPage, listUntil, resolveLinks, Rec } from "./airtable";
 import { evalFilter } from "./filters";
 
 const REC = /^rec[A-Za-z0-9]{14}$/;
@@ -48,7 +48,7 @@ export async function handleCall(tool: string, input: any, acc: Access) {
     if (kind === "update" && spec.update?.record === "event-owner") {
       let sek: boolean | null = null;
       for (const r of records) {
-        const cur = await at(`/v0/${base}/${table}/${r.id}?returnFieldsByFieldId=true&` + [EV_OLEH, ...WATCH].map((f) => "fields%5B%5D=" + f).join("&"));
+        const cur = await getRecord(base, table, r.id);
         evBefore.set(r.id, cur?.fields || {});
         const creator = String(cur?.fields?.[EV_OLEH] || "");
         if (canEditEvent(acc, creator, false)) continue;

@@ -26,6 +26,11 @@ export async function at(path: string, init: RequestInit = {}, tries = 4): Promi
   }
 }
 
+/** Satu rekaman, field dikunci ke ID. GET rekaman tunggal TIDAK mendukung fields[] (Airtable menolak: "parameter validation failed"), jadi semua field diambil. */
+export async function getRecord(base: string, table: string, id: string): Promise<Rec> {
+  return at(`/v0/${base}/${table}/${id}?returnFieldsByFieldId=true`);
+}
+
 export async function listPage(base: string, table: string, o: { fieldIds?: string[]; pageSize?: number; offset?: string; sort?: { fieldId: string; direction?: string }[]; formula?: string }) {
   const p = new URLSearchParams();
   p.set("returnFieldsByFieldId", "true");

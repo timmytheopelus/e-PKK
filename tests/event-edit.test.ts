@@ -76,3 +76,14 @@ describe("proxy: update event", () => {
     expect(JSON.parse(post[2]).records[0].fields[EV_OLEH]).toBe("asli@x.com");
   });
 });
+
+it("GET rekaman tunggal tidak memakai fields[] (Airtable menolaknya: parameter validation failed)", async () => {
+  vi.resetModules();
+  process.env.AIRTABLE_TOKEN = "x";
+  const urls: string[] = [];
+  vi.stubGlobal("fetch", async (u: any) => { urls.push(String(u)); return new Response(JSON.stringify({ id: "recAAAAAAAAAAAAAA", fields: {} }), { status: 200 }); });
+  const { getRecord } = await import("../src/lib/airtable");
+  await getRecord("appIGR8Duhj3Vsz48", "tblbAIILkeRIwn3kl", "recAAAAAAAAAAAAAA");
+  expect(urls[0]).toContain("returnFieldsByFieldId=true");
+  expect(urls[0]).not.toMatch(/fields(%5B|\[)/i);
+});

@@ -1,7 +1,7 @@
 // Approval (ACC) permohonan pewarta luar kota oleh Sekretaris Jenderal BPK (dan Superadmin).
 // Keputusan disimpan sebagai catatan di tabel ACC (SMP) yang ditautkan ke jadwal; tidak ada tabel atau field baru.
 import { Access, BASE_BPK, BASE_SMP, HttpError, T } from "./policy";
-import { at, clearCaches, listPage } from "./airtable";
+import { at, clearCaches, getRecord, listPage } from "./airtable";
 import { AF } from "./access";
 import { clearProxyCache } from "./proxy";
 
@@ -20,8 +20,7 @@ export async function decide(eventId: string, decision: string, acc: Access) {
   const status = (DECISIONS as Record<string, string>)[decision];
   if (!status) throw new HttpError(400, "Keputusan tidak dikenal.");
   if (!REC.test(eventId || "")) throw new HttpError(400, "id permohonan tidak valid.");
-  const qs = [EV.nama, EV.tgl, EV.hapus, EV.acc].map((f) => "fields%5B%5D=" + f).join("&");
-  const ev = await at(`/v0/${BASE_SMP}/${T.smpEvents}/${eventId}?returnFieldsByFieldId=true&${qs}`);
+  const ev = await getRecord(BASE_SMP, T.smpEvents, eventId);
   const f = ev.fields || {};
   if (f[EV.hapus]) throw new HttpError(409, "Jadwal ini sudah dibatalkan.");
   if (Array.isArray(f[EV.acc]) && f[EV.acc].length) throw new HttpError(409, "Permohonan ini sudah diputuskan. Muat ulang halaman.");
@@ -49,7 +48,7 @@ export async function sekjenContact() {
     const r = records.find((x: any) => x.fields[AF.status] === "Disetujui");
     const uid = r && Array.isArray(r.fields[AF.umat]) ? (r.fields[AF.umat][0]?.id || r.fields[AF.umat][0]) : "";
     if (r && /^rec[A-Za-z0-9]{14}$/.test(uid || "")) {
-      const u = await at(`/v0/appIGR8Duhj3Vsz48/${T.umat}/${uid}?returnFieldsByFieldId=true&fields%5B%5D=fldzY1Z2QvIIEkYXR`);
+      const u = await getRecord(BASE_BPK, T.umat, uid);
       const wa = String(u.fields?.fldzY1Z2QvIIEkYXR || "");
       if (wa) v = { nama: String(r.fields[AF.nama] || "Sekretaris Jenderal"), wa };
     }
