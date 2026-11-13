@@ -21,3 +21,10 @@ describe("proker-schema", () => {
     expect([...S.JENIS]).toEqual(["Pemasukan", "Pengeluaran"]);
   });
 });
+
+import { T_REALISASI, RZ } from "../src/lib/proker-schema";
+it("tabel Realisasi Program punya id tabel dan field yang lengkap", () => {
+  expect(T_REALISASI).toMatch(/^tbl[A-Za-z0-9]{14}$/);
+  expect(Object.keys(RZ).sort()).toEqual(["keterangan", "mutasiId", "nominal", "oleh", "penerima", "programId", "tanggal"]);
+  for (const v of Object.values(RZ)) expect(v).toMatch(/^fld[A-Za-z0-9]{14}$/);
+});
