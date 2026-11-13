@@ -92,3 +92,22 @@ describe("klik agenda: edit kegiatan", () => {
     expect(HTML).not.toContain("fldPHO7qPmtfuxhbQ");
   });
 });
+
+describe("kegiatan batal disembunyikan dari kalender dan agenda", () => {
+  function loadPasses(): any {
+    const m = HTML.match(/function passes\([\s\S]*?\/\* end passes \*\//);
+    const w: any = new JSDOM("<body></body>", { runScripts: "outside-only" }).window;
+    w.eval("var cal = { libur: true, kel: '', jenis: '', sifat: '', plan: '', q: '' };" + (m ? m[0] : "") + "; window.passes = typeof passes === 'function' ? passes : undefined; window.cal = cal;");
+    return w;
+  }
+  it("yang batal tidak lolos filter bawaan; yang lain lolos", () => {
+    const w = loadPasses();
+    expect(w.passes({ nama: "x", batal: true, plan: "Batal", libur: false })).toBe(false);
+    expect(w.passes({ nama: "y", batal: false, plan: "Confirmed", libur: false })).toBe(true);
+  });
+  it("tetap bisa dilihat bila filter status Batal dipilih sengaja", () => {
+    const w = loadPasses();
+    w.cal.plan = "Batal";
+    expect(w.passes({ nama: "x", batal: true, plan: "Batal", libur: false })).toBe(true);
+  });
+});

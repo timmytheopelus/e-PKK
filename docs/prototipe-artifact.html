@@ -1717,10 +1717,11 @@ function passes(e) {
   if (cal.kel && e.kelompok !== cal.kel) return false;
   if (cal.jenis && e.jenis !== cal.jenis) return false;
   if (cal.sifat && e.sifat !== cal.sifat) return false;
+  if (e.batal && cal.plan !== "Batal") return false; // kegiatan batal disembunyikan, kecuali filter status Batal dipilih
   if (cal.plan && e.plan !== cal.plan) return false;
   if (cal.q && (e.nama + " " + e.lokasi + " " + e.pic + " " + e.pengundang + " " + e.kelompok).toLowerCase().indexOf(cal.q) < 0) return false;
   return true;
-}
+} /* end passes */
 function buildKelChips() {
   var cnt = {};
   (cal.events || []).forEach(function (e) { if (e.kelompok) cnt[e.kelompok] = (cnt[e.kelompok] || 0) + 1; });
