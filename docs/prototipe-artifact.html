@@ -597,7 +597,7 @@ body.sep img.logo { width: 120px; height: 120px; object-fit: contain; } @media (
     <div id="pdRptTabs"></div>
     <section id="pdSecDaftar" style="gap:12px;display:grid" aria-label="Daftar PD">
       <div class="sel2">
-        <input type="search" id="pdQ" placeholder="Cari nama PD, koordinator, atau pastor" autocomplete="off" aria-label="Cari PD">
+        <input type="search" id="pdQ" placeholder="Cari nama PD, dekanat, koordinator, atau pastor" autocomplete="off" aria-label="Cari PD">
         <button type="button" class="btn" id="pdFilterBtn" aria-expanded="false" aria-controls="pdFilterBox">Filter</button>
       </div>
       <div class="sel2" id="pdFilterBox" hidden>
@@ -2776,6 +2776,9 @@ document.getElementById("tmQ").addEventListener("input", function (e) { tm.q = e
 
 /* ---------- tab PD ---------- */
 var pdf = { q: "", status: "", dekanat: "", kota: "" };
+/** Pencarian PD: nama, dekanat, koordinator (termasuk panggilan), dan pastor. */
+function pdCocok(p, q) { return (p.nama + " " + (p.dekanat || "") + " " + p.koor + " " + pgl(p.koor) + " " + p.pastor).toLowerCase().indexOf(q) >= 0; }
+/* end pdCocok */
 /** Urutan daftar PD: dekanat A-Z, lalu nama PD/KomPKK A-Z; yang tanpa dekanat (mis. BPKPKK Bandung) di akhir. */
 function pdSort(list) {
   return list.slice().sort(function (a, b) {
@@ -2799,7 +2802,7 @@ function renderPd() {
     if (pdf.status && p.status !== pdf.status) return false;
     if (pdf.dekanat && p.dekanat !== pdf.dekanat) return false;
     if (pdf.kota && p.kota.indexOf(pdf.kota) < 0) return false;
-    if (pdf.q && (p.nama + " " + p.koor + " " + pgl(p.koor) + " " + p.pastor).toLowerCase().indexOf(pdf.q) < 0) return false;
+    if (pdf.q && !pdCocok(p, pdf.q)) return false;
     return true;
   });
   list = pdSort(list);
