@@ -121,11 +121,17 @@ export const ADMIN_JS = String.raw`
         var lv = IS_SUPER ? select([["View", "Hanya lihat"], ["Edit", "Edit"]], "View") : EPK.el("b", { text: "Hanya lihat (View)" });
         var tb = tabBoxes(["Dashboard"].filter(function (t) { return allowedTabs.indexOf(t) >= 0; }));
         Array.prototype.forEach.call(tb.querySelectorAll("input"), function (c) { if (allowedTabs.indexOf(c.value) < 0) { c.disabled = true; c.checked = false; c.parentNode.style.display = "none"; } });
-        var msg = msgBox();
+        var msg = msgBox(), res = EPK.el("div", { class: "epk-row" });
         var go = EPK.el("button", { type: "button", class: "epk-btn", text: "Tambahkan", onclick: function () {
           msg.say("Menyimpan…"); go.disabled = true;
           api("add", { umatId: u.id, email: em.value, level: IS_SUPER ? lv.value : "View", tabs: tb.get() }).then(function (j) {
-            umatCache = null; msg.say("Selesai: " + u.nama + " ditambahkan. " + (j.emailed ? "Email sambutan terkirim." : "Email sambutan belum terkirim otomatis (SMTP belum diatur); kirim link aplikasi secara manual."));
+            umatCache = null; msg.say("Selesai: " + u.nama + " ditambahkan. Kirim sambutan lewat WhatsApp (berisi link, cara masuk, dan menu yang bisa dipakai):");
+            res.textContent = "";
+            res.appendChild(j.wa ? EPK.el("a", { class: "epk-btn", href: "https://wa.me/" + j.wa + "?text=" + encodeURIComponent(j.pesan), target: "_blank", rel: "noopener", text: "Kirim sambutan via WhatsApp" })
+              : EPK.el("span", { class: "sub", text: "Nomor WA umat ini belum ada. Salin pesannya dan kirim manual." }));
+            res.appendChild(EPK.el("button", { type: "button", class: "epk-btn sec", text: "Salin pesan", onclick: function (ev) {
+              var t = ev.currentTarget; try { navigator.clipboard.writeText(j.pesan).then(function () { t.textContent = "Tersalin ✓"; }, function () { window.prompt("Salin pesan:", j.pesan); }); } catch (x) { window.prompt("Salin pesan:", j.pesan); }
+            } }));
             if (IS_SUPER) load().catch(function () {});
           }, function (e) { go.disabled = false; msg.say(e.message, true); });
         } });
@@ -134,7 +140,7 @@ export const ADMIN_JS = String.raw`
           EPK.el("h4", { text: u.nama }), EPK.el("div", { class: "sub", text: [u.pd, u.jab].filter(Boolean).join(" · ") }),
           EPK.el("div", { class: "epk-row" }, [EPK.el("label", {}, ["Email login ", em])]),
           EPK.el("div", { class: "epk-row" }, [EPK.el("label", {}, ["Hak akses ", lv]), tb]),
-          EPK.el("div", { class: "epk-row" }, [go]), msg]));
+          EPK.el("div", { class: "epk-row" }, [go]), msg, res]));
         holder.scrollTop = 0;
       }
       [q, fj, fp].forEach(function (x) { x.addEventListener(x === q ? "input" : "change", draw); });

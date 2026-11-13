@@ -2,11 +2,13 @@
 import { ALL_TABS, BASE_BPK, HttpError, T } from "./policy";
 import { at, listPage, listUntil, resolveLinks } from "./airtable";
 import { AF, invalidateAccess, jabatanOf } from "./access";
-import { sendWelcome } from "./mail";
+import { appUrl } from "./mail";
+import { welcomeWa } from "./mail-template";
+import { waDigits } from "./absen";
 
 export type Actor = { level: string; tabs: string[] };
 const SUPER: Actor = { level: "Superadmin", tabs: ALL_TABS };
-const UF = { nama: "fldIpQTSkFB9sU0lo", pgl: "fld469PYR80nAUNIF", email: "fldAaQ3zmiLBhp4z9", pd: "fldrHJ6q3HZvApccl", jab: "fldT3yUTrEgCuOwbm" };
+const UF = { nama: "fldIpQTSkFB9sU0lo", pgl: "fld469PYR80nAUNIF", email: "fldAaQ3zmiLBhp4z9", wa: "fldzY1Z2QvIIEkYXR", pd: "fldrHJ6q3HZvApccl", jab: "fldT3yUTrEgCuOwbm" };
 
 const LEVELS = ["View", "Edit", "Admin", "Superadmin"], STATUS = ["Menunggu", "Disetujui", "Ditolak"];
 const EMAIL = /^[^@\s,;"<>]+@[^@\s,;"<>]+\.[^@\s,;"<>]+$/;
@@ -50,7 +52,7 @@ async function umatList() {
     const f = x.fields, em = String(f[UF.email] || "").trim().toLowerCase();
     const jab = f[UF.jab]; 
     return { id: x.id, nama: String(f[UF.nama] || "").replace(/\s+/g, " ").trim(), pgl: String(f[UF.pgl] || "").trim(), pd: (Array.isArray(f[UF.pd]) ? f[UF.pd] : []).map((p: any) => String(p.name || "").replace(/\s+/g, " ").trim()).filter(Boolean).join(", "),
-      jab: (Array.isArray(jab) ? jab.join(", ") : String(jab || "")).trim(), email: em };
+      jab: (Array.isArray(jab) ? jab.join(", ") : String(jab || "")).trim(), email: em, wa: waDigits(f[UF.wa]) };
   }).filter((u) => u.nama);
   umatCache = { at: Date.now(), v };
   return v;
@@ -82,9 +84,9 @@ export async function adminCall(action: string, i: any, selfEmail: string, actor
     const j = await at(tableUrl, { method: "POST", body: JSON.stringify({ records: [{ fields }], typecast: true }) });
     if (um.email !== email) { await at(`/v0/${BASE_BPK}/${T.umat}`, { method: "PATCH", body: JSON.stringify({ records: [{ id: um.id, fields: { [UF.email]: email } }] }) }); umatCache = null; }
     invalidateAccess(); console.log("ADMIN add", selfEmail, email, level, tabs.join(","));
-    let emailed = false;
-    try { emailed = await sendWelcome({ nama: um.nama, email, level, tabs }); } catch (e) { console.error("email sambutan gagal", e); }
-    return { user: toUser(j.records[0]), emailed };
+    // Sambutan dikirim lewat WhatsApp oleh admin sendiri (tombol di layar); nomor hanya dipakai untuk tautan wa.me.
+    const pesan = welcomeWa({ nama: um.nama, email, level, tabs, url: appUrl() || "https://e-pkk-one.vercel.app" });
+    return { user: toUser(j.records[0]), wa: um.wa || "", pesan };
   }
   mustSuper(actor);
   if (action === "list") return { users: await all() };

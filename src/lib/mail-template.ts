@@ -31,3 +31,31 @@ export function welcomeHtml(o: { nama: string; email: string; level: string; tab
 <tr><td style="padding:14px 28px 26px;color:#55687a;font-size:13px;line-height:1.55">Nomor WA dan email umat tidak ditampilkan sebagai teks; hubungi lewat tombol WA. Menu bisa disembunyikan lewat tombol ☰ Menu. Bila ada kendala login atau data yang keliru, balas email ini.<br><br>Tuhan memberkati,<br><b>Sekretariat BPKPKK Bandung</b></td></tr>
 </table></td></tr></table></body></html>`;
 }
+
+const plain = (t: string) => t.replace(/&amp;/g, "&");
+/** Pesan sambutan untuk dikirim lewat WhatsApp (format tebal WA dengan tanda bintang). */
+export function welcomeWa(o: { nama: string; email: string; level: string; tabs: string[]; url: string }) {
+  const lv = o.level === "Edit" ? "Edit (boleh mengubah data)" : o.level === "Superadmin" ? "Superadmin" : o.level === "Admin" ? "Admin (mengubah data dan menambah pengguna View)" : "Hanya lihat";
+  const fitur = FITUR.filter((f) => o.tabs.includes(f.tab)).map((f) => `• *${plain(f.judul)}*: ${plain(f.isi)}`).join("\n");
+  return [
+    `Shalom ${o.nama}, Tuhan memberkati 🙏`,
+    "",
+    "Anda sudah diberi akses ke *e-PKK*, dashboard BPKPKK Bandung (data pengurus, pewarta, PD, umat, kegiatan, dan pendaftaran event).",
+    "",
+    `Buka: ${o.url}`,
+    "",
+    "*Cara masuk*",
+    "1. Buka link di atas.",
+    "2. Pilih *Masuk dengan Google*.",
+    `3. Login dengan Gmail *${o.email}* (email lain tidak dikenali).`,
+    "",
+    `*Hak akses*: ${lv}`,
+    "",
+    "*Menu yang bisa Anda pakai*",
+    fitur,
+    "",
+    "Nomor WA dan email umat tidak ditampilkan sebagai teks; hubungi lewat tombol WA. Bila ada kendala login atau data yang keliru, balas pesan ini.",
+    "",
+    "Sekretariat BPKPKK Bandung",
+  ].join("\n");
+}
