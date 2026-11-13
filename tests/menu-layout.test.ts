@@ -190,3 +190,34 @@ describe("laporan perwakilan per seksi di detail Event", () => {
     expect(html).toContain('"/api/event-seksi"');
   });
 });
+
+describe("laporan per seksi: baris bisa diklik dan memuat siapa saja", () => {
+  it("klik baris membuka daftar anggota; filter status menyaring seksi", async () => {
+    const { JSDOM } = await import("jsdom");
+    const html = require("node:fs").readFileSync("docs/prototipe-artifact.html", "utf8");
+    const m = html.match(/var SK = [\s\S]*?\/\* end skDraw \*\//);
+    expect(m).toBeTruthy();
+    const w: any = new JSDOM('<body><div id="evSeksi"></div></body>', { runScripts: "outside-only" }).window;
+    w.eval('function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;")} function tile(n,l){return "<b>"+n+" "+l+"</b>"}' + m[0] + ";window.SK=SK;window.skDraw=skDraw;");
+    w.SK.eid = "recAAAAAAAAAAAAAA"; w.SK.f = "";
+    w.SK.data = { dasar: "daftar", ringkas: { ketua: 1, diwakili: 0, kosong: 1 }, seksi: [
+      { bidang: "Inreach", seksi: "Sekretariat", status: "ketua", anggota: 2, perwakilan: [], ketua: [{ nama: "Ani", status: "hadir" }], daftar: [{ nama: "Ani", peran: "Ketua", hadir: true }, { nama: "Budi", peran: "Anggota", hadir: false }] },
+      { bidang: "Inreach", seksi: "Litbang", status: "kosong", anggota: 1, perwakilan: [], ketua: [{ nama: "Eka", status: "tidak" }], daftar: [{ nama: "Eka", peran: "Ketua", hadir: false }] },
+    ] };
+    w.skDraw("recAAAAAAAAAAAAAA");
+    const d = w.document;
+    const rows = d.querySelectorAll("#evSeksi tr[data-prow]");
+    expect(rows.length).toBe(2);
+    const det = rows[0].nextElementSibling;
+    expect(det.hidden).toBe(true);
+    expect(det.textContent).toContain("Budi");
+    expect(det.textContent).toContain("Anggota");
+    w.SK.f = "kosong"; w.skDraw("recAAAAAAAAAAAAAA");
+    expect(d.querySelectorAll("#evSeksi tr[data-prow]").length).toBe(1);
+    expect(d.querySelector("#evSeksi tr[data-prow]").textContent).toContain("Litbang");
+  });
+  it("handler klik tab Event menangani filter status", () => {
+    const html = require("node:fs").readFileSync("docs/prototipe-artifact.html", "utf8");
+    expect(html).toContain('closest("[data-skf]")');
+  });
+});

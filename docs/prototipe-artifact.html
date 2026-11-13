@@ -3477,7 +3477,7 @@ var EVMSG = function (e, pd) {
   return "Shalom " + nm + ",\n\nKami dari BPKPKK Bandung menginformasikan event:\n*" + judul + "*\n\n" + info + "\n\nSampai saat ini belum ada pendaftar dari " + pd.nama + ". Mohon informasikan kepada anggota PD dan ajak untuk mendaftar melalui link berikut:\n" + (e.link || "(link pendaftaran belum tersedia)") + "\n\n" +
     (e.pic ? "Pertanyaan hubungi: " + e.pic + (e.telp ? " - " + e.telp : "") + "\n\n" : "") + "Terima kasih, Tuhan memberkati.\nBPKPKK Bandung";
 };
-var SK = { eid: "", dasar: "", data: null, err: "", busy: false };
+var SK = { eid: "", dasar: "", data: null, err: "", busy: false, f: "" };
 function skLoad(eid, dasar) {
   SK.eid = eid; SK.dasar = dasar; SK.busy = true; SK.err = ""; skDraw(eid);
   fetch("/api/event-seksi", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ event: eid, dasar: dasar }) })
@@ -3493,16 +3493,20 @@ function skDraw(eid) {
   var h = '<div class="pan"><h4>Perwakilan per seksi <small class="note">· dari sisi ' + (hd ? "kehadiran" : "pendaftaran") + "</small></h4>" +
     '<p class="chips"><button type="button" class="chip' + (hd ? "" : " on") + '" data-seksi="' + esc(eid) + '|daftar">Pendaftaran</button><button type="button" class="chip' + (hd ? " on" : "") + '" data-seksi="' + esc(eid) + '|hadir">Kehadiran</button></p>' +
     '<div class="tiles">' + tile(d.ringkas.ketua, "Ketua " + kata, "seksi dengan ketua " + kata) + tile(d.ringkas.diwakili, "Ketua diwakili", "ketua belum " + kata + ", ada perwakilan seksi") + tile(d.ringkas.kosong, "Tanpa perwakilan", "tidak ada satu pun yang " + kata) + "</div>";
-  var by = {}, ord = []; d.seksi.forEach(function (r) { var k = r.bidang || "Lainnya"; if (!by[k]) { by[k] = []; ord.push(k); } by[k].push(r); });
+  var fl = [["", "Semua"], ["ketua", "Ketua " + kata], ["diwakili", "Diwakili"], ["kosong", "Tanpa perwakilan"]];
+  h += '<p class="chips">' + fl.map(function (x) { return '<button type="button" class="chip' + (SK.f === x[0] ? " on" : "") + '" data-skf="' + x[0] + '">' + x[1] + "</button>"; }).join("") + '</p><p class="note">Klik baris seksi untuk melihat siapa saja anggotanya dan siapa yang ' + kata + ".</p>";
+  var by = {}, ord = []; d.seksi.filter(function (r) { return !SK.f || r.status === SK.f; }).forEach(function (r) { var k = r.bidang || "Lainnya"; if (!by[k]) { by[k] = []; ord.push(k); } by[k].push(r); });
   var lab = { ketua: "Ketua " + kata, diwakili: "Diwakili", kosong: "Tidak ada perwakilan" };
   ord.forEach(function (k) {
     h += "<h5>" + esc(k) + '</h5><div class="tw"><table class="tbl"><thead><tr><th>Seksi</th><th>Ketua</th><th>Perwakilan</th><th>Status</th></tr></thead><tbody>' + by[k].map(function (r) {
       var kt = r.ketua.length ? r.ketua.map(function (x) { return esc(x.nama) + (x.status === "hadir" ? " ✓" : x.status === "diwakili" ? " (diwakili)" : " ✗"); }).join("<br>") : '<span class="note">belum ada ketua di data</span>';
-      return "<tr><td>" + esc(r.seksi) + "</td><td>" + kt + "</td><td>" + (r.perwakilan.length ? esc(r.perwakilan.join(", ")) : "–") + '</td><td><span class="tag">' + lab[r.status] + "</span></td></tr>";
+      var dt = (r.daftar || []).map(function (a) { return '<span class="tag' + (a.hadir ? "" : " alt") + '">' + (a.hadir ? "✓ " : "✗ ") + esc(a.nama) + " · " + esc(a.peran) + "</span>"; }).join(" ") || '<span class="note">Belum ada anggota di data.</span>';
+      return '<tr class="clk" data-prow tabindex="0" aria-expanded="false"><td>▸ ' + esc(r.seksi) + "</td><td>" + kt + "</td><td>" + (r.perwakilan.length ? esc(r.perwakilan.join(", ")) : "–") + '</td><td><span class="tag">' + lab[r.status] + '</span></td></tr><tr class="det" hidden><td colspan="4"><b>' + esc(r.seksi) + "</b> · " + r.anggota + " anggota (✓ = " + kata + ")<br>" + dt + "</td></tr>";
     }).join("") + "</tbody></table></div>";
   });
   el.innerHTML = h + '<p class="note">Seksi dan ketua dibaca dari Pengurus periode 2026. "Diwakili" berarti ada anggota seksi itu ' + kata + " walau ketuanya belum.</p></div>";
 }
+/* end skDraw */
 function renderEvDetail(e, regs) {
   var el = document.getElementById("evDetail");
   var pdActive = (D.pd || []).filter(function (p) { return isAktif(p.status); });
@@ -3554,8 +3558,10 @@ function renderEvRegs() {
     l.map(function (p) { return "<tr><td>" + esc(p.nama) + "</td><td>" + esc(p.pd) + "</td><td>" + esc(ageLbl(p.usia)) + "</td><td>" + esc(p.st) + (p.val ? " ✓" : "") + "</td><td>" + esc(p.hadir) + "</td></tr>"; }).join("") + "</tbody></table></div>";
 }
 document.getElementById("tab-event").addEventListener("click", function (e) {
+  var skf = e.target.closest && e.target.closest("[data-skf]");
+  if (skf) { SK.f = skf.getAttribute("data-skf"); skDraw(SK.eid); return; }
   var sk = e.target.closest && e.target.closest("[data-seksi]");
-  if (sk) { var sp = sk.getAttribute("data-seksi").split("|"); skLoad(sp[0], sp[1]); return; }
+  if (sk) { var sp = sk.getAttribute("data-seksi").split("|"); SK.f = ""; skLoad(sp[0], sp[1]); return; }
   var cp = e.target.closest && e.target.closest("[data-evcopy]");
   if (cp) { try { navigator.clipboard.writeText(cp.getAttribute("data-evcopy")); cp.textContent = "Tersalin ✓"; } catch (x) { prompt("Salin link:", cp.getAttribute("data-evcopy")); } return; }
   var ab = e.target.closest && e.target.closest("[data-absen]");

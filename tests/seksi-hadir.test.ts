@@ -38,3 +38,14 @@ describe("hitungSeksi", () => {
     expect(row(x, "S2").status).toBe("diwakili");
   });
 });
+
+describe("hitungSeksi: daftar anggota untuk detail", () => {
+  const r = hitungSeksi(orang, new Set(["u1", "u4"]));
+  it("setiap seksi memuat semua anggota dengan peran dan status hadir", () => {
+    expect(row(r, "Dana Usaha").daftar).toEqual([
+      { nama: "Cici", peran: "Ketua", hadir: false },
+      { nama: "Dedi", peran: "Wakil", hadir: true },
+    ]);
+    expect(row(r, "Sekretariat").daftar.map((x: any) => x.nama)).toEqual(["Ani", "Budi"]);
+  });
+});
