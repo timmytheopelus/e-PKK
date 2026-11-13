@@ -29,7 +29,10 @@ describe("halaman absensi", () => {
     expect(d.getElementById("lb").textContent).toContain("Budi Lengkap");
     expect(d.getElementById("lh").textContent).toContain("Ani Lengkap");
     expect(d.getElementById("lh").textContent).toContain("Seksi BPK: Sekretariat");
-    expect(d.getElementById("lh").textContent).toContain("PD: PD Satu");
+    expect(d.querySelector("#lh .tx b").textContent).toBe("Ani Lengkap");
+    expect(d.querySelector("#lh .tx .as").textContent).toBe("· PD Satu"); // nama PD/KomPKK tepat setelah nama peserta
+    expect(d.querySelector("#lh .tx b").nextElementSibling!.className).toBe("as");
+    expect(d.getElementById("lh").textContent).not.toContain("PD: PD Satu"); // tidak diulang di baris bawah
     expect(d.getElementById("lb").textContent).toContain("Panggilan: Bud");
     expect(d.querySelector("#lh a.wa").getAttribute("href")).toBe("https://wa.me/628111");
     expect(d.body.textContent).not.toContain("628111");
