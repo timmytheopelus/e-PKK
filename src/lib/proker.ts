@@ -1,7 +1,8 @@
 // Program Kerja: ajukan, putuskan (persetujuan bertahap), daftar. Semua aturan ditegakkan di server.
 import { Access, BASE_BPK, HttpError } from "./policy";
 import { at, listUntil } from "./airtable";
-import { T_PROGRAM, T_ANGGARAN, T_SETUJU, PK, AG, ST, JENIS } from "./proker-schema";
+import { T_PROGRAM, T_ANGGARAN, T_SETUJU, T_REALISASI, PK, AG, ST, RZ, JENIS } from "./proker-schema";
+import { hitungSisa } from "./realisasi";
 import { peranOf, rowsOf, semuaSeksi, seksiBidang, emailsWhere } from "./proker-roles";
 import { canAct, nextStatus, type Keputusan, type Tahap } from "./proker-flow";
 import { buatNotif } from "./notif";
@@ -173,10 +174,11 @@ export async function daftarProgram(acc: Access) { return muatProgram(acc, true)
 async function muatProgram(acc: Access, saring: boolean) {
   if (acc.level !== "Superadmin" && !acc.tabs.includes("Program Kerja")) throw new HttpError(403, "Tidak punya akses ke menu Program Kerja.");
   const [peran, rows] = await Promise.all([peranOf(acc), rowsOf(acc.email)]);
-  const [pr, ag, st] = await Promise.all([
+  const [pr, ag, st, rz] = await Promise.all([
     listUntil(BASE_BPK, T_PROGRAM, { fieldIds: PROG_FIELDS, want: Infinity, maxPages: 20 }),
     listUntil(BASE_BPK, T_ANGGARAN, { fieldIds: Object.values(AG), want: Infinity, maxPages: 50 }),
     listUntil(BASE_BPK, T_SETUJU, { fieldIds: Object.values(ST), want: Infinity, maxPages: 50 }),
+    listUntil(BASE_BPK, T_REALISASI, { fieldIds: Object.values(RZ), want: Infinity, maxPages: 50 }),
   ]);
   const ctx: CakupanCtx = {
     semua: peran.sekjen || peran.pimpinan || acc.level === "Superadmin",
@@ -193,7 +195,12 @@ async function muatProgram(acc: Access, saring: boolean) {
     const aksi: Tahap[] = [];
     if (canAct(peran, p, "Sekjen")) aksi.push("Sekjen");
     const kep = st.records.filter((r) => r.fields[ST.programId] === p.id).map((r) => ({ tahap: sel(r.fields[ST.tahap]), seksi: String(r.fields[ST.seksi] || ""), keputusan: sel(r.fields[ST.keputusan]), oleh: String(r.fields[ST.oleh] || ""), catatan: String(r.fields[ST.catatan] || "") }));
+    const real = rz.records.filter((r) => r.fields[RZ.programId] === p.id)
+      .map((r) => ({ tanggal: String(r.fields[RZ.tanggal] || ""), nominal: Number(r.fields[RZ.nominal] || 0), keterangan: String(r.fields[RZ.keterangan] || ""), penerima: String(r.fields[RZ.penerima] || "") }))
+      .sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+    const anggaranKeluar = p.mode === "Rincian" ? sum("Pengeluaran") : p.total;
     out.push({
+      ...hitungSisa(anggaranKeluar, real.map((r) => r.nominal)), realisasi: real,
       id: p.id, nama: p.nama, detail: p.detail, seksiPengaju: p.seksiPengaju, bidang: p.bidang, mulai: p.mulai, seksiTerlibat: p.seksiTerlibat, status: p.status,
       mode: p.mode, totalPemasukan: p.mode === "Rincian" ? sum("Pemasukan") : 0, totalPengeluaran: p.mode === "Rincian" ? sum("Pengeluaran") : p.total,
       baris: baris.map((r) => ({ keterangan: String(r.fields[AG.keterangan] || ""), jenis: sel(r.fields[AG.jenis]), nominal: Number(r.fields[AG.nominal] || 0) })),
