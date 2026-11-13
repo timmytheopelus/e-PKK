@@ -13,7 +13,7 @@ export const KEUANGAN_JS = String.raw`
   var BLNF = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
   var MASUK = "Transaksi Masuk", KELUAR = "Transaksi Keluar", AWAL = "Saldo Awal";
   var JLABEL = {}; JLABEL[MASUK] = "Uang masuk"; JLABEL[KELUAR] = "Uang keluar"; JLABEL[AWAL] = "Saldo awal";
-  var VIEWS = [["ringkasan", "Ringkasan"], ["transaksi", "Transaksi"], ["bulan", "Per Bulan"], ["bidang", "Per Bidang"], ["rekening", "Per Rekening"]];
+  var VIEWS = [["ringkasan", "Ringkasan"], ["transaksi", "Transaksi"], ["bulan", "Per Bulan"], ["bidang", "Per Bidang"], ["rekening", "Per Rekening"], ["anggaran", "Anggaran"]];
   var items = [], loaded = false, loading = false, loadedAt = null, shown = 50;
   var view = "ringkasan", grp = "bidang";
   var filt = { tahun: "", bulan: "", rek: "", bidang: "", account: "", jenis: "", q: "" };
@@ -61,8 +61,11 @@ export const KEUANGAN_JS = String.raw`
   function uniq(a) { var s = {}, o = []; a.forEach(function (x) { if (x && !s[x]) { s[x] = 1; o.push(x); } }); return o; }
   function signed(t) { return t.jenis === KELUAR ? -t.nominal : t.nominal; }
 
+  var ACC = {}, REKS = {};
+  function collect(map, x) { if (Array.isArray(x)) x.forEach(function (e) { if (e && typeof e === "object" && e.id) map[e.id] = clean(e.name); }); }
   function mapTx(r) {
     var f = r.cellValuesByFieldId || {};
+    collect(ACC, f[K.account]); collect(REKS, f[K.rekening]);
     return { id: r.id, jenis: txt(f[K.jenis]), tgl: String(f[K.tgl] || "").slice(0, 10), nominal: num(f[K.nominal]), ket: txt(f[K.ket]),
       account: names(f[K.account]), rekening: names(f[K.rekening]), bidang: names(f[K.bidang]), event: names(f[K.event]), penerima: txt(f[K.penerima]), hapus: !!f[K.hapus] };
   }
@@ -117,6 +120,7 @@ export const KEUANGAN_JS = String.raw`
       + ".keu-seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:0 0 8px}.keu-seg button{font:inherit;background:var(--surface);color:var(--fg);border:0;padding:7px 14px;cursor:pointer}.keu-seg button[aria-pressed=true]{background:var(--accent);color:var(--surface)}"
       + ".keu-bars{display:grid;gap:9px}.keu-brow{display:grid;gap:3px;cursor:pointer}.keu-brow .t{display:flex;justify-content:space-between;gap:10px;font-size:14px}.keu-brow .tr{height:9px;border-radius:5px;background:var(--bg);overflow:hidden}.keu-brow .tr i{display:block;height:100%;background:#c62828;border-radius:5px}"
       + ".keu-empty{color:var(--muted);padding:18px 4px;text-align:center}"
+      + ".keu-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:10px 0}.keu-form label{display:grid;gap:4px;font-size:13px;color:var(--muted)}.keu-form input,.keu-form select{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg)}.keu-ok{color:#1d6b2f}.keu-err{color:#9b1c1c}"
       + ".keu-dl{display:grid;grid-template-columns:140px 1fr;gap:8px 12px;margin:0}.keu-dl dt{color:var(--muted)}.keu-dl dd{margin:0;overflow-wrap:anywhere}@media(max-width:560px){.keu-dl{grid-template-columns:1fr}.keu-dl dt{margin-top:6px}}";
     document.head.appendChild(st);
   }
@@ -244,6 +248,83 @@ export const KEUANGAN_JS = String.raw`
   }
   function clear() { return { rek: "", bidang: "", account: "", jenis: "", q: "" }; }
   function withClear(o) { var c = clear(); Object.keys(o || {}).forEach(function (k) { c[k] = o[k]; }); return c; }
+
+  // ---- Anggaran program & realisasi ----
+  var ang = { loaded: false, loading: false, err: "", programs: [], bisaCatat: false, open: "", msg: "", form: false, sending: false };
+  function apiR(body) {
+    return fetch("/api/realisasi", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.message || ("HTTP " + r.status)); return j; }); });
+  }
+  function loadAng(force) {
+    if (ang.loading || (ang.loaded && !force)) return Promise.resolve();
+    ang.loading = true; ang.err = "";
+    return apiR({ aksi: "daftar" }).then(function (j) { ang.programs = j.programs || []; ang.bisaCatat = !!j.bisaCatat; ang.loaded = true; })
+      .catch(function (e) { ang.err = e.message || "Gagal memuat anggaran."; })
+      .then(function () { ang.loading = false; if (view === "anggaran" && root) drawBody(); });
+  }
+  function opsi(map) {
+    return Object.keys(map).map(function (id) { return [id, nice(map[id])]; }).sort(function (a, b) { return a[1].localeCompare(b[1], "id"); });
+  }
+  function formRealisasi(p) {
+    var today = new Date(); var tg0 = today.getFullYear() + "-" + ("0" + (today.getMonth() + 1)).slice(-2) + "-" + ("0" + today.getDate()).slice(-2);
+    var tg = EPK.el("input", { type: "date", "aria-label": "Tanggal" }); tg.value = tg0;
+    var nm = EPK.el("input", { type: "text", inputmode: "numeric", "aria-label": "Nominal (Rp)", placeholder: "mis. 250000" });
+    var kt = EPK.el("input", { type: "text", "aria-label": "Keterangan", maxlength: "200" });
+    var pn = EPK.el("input", { type: "text", "aria-label": "Penerima", maxlength: "100" });
+    var ac = sel(opsi(ACC), "", "Pilih kategori", "Account"), rk = sel(opsi(REKS), "", "Pilih rekening", "Rekening");
+    var pesan = EPK.el("p", { class: "keu-note keu-err", role: "alert" });
+    var btn = EPK.el("button", { type: "button", class: "btn", text: "Simpan realisasi" });
+    function kirim() {
+      var n = Number(String(nm.value).replace(/[^\d]/g, ""));
+      var e = !tg.value ? "Pilih tanggal." : !n ? "Isi nominal dengan angka lebih dari 0." : n > p.sisa ? "Nominal melebihi sisa anggaran (sisa " + rp(Math.max(p.sisa, 0)) + ")."
+        : !kt.value.trim() ? "Isi keterangan." : !ac.value ? "Pilih kategori (Account)." : !rk.value ? "Pilih rekening." : "";
+      if (e) { pesan.textContent = e; return; }
+      pesan.textContent = ""; btn.disabled = true;
+      apiR({ aksi: "catat", programId: p.id, tanggal: tg.value, nominal: n, keterangan: kt.value.trim(), penerima: pn.value.trim(), account: ac.value, rekening: rk.value })
+        .then(function () { ang.msg = "Realisasi tersimpan dan sudah masuk ke pengeluaran (Mutasi)."; ang.form = false; return Promise.all([loadAng(true), load(true)]); })
+        .catch(function (er) { pesan.textContent = er.message || "Gagal menyimpan."; btn.disabled = false; });
+    }
+    btn.addEventListener("click", kirim);
+    function lb(t, el) { return EPK.el("label", {}, [EPK.el("span", { text: t }), el]); }
+    return EPK.el("div", {}, [EPK.el("div", { class: "keu-form" }, [lb("Tanggal", tg), lb("Nominal (Rp)", nm), lb("Keterangan", kt), lb("Penerima", pn), lb("Kategori (Account)", ac), lb("Rekening", rk)]),
+      pesan, EPK.el("div", {}, [btn, EPK.el("button", { type: "button", class: "btn", text: "Batal", onclick: function () { ang.form = false; drawBody(); } })])]);
+  }
+  function detailProgram(p) {
+    var pct = p.anggaran > 0 ? Math.min(100, Math.round(100 * p.terpakai / p.anggaran)) : 0;
+    var box = EPK.el("div", { class: "keu-panel" }, [EPK.el("h3", { text: p.nama }),
+      EPK.el("p", { class: "keu-note", text: "Seksi " + p.seksi + " · terpakai " + rp(p.terpakai) + " dari " + rp(p.anggaran) + " (" + pct + "%) · sisa " + rp(p.sisa) }),
+      EPK.el("div", { class: "keu-brow" }, [EPK.el("div", { class: "tr" }, [EPK.el("i", { style: "width:" + Math.max(pct ? 3 : 0, pct) + "%" })])]),
+      EPK.el("h3", { text: "Baris anggaran" }),
+      table(["Keterangan", "Jenis", "Nominal"], p.baris.map(function (b) { return [b.keterangan, b.jenis, rp(b.nominal)]; }), 2),
+      EPK.el("h3", { text: "Realisasi pengeluaran" }),
+      table(["Tanggal", "Keterangan", "Penerima", "Jumlah"], p.realisasi.map(function (r) { return [tgl(r.tanggal), r.keterangan, r.penerima || "-", rp(r.nominal)]; }), 3)]);
+    if (ang.bisaCatat && p.sisa > 0) {
+      if (ang.form) box.appendChild(formRealisasi(p));
+      else box.appendChild(EPK.el("button", { type: "button", class: "btn", text: "Catat realisasi", onclick: function () { ang.form = true; ang.msg = ""; drawBody(); } }));
+    } else if (!ang.bisaCatat) box.appendChild(EPK.el("p", { class: "keu-note", text: "Realisasi dicatat oleh Bendahara." }));
+    else box.appendChild(EPK.el("p", { class: "keu-note", text: "Anggaran pengeluaran program ini sudah terpakai seluruhnya." }));
+    return box;
+  }
+  function vAnggaran() {
+    var box = EPK.el("div");
+    if (!ang.loaded) {
+      loadAng(false);
+      box.appendChild(EPK.el("p", { class: "keu-empty", text: ang.err || "Memuat anggaran program…" }));
+      if (ang.err) box.appendChild(EPK.el("button", { type: "button", class: "btn", text: "Coba lagi", onclick: function () { loadAng(true); } }));
+      return box;
+    }
+    var tA = 0, tT = 0; ang.programs.forEach(function (p) { tA += p.anggaran; tT += p.terpakai; });
+    box.appendChild(EPK.el("p", { class: "keu-note", text: "Anggaran pengeluaran program yang sudah disetujui (Disetujui dan Berjalan). Pemasukan program tidak dihitung." }));
+    if (ang.msg) box.appendChild(EPK.el("p", { class: "keu-note keu-ok", role: "status", text: ang.msg }));
+    function kt(l, v, s2) { return EPK.el("div", { class: "keu-card" }, [EPK.el("span", { class: "l", text: l }), EPK.el("span", { class: "n", text: v }), EPK.el("span", { class: "s", text: s2 })]); }
+    box.appendChild(EPK.el("div", { class: "keu-cards" }, [kt("Total anggaran", rp(tA), ang.programs.length + " program disetujui."), kt("Sudah dipakai", rp(tT), "Realisasi yang sudah dicatat."), kt("Sisa anggaran", rp(tA - tT), "Masih boleh dipakai.")]));
+    box.appendChild(table(["Program", "Seksi", "Anggaran", "Terpakai", "Sisa"], ang.programs.map(function (p) {
+      return { cells: [p.nama, p.seksi, rp(p.anggaran), rp(p.terpakai), signCell(p.sisa)], go: function () { ang.open = ang.open === p.id ? "" : p.id; ang.form = false; ang.msg = ""; drawBody(); } };
+    }), 2, null, true));
+    var cur = ang.programs.filter(function (p) { return p.id === ang.open; })[0];
+    if (cur) box.appendChild(detailProgram(cur));
+    return box;
+  }
 
   // ---- halaman ----
   function card(label, value, sub, cls, to, preset) {
@@ -374,7 +455,7 @@ export const KEUANGAN_JS = String.raw`
   function drawBody() {
     drawHead();
     bodyBox.textContent = "";
-    bodyBox.appendChild(view === "transaksi" ? vTransaksi() : view === "bulan" ? vBulan() : view === "bidang" ? vBidang() : view === "rekening" ? vRekening() : vRingkasan());
+    bodyBox.appendChild(view === "transaksi" ? vTransaksi() : view === "bulan" ? vBulan() : view === "bidang" ? vBidang() : view === "rekening" ? vRekening() : view === "anggaran" ? vAnggaran() : vRingkasan());
   }
   function draw() {
     if (!root) return;

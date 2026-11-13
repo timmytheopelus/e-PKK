@@ -52,3 +52,15 @@ export type StatusProgram = (typeof STATUS)[number];
 
 export const JENIS = ["Pemasukan", "Pengeluaran"] as const;
 export type JenisAnggaran = (typeof JENIS)[number];
+
+/** Realisasi pengeluaran terhadap anggaran program (base BPK). Tiap baris punya padanan baris di Mutasi (base Bendahara). */
+export const T_REALISASI = "tbl3RgGLiFVN6Zc0l";
+export const RZ = {
+  programId: "fldXpo8SuQQuyGWae",
+  tanggal: "fldKUEidGANAEorl0",
+  nominal: "fld2zsLvtKGu41UZI",
+  keterangan: "fldLsgqK6c8heCh9a",
+  penerima: "fldc7ba1kob8HxQHQ",
+  mutasiId: "fldsj3Al8VGw4eyig",
+  oleh: "fldfZAWzrj2oGtZNi",
+} as const;

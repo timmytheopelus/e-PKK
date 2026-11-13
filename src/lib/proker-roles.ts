@@ -8,7 +8,7 @@ export type Peran = { koordBidang: string[]; koordSeksi: string[]; sekjen: boole
 export type JabRow = { bidang: string; seksi: string; peran: string };
 
 const JAB = { bidang: "fldCCi0hV9yTL091P", seksi: "fldAAyRg1kko5YgrK", peran: "fldI8J3VXZDyjWa3f" };
-const PGR = { umat: "fldHK8r2o5q60IDXW", jabatan: "fldwW6zQoxhbTWLDv", periode: "fldHngi5Klnm5bUmM" };
+const PGR = { umat: "fldfYrY68cNtbaXtN", jabatan: "fldwW6zQoxhbTWLDv", periode: "fldzVMmCXsP2MP293" }; // umat = link record (bukan lookup nama), periode = select
 
 const sel = (v: any) => String(typeof v === "object" && v ? v.name ?? "" : v ?? "").trim();
 const uniq = (a: string[]) => [...new Set(a)];
@@ -46,7 +46,7 @@ function muatPeta(): Promise<Peta> {
     const rowsByUmat = new Map<string, JabRow[]>();
     for (const r of pg.records) {
       const ptxt = sel(r.fields[PGR.periode]);
-      if (ptxt && !ptxt.includes("2026")) continue;
+      if (ptxt && !/^2026/.test(ptxt)) continue;
       const ms: JabRow[] = ((r.fields[PGR.jabatan] as any[]) || []).map((j) => master.get(typeof j === "string" ? j : j?.id)).filter(Boolean) as JabRow[];
       for (const u of (r.fields[PGR.umat] as any[]) || []) {
         const id = typeof u === "string" ? u : u?.id;
