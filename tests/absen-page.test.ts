@@ -89,3 +89,18 @@ describe("go show di halaman absensi", () => {
     expect(d.getElementById("gm").textContent).toContain("sudah ada di data umat");
   });
 });
+
+describe("kolom cari di halaman absensi", () => {
+  it("menyebut PD/KomPKK dan benar-benar mencocokkan PD", async () => {
+    const res = await GET(new Request("http://t.test/absen/tok"), { params: Promise.resolve({ token: "tok" }) });
+    const dom = new JSDOM(await res.text(), { runScripts: "dangerously", url: "http://t.test/absen/tok", beforeParse(w: any) {
+      w.fetch = async () => ({ ok: true, json: async () => data });
+    } });
+    await new Promise((r) => setTimeout(r, 20));
+    const d = dom.window.document as any;
+    expect(d.getElementById("q").placeholder).toContain("PD/KomPKK");
+    d.getElementById("q").value = "pd dua"; d.getElementById("q").dispatchEvent(new dom.window.Event("input"));
+    expect(d.getElementById("lb").textContent).toContain("Budi Lengkap");
+    expect(d.getElementById("lh").textContent).not.toContain("Ani Lengkap");
+  });
+});
