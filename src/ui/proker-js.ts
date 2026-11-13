@@ -84,15 +84,8 @@ export const PROKER_JS = String.raw`
       var cat = EPK.el("input", { type: "text", placeholder: "Catatan (opsional)", "aria-label": "Catatan", maxlength: "500" });
       box.appendChild(cat);
       var row = EPK.el("div", { class: "epk-row" });
-      var tahapSeksi = [];
-      if (p.aksi.indexOf("Koord Bidang") >= 0) tahapSeksi.push(["Koord Bidang", ""]);
-      if (p.aksi.indexOf("Kolaborasi") >= 0) (p.seksiAksi || []).forEach(function (s) { tahapSeksi.push(["Kolaborasi", s]); });
-      if (p.aksi.indexOf("Sekjen") >= 0) tahapSeksi.push(["Sekjen", ""]);
-      tahapSeksi.forEach(function (x) {
-        var lbl = x[0] === "Kolaborasi" ? "kolaborasi " + x[1] : x[0] === "Sekjen" ? "pelaksanaan (Sekjen)" : "Koordinator Bidang";
-        row.appendChild(EPK.el("button", { type: "button", class: "epk-btn", text: "Setujui " + lbl, onclick: function () { keputusan(p, x[0], x[1], true, cat); } }));
-        row.appendChild(EPK.el("button", { type: "button", class: "epk-btn bad", text: "Tolak " + lbl, onclick: function () { keputusan(p, x[0], x[1], false, cat); } }));
-      });
+      row.appendChild(EPK.el("button", { type: "button", class: "epk-btn", text: "Setujui program", onclick: function () { keputusan(p, "Sekjen", "", true, cat); } }));
+      row.appendChild(EPK.el("button", { type: "button", class: "epk-btn bad", text: "Tolak program", onclick: function () { keputusan(p, "Sekjen", "", false, cat); } }));
       box.appendChild(row);
       box.appendChild(EPK.el("p", { id: "proDetMsg", class: "epk-msg" }));
     }

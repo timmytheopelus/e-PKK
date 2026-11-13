@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+vi.mock("@/lib/proker-roles", () => ({ peranOf: async () => ({ koordBidang: [], koordSeksi: [], sekjen: false, bendahara: true, pimpinan: false }) }));
 import { handleCall, clearProxyCache, clearRekeningCache } from "@/lib/proxy";
 import { clearCaches } from "@/lib/airtable";
 import { BASE_BEN, BASE_BPK, HttpError, KEU, KEU_READ, REK, T, TABLES, checkRead, checkWrite } from "@/lib/policy";
