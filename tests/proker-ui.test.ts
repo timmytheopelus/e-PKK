@@ -99,3 +99,12 @@ describe("kartu Menunggu tindakan saya", () => {
     expect(kartu(w).className).toContain("nol");
   });
 });
+
+describe("status lama ditampilkan sebagai Menunggu Sekjen", () => {
+  it("Menunggu Koord Bidang dan Menunggu Kolaborasi tampil sebagai Menunggu Sekjen dan tetap terhitung menunggu", async () => {
+    const w = await boot([P("L1", "Menunggu Koord Bidang", 10), P("L2", "Menunggu Kolaborasi", 20)]); w.EPK_PROKER_OPEN(); await wait();
+    const r = rows(w); expect(r.length).toBe(2);
+    r.forEach((x: string) => { expect(x).toContain("Menunggu Sekjen"); expect(x).not.toContain("Koord Bidang"); expect(x).not.toContain("Kolaborasi"); });
+    expect(digits(tile(w, "menunggu").textContent)).toBe("2" + "30");
+  });
+});

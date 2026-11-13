@@ -3,7 +3,7 @@
 export const PROKER_JS = String.raw`
 (function () {
   var items = [], bisaSetuju = false, info = null, loaded = false, filt = { q: "", st: "", grup: "" }, tabsBuilt = false;
-  var ST = ["Draft", "Menunggu Koord Bidang", "Menunggu Kolaborasi", "Menunggu Sekjen", "Disetujui", "Berjalan", "Selesai", "Ditolak"];
+  var ST = ["Draft", "Menunggu Sekjen", "Disetujui", "Berjalan", "Selesai", "Ditolak"];
   var BLN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
   function $(id) { return document.getElementById(id); }
   function api(body) {
@@ -95,7 +95,7 @@ export const PROKER_JS = String.raw`
 
   function load() {
     msg("Memuat…");
-    return api({ aksi: "daftar" }).then(function (j) { items = j.programs || []; bisaSetuju = !!j.bisaSetuju; loaded = true; msg(""); draw(); if (window.__PROKER_OPEN) { var id = window.__PROKER_OPEN; window.__PROKER_OPEN = null; detail(id); } })
+    return api({ aksi: "daftar" }).then(function (j) { items = (j.programs || []).map(function (p) { if (p.status === "Menunggu Koord Bidang" || p.status === "Menunggu Kolaborasi") p.status = "Menunggu Sekjen"; return p; }); bisaSetuju = !!j.bisaSetuju; loaded = true; msg(""); draw(); if (window.__PROKER_OPEN) { var id = window.__PROKER_OPEN; window.__PROKER_OPEN = null; detail(id); } })
       .catch(function (e) { loaded = true; msg(e.message, true); draw(); });
   }
 
