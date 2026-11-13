@@ -2776,6 +2776,15 @@ document.getElementById("tmQ").addEventListener("input", function (e) { tm.q = e
 
 /* ---------- tab PD ---------- */
 var pdf = { q: "", status: "", dekanat: "", kota: "" };
+/** Urutan daftar PD: dekanat A-Z, lalu nama PD/KomPKK A-Z; yang tanpa dekanat (mis. BPKPKK Bandung) di akhir. */
+function pdSort(list) {
+  return list.slice().sort(function (a, b) {
+    var x = a.dekanat || "", y = b.dekanat || "";
+    if (!x !== !y) return x ? -1 : 1;
+    return cmpId(x, y) || cmpId(a.nama || "", b.nama || "");
+  });
+}
+/* end pdSort */
 function renderPd() {
   srcStatus("pdLink", ["pd"]);
   var pd = D.pd, tb = document.getElementById("pdBody");
@@ -2793,6 +2802,7 @@ function renderPd() {
     if (pdf.q && (p.nama + " " + p.koor + " " + pgl(p.koor) + " " + p.pastor).toLowerCase().indexOf(pdf.q) < 0) return false;
     return true;
   });
+  list = pdSort(list);
   document.getElementById("pdCount").textContent = "Menampilkan " + list.length + " dari " + pd.length + " PD";
   document.getElementById("pdNone").hidden = list.length > 0;
   tb.innerHTML = list.map(function (p) {
