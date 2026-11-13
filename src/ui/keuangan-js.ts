@@ -61,10 +61,17 @@ export const KEUANGAN_JS = String.raw`
   function uniq(a) { var s = {}, o = []; a.forEach(function (x) { if (x && !s[x]) { s[x] = 1; o.push(x); } }); return o; }
   function signed(t) { return t.jenis === KELUAR ? -t.nominal : t.nominal; }
 
+  // Pos yang hanya memindahkan uang (bukan pendapatan atau biaya): saldo awal, pembukaan rekening, transfer antar rekening,
+  // penyesuaian, dan transaksi pengurus lama. Tidak dihitung di "uang masuk/keluar", tetapi tetap dihitung di saldo.
+  var NETRAL = { 1: 1, 2: 1, 3: 1, 4: 1, 27: 1, 43: 1, 57: 1, 73: 1, 79: 1, 80: 1 };
+  // Donasi umum (janji iman pengurus dan donatur luar): menutup defisit kegiatan, jadi dipisah dari "hasil kegiatan".
+  var DONASI = { 12: 1, 83: 1 };
+  function accNo(s) { var m = /^\s*(\d+)\s*-/.exec(s || ""); return m ? Number(m[1]) : 0; }
   function mapTx(r) {
     var f = r.cellValuesByFieldId || {};
-    return { id: r.id, jenis: txt(f[K.jenis]), tgl: String(f[K.tgl] || "").slice(0, 10), nominal: num(f[K.nominal]), ket: txt(f[K.ket]),
-      account: names(f[K.account]), rekening: names(f[K.rekening]), bidang: names(f[K.bidang]), event: names(f[K.event]), penerima: txt(f[K.penerima]), hapus: !!f[K.hapus] };
+    var acc = names(f[K.account]), no = accNo(acc);
+    return { netral: !!NETRAL[no], donasi: !!DONASI[no], id: r.id, jenis: txt(f[K.jenis]), tgl: String(f[K.tgl] || "").slice(0, 10), nominal: num(f[K.nominal]), ket: txt(f[K.ket]),
+      account: acc, rekening: names(f[K.rekening]), bidang: names(f[K.bidang]), event: names(f[K.event]), penerima: txt(f[K.penerima]), hapus: !!f[K.hapus] };
   }
 
   function load(force) {
@@ -150,20 +157,30 @@ export const KEUANGAN_JS = String.raw`
         && (!q || [t.ket, t.penerima, t.account, t.bidang, t.event].join(" ").toLowerCase().indexOf(q) >= 0);
     }).sort(function (a, b) { return a.tgl < b.tgl ? 1 : a.tgl > b.tgl ? -1 : 0; });
   }
-  function totals(arr) {
-    var o = { masuk: 0, keluar: 0, awal: 0 };
-    arr.forEach(function (t) { if (t.jenis === MASUK) o.masuk += t.nominal; else if (t.jenis === KELUAR) o.keluar += t.nominal; else if (t.jenis === AWAL) o.awal += t.nominal; });
+  // all=true: ikut menghitung perpindahan uang (dipakai untuk saldo rekening). Bawaan: tanpa perpindahan uang.
+  function totals(arr, all) {
+    var o = { masuk: 0, keluar: 0, awal: 0, netMasuk: 0, netKeluar: 0, donasi: 0 };
+    arr.forEach(function (t) {
+      var skip = t.netral && !all;
+      if (t.jenis === MASUK) { if (skip) o.netMasuk += t.nominal; else { o.masuk += t.nominal; if (t.donasi) o.donasi += t.nominal; } }
+      else if (t.jenis === KELUAR) { if (skip) o.netKeluar += t.nominal; else o.keluar += t.nominal; }
+      else if (t.jenis === AWAL) { o.awal += t.nominal; if (!all) o.netMasuk += t.nominal; }
+    });
     o.selisih = o.masuk - o.keluar; return o;
   }
-  function group(arr, key, empty) {
+  function group(arr, key, empty, all) {
     var m = {};
-    arr.forEach(function (t) { var k = t[key] || empty; var g = m[k] = m[k] || { nama: k, masuk: 0, keluar: 0, awal: 0, n: 0 }; g.n++; if (t.jenis === MASUK) g.masuk += t.nominal; else if (t.jenis === KELUAR) g.keluar += t.nominal; else if (t.jenis === AWAL) g.awal += t.nominal; });
+    arr.forEach(function (t) {
+      var k = t[key] || empty; var g = m[k] = m[k] || { nama: k, masuk: 0, keluar: 0, awal: 0, n: 0 }; g.n++;
+      var skip = t.netral && !all;
+      if (t.jenis === MASUK) { if (!skip) g.masuk += t.nominal; } else if (t.jenis === KELUAR) { if (!skip) g.keluar += t.nominal; } else if (t.jenis === AWAL) g.awal += t.nominal;
+    });
     return Object.keys(m).map(function (k) { return m[k]; });
   }
   // Arus per bulan dari seluruh data: uang masuk, uang keluar, dan saldo di akhir bulan (berjalan).
   function monthly() {
     var m = {};
-    items.forEach(function (t) { var k = t.tgl.slice(0, 7); if (!/^\d{4}-\d{2}$/.test(k)) return; var g = m[k] = m[k] || { key: k, masuk: 0, keluar: 0, delta: 0 }; if (t.jenis === MASUK) g.masuk += t.nominal; else if (t.jenis === KELUAR) g.keluar += t.nominal; g.delta += signed(t); });
+    items.forEach(function (t) { var k = t.tgl.slice(0, 7); if (!/^\d{4}-\d{2}$/.test(k)) return; var g = m[k] = m[k] || { key: k, masuk: 0, keluar: 0, delta: 0 }; if (!t.netral) { if (t.jenis === MASUK) g.masuk += t.nominal; else if (t.jenis === KELUAR) g.keluar += t.nominal; } g.delta += signed(t); });
     var keys = Object.keys(m).sort(), run = 0;
     return keys.map(function (k) { run += m[k].delta; m[k].saldo = run; return m[k]; });
   }
@@ -256,9 +273,12 @@ export const KEUANGAN_JS = String.raw`
     if (!items.length) { box.appendChild(EPK.el("p", { class: "keu-empty", text: "Belum ada catatan keuangan." })); return box; }
     box.appendChild(EPK.el("div", { class: "keu-cards" }, [
       card("Saldo kas saat ini", rp(saldo), "Uang yang ada sekarang di semua rekening.", saldo < 0 ? "keu-neg" : "", "rekening"),
-      card("Uang masuk", rp(tt.masuk), "Total uang yang diterima, " + p + ".", "keu-in", "transaksi", withClear({ jenis: MASUK })),
-      card("Uang keluar", rp(tt.keluar), "Total uang yang dipakai, " + p + ".", "keu-out", "transaksi", withClear({ jenis: KELUAR })),
+      card("Uang masuk", rp(tt.masuk), "Pemasukan sebenarnya, " + p + ".", "keu-in", "transaksi", withClear({ jenis: MASUK })),
+      card("Uang keluar", rp(tt.keluar), "Pengeluaran sebenarnya, " + p + ".", "keu-out", "transaksi", withClear({ jenis: KELUAR })),
       card("Selisih", rp(tt.selisih), tt.selisih === 0 ? "Uang masuk dan keluar sama besar, " + p + "." : tt.selisih > 0 ? "Uang masuk lebih besar dari uang keluar, " + p + "." : "Uang keluar lebih besar dari uang masuk, " + p + ".", tt.selisih < 0 ? "keu-neg" : "", "bulan")]));
+    var hasil = tt.selisih - tt.donasi;
+    box.appendChild(EPK.el("p", { class: "keu-note", text: "Tidak dihitung sebagai uang masuk/keluar: perpindahan uang antar rekening, saldo awal, penyesuaian, dan transaksi pengurus lama (masuk " + rp(tt.netMasuk) + ", keluar " + rp(tt.netKeluar) + "); semuanya tetap ada di saldo kas." }));
+    if (tt.donasi) box.appendChild(EPK.el("p", { class: "keu-note", text: "Hasil kegiatan sebelum donasi pengurus (janji iman) dan donatur luar sebesar " + rp(tt.donasi) + ": " + rp(hasil) + (hasil < 0 ? " (defisit)" : hasil > 0 ? " (surplus)" : "") + ". Angka ini yang paling mendekati laporan Surplus & Defisit dari bendahara." }));
 
     var last6 = monthly().slice(-6);
     var pn = EPK.el("div", { class: "keu-panel" }, [EPK.el("h3", { text: "Uang masuk dan keluar tiap bulan" }), EPK.el("p", { class: "keu-note", text: "6 bulan terakhir yang ada catatannya." })]);
@@ -295,7 +315,7 @@ export const KEUANGAN_JS = String.raw`
     var q = EPK.el("input", { type: "search", class: "grow", placeholder: "Cari keterangan atau nama penerima", autocomplete: "off", "aria-label": "Cari transaksi" }); q.value = filt.q;
     var acc = EPK.el("p", { class: "keu-note" }), tb = EPK.el("div");
     function again() {
-      var arr = filtered(), tt = totals(arr), sl = arr.slice(0, shown);
+      var arr = filtered(), tt = totals(arr, !!(filt.account || filt.rek)), sl = arr.slice(0, shown);
       acc.textContent = arr.length + " transaksi pada " + periodLabel() + " · uang masuk " + rp(tt.masuk) + " · uang keluar " + rp(tt.keluar) + (filt.account ? " · kategori: " + nice(filt.account) : "") + ". Klik baris untuk melihat detailnya.";
       tb.textContent = "";
       tb.appendChild(table(["Tanggal", "Keterangan", "Bidang", "Rekening", "Jenis", "Jumlah"], sl.map(function (t) {
@@ -315,7 +335,7 @@ export const KEUANGAN_JS = String.raw`
   function vBulan() {
     var rows = monthly().filter(function (r) { return !filt.tahun || r.key.slice(0, 4) === filt.tahun; });
     var box = EPK.el("div");
-    box.appendChild(EPK.el("p", { class: "keu-note", text: "Uang masuk, uang keluar, dan saldo kas di akhir tiap bulan" + (filt.tahun ? " tahun " + filt.tahun : "") + ". Klik baris untuk melihat transaksinya." }));
+    box.appendChild(EPK.el("p", { class: "keu-note", text: "Uang masuk dan keluar sebenarnya (tanpa perpindahan antar rekening), serta saldo kas di akhir tiap bulan" + (filt.tahun ? " tahun " + filt.tahun : "") + ". Klik baris untuk melihat transaksinya." }));
     if (!rows.length) { box.appendChild(EPK.el("p", { class: "keu-empty", text: "Belum ada transaksi bertanggal." })); return box; }
     box.appendChild(EPK.el("div", { class: "keu-panel" }, [chart(rows.slice(-12), 240), legend()]));
     box.appendChild(table(["Bulan", "Uang masuk", "Uang keluar", "Selisih", "Saldo akhir bulan"], rows.slice().reverse().map(function (r) {
@@ -341,7 +361,7 @@ export const KEUANGAN_JS = String.raw`
   }
 
   function vRekening() {
-    var rek = group(items, "rekening", "(Tanpa rekening)").sort(function (a, b) { return (b.awal + b.masuk - b.keluar) - (a.awal + a.masuk - a.keluar); });
+    var rek = group(items, "rekening", "(Tanpa rekening)", true).sort(function (a, b) { return (b.awal + b.masuk - b.keluar) - (a.awal + a.masuk - a.keluar); });
     var box = EPK.el("div");
     box.appendChild(EPK.el("p", { class: "keu-note", text: "Saldo dihitung dari seluruh catatan sejak awal, jadi tidak berubah menurut pilihan periode. Klik baris untuk melihat transaksinya." }));
     box.appendChild(table(["Rekening", "Saldo awal", "Total uang masuk", "Total uang keluar", "Saldo sekarang"], rek.map(function (g) {
