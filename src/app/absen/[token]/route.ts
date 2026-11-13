@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { effectiveAccess } from "@/lib/viewas";
+import { bolehAbsen } from "@/lib/absen";
 
 export const dynamic = "force-dynamic";
 
 // Halaman absensi sederhana: data dimuat lewat /api/absen (hanya nama peserta), tap nama untuk menandai hadir.
-export async function GET(_: Request, ctx: { params: Promise<{ token: string }> }) {
+export async function GET(req: Request, ctx: { params: Promise<{ token: string }> }) {
   const { token } = await ctx.params;
+  const email = (await auth())?.user?.email?.toLowerCase();
+  if (!email) return NextResponse.redirect(new URL("/masuk?next=" + encodeURIComponent("/absen/" + token), req.url));
+  const { real } = await effectiveAccess(email, null);
+  if (!bolehAbsen(real)) return new NextResponse('<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Absensi</title></head><body style="font-family:system-ui,sans-serif;max-width:480px;margin:14vh auto;padding:20px"><h1 style="font-size:20px">Belum punya akses Absensi</h1><p>Akun ini belum diberi menu <b>Absensi</b>. Hubungi sekretariat BPKPKK Bandung untuk meminta akses.</p><p><a href="/keluar">Ganti akun</a></p></body></html>', { status: 403, headers: { "content-type": "text/html; charset=utf-8" } });
   const html = `<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Absensi kehadiran</title><link rel="icon" href="/favicon.png"><style>body{font-family:system-ui,sans-serif;background:#f4f6f8;margin:0;color:#14212b}main{max-width:560px;margin:0 auto;padding:14px 14px 60px}h1{font-size:18px;margin:4px 0}.sub{color:#5b6773;font-size:13px;margin:0 0 10px}.bar{position:sticky;top:0;background:#f4f6f8;padding:8px 0;z-index:1}input{font:inherit;width:100%;box-sizing:border-box;padding:12px;border:1px solid #c9d1d9;border-radius:10px}.cnt{font-size:13px;margin:6px 0;font-weight:600}.row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font:inherit;background:#fff;border:1px solid #e1e6eb;border-radius:10px;padding:12px;margin:0 0 6px;cursor:pointer}.row small{display:block;color:#5b6773;font-size:12px}.row b{flex:1;font-weight:600}.ck{width:26px;height:26px;border-radius:50%;border:2px solid #b5bec7;flex:none;display:grid;place-items:center;color:#fff;font-size:16px}.row.on{background:#e3f4ea;border-color:#8cc9a3}.row.on .ck{background:#2f8a52;border-color:#2f8a52}.row:disabled{opacity:.6}.msg{padding:10px;border-radius:8px;font-size:14px;background:#fde8e6;margin:8px 0}</style></head><body><main><h1 id="jd">Absensi kehadiran</h1><p class="sub" id="sb">Memuat…</p><div id="ms"></div><div class="bar"><input id="q" type="search" placeholder="Cari nama…" autocomplete="off"><div class="cnt" id="ct"></div></div><div id="ls"></div></main><script>(function(){var T=${JSON.stringify(token)},D=null,$=function(i){return document.getElementById(i)};
 function api(b){b.token=T;return fetch("/api/absen",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(b)}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.message||"Gagal.");return j})})}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}

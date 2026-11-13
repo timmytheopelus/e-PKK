@@ -63,3 +63,14 @@ describe("infoAbsen dan tandaiHadir", () => {
     await expect(tandaiHadir(T(), "recPEND00000000B2", true)).rejects.toThrow(/tidak terdaftar/);
   });
 });
+
+import { bolehAbsen } from "@/lib/absen";
+describe("hak akses Absensi", () => {
+  it("butuh status Disetujui, menu Absensi, dan bukan Lihat sebagai", () => {
+    expect(bolehAbsen({ status: "Disetujui", tabs: ["Absensi"] })).toBe(true);
+    expect(bolehAbsen({ status: "Disetujui", tabs: ["Event"] })).toBe(false);
+    expect(bolehAbsen({ status: "Menunggu", tabs: ["Absensi"] })).toBe(false);
+    expect(bolehAbsen({ status: "Disetujui", tabs: ["Absensi"], viewAs: "x@x.com" })).toBe(false);
+    expect(bolehAbsen(null)).toBe(false);
+  });
+});

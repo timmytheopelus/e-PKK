@@ -1,6 +1,6 @@
 // Absensi kehadiran event lewat link publik bertanda tangan (HMAC). Memakai tabel KehadiranEvent yang sudah ada.
 import crypto from "node:crypto";
-import { BASE_BPK, HttpError, T } from "./policy";
+import { Access, BASE_BPK, HttpError, T } from "./policy";
 import { at, getRecord, listUntil } from "./airtable";
 
 export const T_HADIR = "tblQgU4DawCAXIRdi";
@@ -82,4 +82,20 @@ export async function tandaiHadir(token: string, pendaftaran: string, hadir: boo
     await at(`/v0/${BASE_BPK}/${T_HADIR}/${ada}`, { method: "DELETE" });
   }
   return { ok: true, hadir };
+}
+
+/** Hanya akun yang disetujui dan punya menu Absensi (bukan mode Lihat sebagai) yang boleh mencatat kehadiran. */
+export function bolehAbsen(acc: Pick<Access, "status" | "tabs" | "viewAs"> | null | undefined): boolean {
+  return !!acc && acc.status === "Disetujui" && !acc.viewAs && acc.tabs.includes("Absensi");
+}
+
+/** Acara dalam jendela absensi (belum batal), untuk halaman daftar /absen. */
+export async function acaraAbsensi(now = new Date()) {
+  const { listPage } = await import("./airtable");
+  const F = { st: "fldG7mLTlU3TDeXoF" };
+  const { records } = await listPage(BASE_BPK, T.events, { fieldIds: [EVF.nama, EVF.tgl, F.st], pageSize: 100, formula: `ABS(DATETIME_DIFF({${EVF.tgl}}, TODAY(), 'days'))<=${JENDELA_HARI}`, sort: [{ fieldId: EVF.tgl }] });
+  return records
+    .map((r) => ({ id: r.id, nama: String(r.fields[EVF.nama] || "").replace(/^\d{6}-/, ""), tgl: String(r.fields[EVF.tgl] || "").slice(0, 10), st: sel(r.fields[F.st]) }))
+    .filter((e) => e.nama && e.tgl && !/batal/i.test(e.st) && dalamJendela(e.tgl, now))
+    .map((e) => ({ ...e, token: buatToken(e.id) }));
 }

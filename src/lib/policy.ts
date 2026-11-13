@@ -12,6 +12,7 @@ export const TAB_IDS: Record<string, string> = {
   Inventaris: "inventaris",
   Keuangan: "keuangan",
   "Program Kerja": "proker",
+  Absensi: "absensi",
   Administrasi: "admin",
 };
 export const ALL_TABS = Object.keys(TAB_IDS);

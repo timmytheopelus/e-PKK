@@ -165,3 +165,16 @@ describe("link absensi di detail Event", () => {
     expect(html).not.toContain("AUTH_SECRET");
   });
 });
+
+describe("link absensi: handler di tab Event", () => {
+  it("klik [data-absen] ditangani oleh listener tab-event (bukan tab lain)", () => {
+    const html = require("node:fs").readFileSync("docs/prototipe-artifact.html", "utf8");
+    const a = html.indexOf('getElementById("tab-event").addEventListener("click"');
+    const b = html.indexOf('getElementById("tab-event").addEventListener("keydown"');
+    const seg = html.slice(a, b);
+    expect(seg).toContain('closest("[data-absen]")');
+    expect(seg).toContain('aksi: "link"');
+    const kep = html.slice(html.indexOf('getElementById("tab-kep").addEventListener("click"'));
+    expect(kep.slice(0, 2500)).not.toContain("data-absen");
+  });
+});

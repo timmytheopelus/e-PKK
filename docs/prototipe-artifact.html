@@ -3450,12 +3450,6 @@ document.getElementById("tab-kep").addEventListener("click", function (e) {
     if (!confirm((id === "apOk" ? "Setujui " : "Tolak ") + ids.length + " pendaftar?")) return;
     t.disabled = true; say("apMsg", "Menyimpan…");
     sepPost("decide", { ids: ids, decision: id === "apOk" ? "Disetujui" : "Ditolak" }).then(function () { sepReload(); }, function (er) { t.disabled = false; say("apMsg", er.message, true); });
-  } else if (t.dataset && t.dataset.absen) {
-    var ab = t.dataset.absen, am = document.getElementById("absenMsg");
-    fetch("/api/absen", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ aksi: "link", event: ab }) }).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.message || "Gagal."); return j; }); }).then(function (j) {
-      var u = location.origin + "/absen/" + j.token;
-      try { navigator.clipboard.writeText(u); if (am) am.textContent = "Link tersalin: " + u + " (dibuka 7 hari sebelum sampai sesudah acara)"; } catch (x) { prompt("Salin link absensi:", u); }
-    }, function (x) { if (am) am.textContent = x.message; });
   } else if (t.dataset && t.dataset.kpcopy) { try { navigator.clipboard.writeText(t.dataset.kpcopy); t.textContent = "Tersalin ✓"; } catch (x) { prompt("Salin link:", t.dataset.kpcopy); } }
   else if (t.dataset && t.dataset.kpfin) {
     if (!confirm("Tandai kegiatan ini SELESAI? Status tidak bisa diubah lagi dan pendaftaran ditutup.")) return;
@@ -3532,6 +3526,17 @@ function renderEvRegs() {
     l.map(function (p) { return "<tr><td>" + esc(p.nama) + "</td><td>" + esc(p.pd) + "</td><td>" + esc(ageLbl(p.usia)) + "</td><td>" + esc(p.st) + (p.val ? " ✓" : "") + "</td><td>" + esc(p.hadir) + "</td></tr>"; }).join("") + "</tbody></table></div>";
 }
 document.getElementById("tab-event").addEventListener("click", function (e) {
+  var cp = e.target.closest && e.target.closest("[data-evcopy]");
+  if (cp) { try { navigator.clipboard.writeText(cp.getAttribute("data-evcopy")); cp.textContent = "Tersalin ✓"; } catch (x) { prompt("Salin link:", cp.getAttribute("data-evcopy")); } return; }
+  var ab = e.target.closest && e.target.closest("[data-absen]");
+  if (ab) {
+    var am = document.getElementById("absenMsg"), eid = ab.getAttribute("data-absen");
+    fetch("/api/absen", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ aksi: "link", event: eid }) }).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.message || "Gagal."); return j; }); }).then(function (j) {
+      var u = location.origin + "/absen/" + j.token;
+      if (am) am.innerHTML = 'Link absensi: <a href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(u) + '</a> <button type="button" class="chip" data-evcopy="' + esc(u) + '">Salin</button> <a class="chip" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent("Absensi kehadiran (login dulu):\n" + u) + '">Bagikan lewat WhatsApp</a><br><small>Hanya akun dengan menu Absensi yang bisa membuka. Dibuka 7 hari sebelum sampai sesudah acara.</small>';
+    }, function (x) { if (am) am.textContent = x.message; });
+    return;
+  }
   var b = e.target.closest && e.target.closest("[data-ev]");
   if (b) { EV.sel = b.getAttribute("data-ev"); EV.pdf = ""; EV.rq = ""; EV.dim = -1; EV.dv = ""; EV.open = true; renderEvent(); window.scrollTo(0, 0); }
   if (e.target.closest && e.target.closest("#evBack")) { EV.open = false; renderEvent(); window.scrollTo(0, 0); }

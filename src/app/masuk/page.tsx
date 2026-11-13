@@ -2,9 +2,9 @@ import { signIn } from "@/auth";
 
 export const dynamic = "force-dynamic";
 
-export default async function Masuk({ searchParams }: { searchParams: Promise<{ kelola?: string }> }) {
+export default async function Masuk({ searchParams }: { searchParams: Promise<{ kelola?: string; next?: string }> }) {
   const sp = await searchParams;
-  const dest = sp?.kelola === "1" ? "/dashboard?kelola=1" : "/";
+  const dest = sp?.kelola === "1" ? "/dashboard?kelola=1" : /^\/absen(\/[A-Za-z0-9._-]+)?$/.test(sp?.next || "") ? (sp.next as string) : "/";
   return (
     <main style={{ maxWidth: 420, margin: "14vh auto", padding: 24, background: "#fff", borderRadius: 12, border: "1px solid #dde2e7", textAlign: "center" }}>
       <h1 style={{ fontSize: 22, marginTop: 0 }}>BPKPKK Bandung</h1>

@@ -79,7 +79,7 @@ export async function adminCall(action: string, i: any, selfEmail: string, actor
     const cur = await all();
     if (cur.some((u) => String(u.email).toLowerCase() === email)) throw new HttpError(400, "Email ini sudah terdaftar sebagai pengguna.");
     const fields = { [AF.email]: email, [AF.nama]: um.nama, [AF.status]: "Disetujui", [AF.level]: level, [AF.tabs]: [...new Set(tabs)], [AF.umat]: [um.id] };
-    const j = await at(tableUrl, { method: "POST", body: JSON.stringify({ records: [{ fields }] }) });
+    const j = await at(tableUrl, { method: "POST", body: JSON.stringify({ records: [{ fields }], typecast: true }) });
     if (um.email !== email) { await at(`/v0/${BASE_BPK}/${T.umat}`, { method: "PATCH", body: JSON.stringify({ records: [{ id: um.id, fields: { [UF.email]: email } }] }) }); umatCache = null; }
     invalidateAccess(); console.log("ADMIN add", selfEmail, email, level, tabs.join(","));
     let emailed = false;
@@ -93,7 +93,7 @@ export async function adminCall(action: string, i: any, selfEmail: string, actor
     if (!EMAIL.test(email)) throw new HttpError(400, "Email tidak valid.");
     if ((await all()).some((u) => String(u.email).toLowerCase() === email)) throw new HttpError(400, "Email ini sudah terdaftar.");
     const fields = { ...clean({ status: "Disetujui", ...i }, false), [AF.email]: email };
-    const j = await at(tableUrl, { method: "POST", body: JSON.stringify({ records: [{ fields }] }) });
+    const j = await at(tableUrl, { method: "POST", body: JSON.stringify({ records: [{ fields }], typecast: true }) });
     invalidateAccess(); console.log("ADMIN create", selfEmail, email);
     return { user: toUser(j.records[0]) };
   }
@@ -105,7 +105,7 @@ export async function adminCall(action: string, i: any, selfEmail: string, actor
     const fields = clean(i, true);
     if (String(cur.email).toLowerCase() === selfEmail && ((fields[AF.level] && fields[AF.level] !== "Superadmin") || (fields[AF.status] && fields[AF.status] !== "Disetujui")))
       throw new HttpError(400, "Anda tidak bisa menurunkan atau menonaktifkan akun Anda sendiri.");
-    const j = await at(tableUrl, { method: "PATCH", body: JSON.stringify({ records: [{ id, fields }] }) });
+    const j = await at(tableUrl, { method: "PATCH", body: JSON.stringify({ records: [{ id, fields }], typecast: true }) });
     invalidateAccess(); console.log("ADMIN update", selfEmail, cur.email, Object.keys(fields).join(","));
     return { user: toUser(j.records[0]) };
   }

@@ -10,6 +10,7 @@ export const FITUR: { tab: string; judul: string; isi: string }[] = [
   { tab: "Umat", judul: "Umat", isi: "Pencarian data umat dan pembaruan data kontak." },
   { tab: "Kalender", judul: "Kalender kegiatan", isi: "Kalender bulanan dan daftar kegiatan BPK, bisa ditambah dari sini." },
   { tab: "Event", judul: "Event &amp; pendaftar", isi: "Event berjalan, pendaftar per PD, PD yang belum mendaftar, dan data demografis." },
+  { tab: "Absensi", judul: "Absensi kehadiran", isi: "Mencatat siapa saja yang hadir di acara lewat link absensi. Login dulu dengan akun ini." },
 ];
 
 export function welcomeHtml(o: { nama: string; email: string; level: string; tabs: string[]; url: string }) {

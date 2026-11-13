@@ -15,5 +15,6 @@ export async function GET(req: Request) {
   if (!email) return NextResponse.redirect(new URL(kelola ? "/masuk?kelola=1" : "/masuk", req.url));
   const { acc } = await effectiveAccess(email, (await cookies()).get(AS_COOKIE)?.value);
   if (!acc || acc.status !== "Disetujui" || !acc.tabs.length) return NextResponse.redirect(new URL("/", req.url));
+  if (!acc.viewAs && acc.tabs.length === 1 && acc.tabs[0] === "Absensi") return NextResponse.redirect(new URL("/absen", req.url));
   return new NextResponse(renderDashboard(acc, kelola, ['Superadmin', 'Admin'].includes(acc.level) ? await sekjenContact() : null), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
 }

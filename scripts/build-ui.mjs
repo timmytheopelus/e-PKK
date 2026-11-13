@@ -209,6 +209,7 @@ function applyMe() {
   var menu = EPK.el("div", { class: "epk-pop", hidden: "" }, [
     EPK.el("button", { type: "button", text: "Profil saya", onclick: function () { EPK.menuClose(); EPK.profile(); } }),
     me.level === "Superadmin" && !me.viewAs ? EPK.el("button", { type: "button", text: "Lihat sebagai…", onclick: function () { EPK.menuClose(); if (window.EPK_LIHATSEBAGAI) window.EPK_LIHATSEBAGAI(); } }) : null,
+    me.tabs.indexOf("absensi") >= 0 && !me.viewAs ? EPK.el("a", { href: "/absen", text: "Absensi kehadiran" }) : null,
     EPK.el("a", { href: "/keluar", text: "Keluar" })]);
   var who = EPK.el("button", { type: "button", class: "epk-who", "aria-haspopup": "true", onclick: function (e) { e.stopPropagation(); var h = menu.hidden; EPK.menuClose(); menu.hidden = !h; } },
     [(me.nama || me.email) + " ▾"]);
