@@ -2,71 +2,36 @@ import { describe, it, expect } from "vitest";
 import { nextStatus, canAct } from "../src/lib/proker-flow";
 import { peranFromRows } from "../src/lib/proker-roles";
 
-const base = { status: "Menunggu Koord Bidang", seksiPengaju: "Forkom 1", seksiTerlibat: ["Forkom 1"] };
-const kb = { tahap: "Koord Bidang" as const, keputusan: "Setuju" as const };
-const sj = { tahap: "Sekjen" as const, keputusan: "Setuju" as const };
-const kol = (seksi: string, keputusan: "Setuju" | "Tolak" = "Setuju") => ({ tahap: "Kolaborasi" as const, seksi, keputusan });
 
-describe("nextStatus", () => {
-  it("tanpa persetujuan tetap Menunggu Koord Bidang", () => {
-    expect(nextStatus(base, [])).toBe("Menunggu Koord Bidang");
+describe("nextStatus (alur baru)", () => {
+  const sj = (keputusan: "Setuju" | "Tolak") => ({ tahap: "Sekjen" as const, keputusan });
+  it("tanpa keputusan tetap Menunggu Sekjen", () => {
+    expect(nextStatus({ status: "Menunggu Sekjen" }, [])).toBe("Menunggu Sekjen");
   });
-  it("Koord Bidang setuju tanpa seksi lain -> Menunggu Sekjen", () => {
-    expect(nextStatus(base, [kb])).toBe("Menunggu Sekjen");
+  it("Sekjen setuju -> Disetujui tanpa tahap lain", () => {
+    expect(nextStatus({ status: "Menunggu Sekjen" }, [sj("Setuju")])).toBe("Disetujui");
   });
-  it("Koord Bidang setuju dengan seksi lain belum setuju -> Menunggu Kolaborasi", () => {
-    const p = { ...base, seksiTerlibat: ["Forkom 1", "Forkom 2"] };
-    expect(nextStatus(p, [kb])).toBe("Menunggu Kolaborasi");
+  it("Sekjen tolak -> Ditolak", () => {
+    expect(nextStatus({ status: "Menunggu Sekjen" }, [sj("Tolak")])).toBe("Ditolak");
   });
-  it("semua kolaborasi setuju -> Menunggu Sekjen", () => {
-    const p = { ...base, seksiTerlibat: ["Forkom 1", "Forkom 2"] };
-    expect(nextStatus(p, [kb, kol("Forkom 2")])).toBe("Menunggu Sekjen");
-  });
-  it("Sekjen setuju -> Disetujui", () => {
-    expect(nextStatus(base, [kb, sj])).toBe("Disetujui");
-  });
-  it("satu Tolak di tahap mana pun -> Ditolak", () => {
-    expect(nextStatus(base, [{ tahap: "Koord Bidang", keputusan: "Tolak" }])).toBe("Ditolak");
-    const p = { ...base, seksiTerlibat: ["Forkom 1", "Forkom 2"] };
-    expect(nextStatus(p, [kb, kol("Forkom 2", "Tolak")])).toBe("Ditolak");
-    expect(nextStatus(base, [kb, { tahap: "Sekjen", keputusan: "Tolak" }])).toBe("Ditolak");
-  });
-  it("Sekjen setuju sebelum Koord Bidang tidak memajukan status", () => {
-    expect(nextStatus(base, [sj])).toBe("Menunggu Koord Bidang");
-  });
-  it("Sekjen setuju sebelum kolaborasi selesai tidak memajukan status", () => {
-    const p = { ...base, seksiTerlibat: ["Forkom 1", "Forkom 2"] };
-    expect(nextStatus(p, [kb, sj])).toBe("Menunggu Kolaborasi");
-  });
-  it("persetujuan kolaborasi dari seksi yang sudah dihapus diabaikan", () => {
-    const p = { ...base, seksiTerlibat: ["Forkom 1", "Forkom 2"] };
-    expect(nextStatus(p, [kb, kol("Sekolah")])).toBe("Menunggu Kolaborasi");
-    // penolakan dari seksi yang sudah dihapus juga tidak berlaku
-    expect(nextStatus(base, [kb, kol("Sekolah", "Tolak")])).toBe("Menunggu Sekjen");
-  });
-  it("status Berjalan/Selesai tidak diubah", () => {
-    expect(nextStatus({ ...base, status: "Berjalan" }, [])).toBe("Berjalan");
-    expect(nextStatus({ ...base, status: "Selesai" }, [])).toBe("Selesai");
+  it("Berjalan dan Selesai tidak berubah", () => {
+    expect(nextStatus({ status: "Berjalan" }, [])).toBe("Berjalan");
+    expect(nextStatus({ status: "Selesai" }, [])).toBe("Selesai");
   });
 });
 
-describe("canAct", () => {
+describe("canAct (alur baru)", () => {
   const none = { koordBidang: [], koordSeksi: [], sekjen: false, bendahara: false, pimpinan: false };
-  const prog = { bidang: "Kesekretariatan", seksiPengaju: "Forkom 1", seksiTerlibat: ["Forkom 1", "Forkom 2"] };
-  it("Koord Seksi A tidak bisa bertindak atas seksi B", () => {
-    const p = { ...none, koordSeksi: ["Forkom 1"] };
-    expect(canAct(p, { ...prog, status: "Menunggu Kolaborasi" }, "Kolaborasi", "Forkom 2")).toBe(false);
-    expect(canAct({ ...none, koordSeksi: ["Forkom 2"] }, { ...prog, status: "Menunggu Kolaborasi" }, "Kolaborasi", "Forkom 2")).toBe(true);
+  it("hanya peran sekjen yang bisa bertindak", () => {
+    expect(canAct({ ...none, koordBidang: ["Kesekretariatan"], koordSeksi: ["Forkom 1"] }, { status: "Menunggu Sekjen" }, "Sekjen")).toBe(false);
+    expect(canAct({ ...none, sekjen: true }, { status: "Menunggu Sekjen" }, "Sekjen")).toBe(true);
   });
-  it("Koord Bidang hanya untuk bidangnya", () => {
-    const st = { ...prog, status: "Menunggu Koord Bidang" };
-    expect(canAct({ ...none, koordBidang: ["Outreach"] }, st, "Koord Bidang")).toBe(false);
-    expect(canAct({ ...none, koordBidang: ["Kesekretariatan"] }, st, "Koord Bidang")).toBe(true);
+  it("status lama Menunggu Koord Bidang / Kolaborasi ikut menunggu Sekjen", () => {
+    for (const status of ["Menunggu Koord Bidang", "Menunggu Kolaborasi"]) expect(canAct({ ...none, sekjen: true }, { status }, "Sekjen")).toBe(true);
   });
-  it("Sekjen hanya saat Menunggu Sekjen", () => {
-    const sjn = { ...none, sekjen: true };
-    expect(canAct(sjn, { ...prog, status: "Menunggu Koord Bidang" }, "Sekjen")).toBe(false);
-    expect(canAct(sjn, { ...prog, status: "Menunggu Sekjen" }, "Sekjen")).toBe(true);
+  it("tidak bisa bertindak pada program yang sudah diputuskan atau tahap lain", () => {
+    for (const status of ["Draft", "Disetujui", "Ditolak", "Berjalan", "Selesai"]) expect(canAct({ ...none, sekjen: true }, { status }, "Sekjen")).toBe(false);
+    expect(canAct({ ...none, sekjen: true }, { status: "Menunggu Sekjen" }, "Koord Bidang")).toBe(false);
   });
 });
 

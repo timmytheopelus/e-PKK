@@ -1,5 +1,6 @@
 // Menerjemahkan panggilan gaya konektor (list/update/create) menjadi REST Airtable, dengan pemeriksaan izin.
-import { Access, EV_OLEH, HttpError, INV, JAB, KEU, REK, T, TABLES, checkRead, checkWrite } from "./policy";
+import { pastikanKeuangan } from "./keuangan-akses";
+import { Access, BASE_BEN, EV_OLEH, HttpError, INV, JAB, KEU, REK, T, TABLES, checkRead, checkWrite } from "./policy";
 import { canEditEvent, sekretariatEmails } from "./event-edit";
 import { WATCH, diffEvent, logEventChange } from "./event-log";
 import { notifyOwner } from "./mail";
@@ -21,6 +22,7 @@ export async function handleCall(tool: string, input: any, acc: Access) {
   const { baseId: base, tableId: table } = input;
   if (tool === "list_records_for_table") {
     checkRead(spec, table, input, acc);
+    if (base === BASE_BEN) await pastikanKeuangan(acc);
     return list(base, table, input);
   }
   if (tool === "get_select_order") {

@@ -3,12 +3,12 @@ import { Access, BASE_BPK, HttpError } from "./policy";
 import { at, listUntil } from "./airtable";
 import { T_PROGRAM, T_ANGGARAN, T_SETUJU, PK, AG, ST, JENIS } from "./proker-schema";
 import { peranOf, rowsOf, semuaSeksi, seksiBidang, emailsWhere } from "./proker-roles";
-import { canAct, nextStatus, seksiKolaborasi, type Keputusan, type Tahap } from "./proker-flow";
+import { canAct, nextStatus, type Keputusan, type Tahap } from "./proker-flow";
 import { buatNotif } from "./notif";
 import { hitungRingkas, type Ringkas } from "./proker-ringkas";
 
 const REC = /^rec[A-Za-z0-9]{14}$/;
-const TAHAP: Tahap[] = ["Koord Bidang", "Kolaborasi", "Sekjen"];
+const TAHAP: Tahap[] = ["Sekjen"];
 const norm = (s: string) => s.trim().toLowerCase();
 const sel = (v: any) => String(typeof v === "object" && v ? v.name ?? "" : v ?? "");
 const lines = (s: any) => String(s || "").split("\n").map((x) => x.trim()).filter(Boolean);
@@ -91,7 +91,7 @@ export async function ajukanProgram(acc: Access, input: AjukanInput): Promise<{ 
     body: JSON.stringify({ records: [{ fields: {
       [PK.nama]: nama, [PK.detail]: detail, [PK.seksiPengaju]: pilih.seksi, [PK.bidang]: pilih.bidang, [PK.mulai]: mulai,
       [PK.seksiTerlibat]: terlibat.join("\n"), [PK.modeAnggaran]: a.mode, [PK.totalAnggaran]: total,
-      [PK.status]: "Menunggu Koord Bidang", [PK.dibuatOleh]: acc.email.trim().toLowerCase(), [PK.waktuDibuat]: new Date().toISOString(),
+      [PK.status]: "Menunggu Sekjen", [PK.dibuatOleh]: acc.email.trim().toLowerCase(), [PK.waktuDibuat]: new Date().toISOString(),
     } }] }),
   });
   const id: string = j.records[0].id;
@@ -101,8 +101,7 @@ export async function ajukanProgram(acc: Access, input: AjukanInput): Promise<{ 
       body: JSON.stringify({ records: baris.slice(i, i + 10).map((b) => ({ fields: { [AG.keterangan]: b.keterangan, [AG.programId]: id, [AG.jenis]: b.jenis, [AG.nominal]: b.nominal } })) }),
     });
   }
-  const kb = await emailsWhere((p) => p.koordBidang.some((x) => norm(x) === norm(pilih.bidang)));
-  await buatNotif(kb, `Program baru menunggu persetujuan Anda: ${nama} (${pilih.seksi})`, `proker:${id}`);
+  await buatNotif(await emailsWhere((r) => r.sekjen), `Program baru menunggu persetujuan Anda: ${nama} (${pilih.seksi})`, `proker:${id}`);
   return { id };
 }
 
@@ -117,8 +116,6 @@ const toProg = (r: any): Prog => {
 const keputusanDari = (recs: any[]): Keputusan[] => recs.map((r) => ({ tahap: sel(r.fields[ST.tahap]) as Tahap, seksi: String(r.fields[ST.seksi] || "") || undefined, keputusan: sel(r.fields[ST.keputusan]) as any }))
   .filter((k) => TAHAP.includes(k.tahap) && (k.keputusan === "Setuju" || k.keputusan === "Tolak"));
 
-const STATUS_TAHAP: Record<Tahap, string> = { "Koord Bidang": "Menunggu Koord Bidang", Kolaborasi: "Menunggu Kolaborasi", Sekjen: "Menunggu Sekjen" };
-
 export async function putuskan(acc: Access, input: { programId: string; tahap: string; seksi?: string; keputusan: string; catatan?: string }): Promise<{ status: string }> {
   guard(acc);
   if (!REC.test(input?.programId || "")) throw new HttpError(400, "id program tidak valid.");
@@ -129,14 +126,14 @@ export async function putuskan(acc: Access, input: { programId: string; tahap: s
   const p = toProg(rec);
   const peran = await peranOf(acc);
   // Peran dicek dulu (403), baru urutan/duplikat (409).
-  if (!canAct(peran, { ...p, status: STATUS_TAHAP[tahap] }, tahap, input.seksi)) throw new HttpError(403, "Anda tidak berwenang pada tahap ini untuk program ini.");
-  if (p.status !== STATUS_TAHAP[tahap]) throw new HttpError(409, "Program ini belum/tidak lagi pada tahap tersebut. Muat ulang halaman.");
+  if (!peran.sekjen) throw new HttpError(403, "Hanya Sekretaris Jenderal atau Koordinator BPK yang boleh menyetujui program.");
+  if (!canAct(peran, p, tahap)) throw new HttpError(409, "Program ini sudah diputuskan atau tidak lagi menunggu persetujuan. Muat ulang halaman.");
   const lama = await at(`/v0/${BASE_BPK}/${T_SETUJU}?returnFieldsByFieldId=true&filterByFormula=${encodeURIComponent(`{Program ID}="${p.id}"`)}`);
   const ada = (lama.records || []).filter((r: any) => r.fields[ST.programId] === p.id);
-  const dobel = ada.some((r: any) => sel(r.fields[ST.tahap]) === tahap && (tahap !== "Kolaborasi" || norm(String(r.fields[ST.seksi] || "")) === norm(input.seksi || "")) && ["Setuju", "Tolak"].includes(sel(r.fields[ST.keputusan])));
+  const dobel = ada.some((r: any) => sel(r.fields[ST.tahap]) === tahap && ["Setuju", "Tolak"].includes(sel(r.fields[ST.keputusan])));
   if (dobel) throw new HttpError(409, "Keputusan untuk tahap ini sudah dicatat.");
 
-  const seksi = tahap === "Kolaborasi" ? String(input.seksi) : "";
+  const seksi = "";
   await at(`/v0/${BASE_BPK}/${T_SETUJU}`, {
     method: "POST",
     body: JSON.stringify({ records: [{ fields: {
@@ -147,23 +144,16 @@ export async function putuskan(acc: Access, input: { programId: string; tahap: s
   });
   const status = nextStatus(p, [...keputusanDari(ada), { tahap, seksi: seksi || undefined, keputusan: input.keputusan as any }]);
   await at(`/v0/${BASE_BPK}/${T_PROGRAM}/${p.id}`, { method: "PATCH", body: JSON.stringify({ fields: { [PK.status]: status } }) });
-  await beritahu(p, status, input.keputusan, tahap);
+  await beritahu(p, status, input.keputusan);
   return { status };
 }
 
-async function beritahu(p: Prog, status: string, keputusan: string, tahap: Tahap) {
+async function beritahu(p: Prog, status: string, keputusan: string) {
   const tautan = `proker:${p.id}`;
   const pengaju = p.dibuatOleh ? [p.dibuatOleh] : [];
-  if (status === "Ditolak") return buatNotif(pengaju, `Program "${p.nama}" ditolak pada tahap ${tahap}.`, tautan);
-  await buatNotif(pengaju, `Program "${p.nama}": ${tahap} ${keputusan === "Setuju" ? "menyetujui" : "memutuskan"} → ${status}.`, tautan);
-  if (status === "Menunggu Kolaborasi") {
-    for (const s of seksiKolaborasi(p)) {
-      const em = await emailsWhere((r) => r.koordSeksi.some((x) => norm(x) === norm(s)));
-      await buatNotif(em, `Ajakan kolaborasi: "${p.nama}" dari ${p.seksiPengaju} memerlukan persetujuan seksi ${s}.`, tautan);
-    }
-  } else if (status === "Menunggu Sekjen") {
-    await buatNotif(await emailsWhere((r) => r.sekjen), `Program "${p.nama}" menunggu persetujuan pelaksanaan Sekjen.`, tautan);
-  } else if (status === "Disetujui") {
+  if (status === "Ditolak") return buatNotif(pengaju, `Program "${p.nama}" ditolak oleh Sekjen / Koordinator BPK.`, tautan);
+  await buatNotif(pengaju, `Program "${p.nama}" ${keputusan === "Setuju" ? "disetujui" : "diputuskan"} oleh Sekjen / Koordinator BPK → ${status}.`, tautan);
+  if (status === "Disetujui") {
     await buatNotif(await emailsWhere((r) => r.pimpinan), `Program "${p.nama}" (${p.seksiPengaju}) disetujui untuk dilaksanakan.`, tautan);
   }
 }
@@ -201,16 +191,13 @@ async function muatProgram(acc: Access, saring: boolean) {
     const baris = ag.records.filter((r) => r.fields[AG.programId] === p.id);
     const sum = (j: string) => baris.filter((r) => sel(r.fields[AG.jenis]) === j).reduce((s, r) => s + Number(r.fields[AG.nominal] || 0), 0);
     const aksi: Tahap[] = [];
-    if (canAct(peran, p, "Koord Bidang")) aksi.push("Koord Bidang");
-    const seksiAksi = seksiKolaborasi(p).filter((s) => canAct(peran, p, "Kolaborasi", s));
-    if (seksiAksi.length) aksi.push("Kolaborasi");
     if (canAct(peran, p, "Sekjen")) aksi.push("Sekjen");
     const kep = st.records.filter((r) => r.fields[ST.programId] === p.id).map((r) => ({ tahap: sel(r.fields[ST.tahap]), seksi: String(r.fields[ST.seksi] || ""), keputusan: sel(r.fields[ST.keputusan]), oleh: String(r.fields[ST.oleh] || ""), catatan: String(r.fields[ST.catatan] || "") }));
     out.push({
       id: p.id, nama: p.nama, detail: p.detail, seksiPengaju: p.seksiPengaju, bidang: p.bidang, mulai: p.mulai, seksiTerlibat: p.seksiTerlibat, status: p.status,
       mode: p.mode, totalPemasukan: p.mode === "Rincian" ? sum("Pemasukan") : 0, totalPengeluaran: p.mode === "Rincian" ? sum("Pengeluaran") : p.total,
       baris: baris.map((r) => ({ keterangan: String(r.fields[AG.keterangan] || ""), jenis: sel(r.fields[AG.jenis]), nominal: Number(r.fields[AG.nominal] || 0) })),
-      keputusan: kep, baru: !!p.waktu && Date.now() - Date.parse(p.waktu) <= 14 * 86400_000, aksi, seksiAksi,
+      keputusan: kep, baru: !!p.waktu && Date.now() - Date.parse(p.waktu) <= 14 * 86400_000, aksi, seksiAksi: [] as string[],
     });
   }
   return out;

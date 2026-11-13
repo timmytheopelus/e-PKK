@@ -84,7 +84,7 @@ describe("ajukanProgram", () => {
     expect(rec.fields[PK.seksiPengaju]).toBe("Forkom 1");
     expect(rec.fields[PK.bidang]).toBe("Kesekretariatan");
     expect(rec.fields[PK.seksiTerlibat]).toBe("Forkom 1");
-    expect(rec.fields[PK.status]).toBe("Menunggu Koord Bidang");
+    expect(rec.fields[PK.status]).toBe("Menunggu Sekjen");
     expect(notifs.length).toBe(1);
   });
   it("Anggota biasa tidak boleh mengajukan", async () => {
@@ -110,58 +110,56 @@ describe("ajukanProgram", () => {
   });
 });
 
-describe("putuskan", () => {
-  it("oleh bukan Koord Bidang ditolak 403", async () => {
+describe("putuskan (alur baru: cukup Sekjen / Koordinator BPK)", () => {
+  it("akun yang bukan Sekjen/Koordinator BPK ditolak 403, termasuk Koord Bidang", async () => {
     seed();
+    peran = { ...emptyPeran, koordBidang: ["Kesekretariatan"], koordSeksi: ["Forkom 1"] };
     const { putuskan } = await import("../src/lib/proker");
-    await expect(putuskan(acc, { programId: "recPPPPPPPPPPPPPP", tahap: "Koord Bidang", keputusan: "Setuju" })).rejects.toMatchObject({ status: 403 });
+    await expect(putuskan(acc, { programId: "recPPPPPPPPPPPPPP", tahap: "Sekjen", keputusan: "Setuju" })).rejects.toMatchObject({ status: 403 });
   });
-  it("Sekjen sebelum Koord Bidang ditolak 409", async () => {
+  it("tahap lama (Koord Bidang / Kolaborasi) tidak dikenal 400", async () => {
     seed();
+    peran = { ...emptyPeran, sekjen: true };
+    const { putuskan } = await import("../src/lib/proker");
+    await expect(putuskan(acc, { programId: "recPPPPPPPPPPPPPP", tahap: "Koord Bidang", keputusan: "Setuju" })).rejects.toMatchObject({ status: 400 });
+    await expect(putuskan(acc, { programId: "recPPPPPPPPPPPPPP", tahap: "Kolaborasi", seksi: "Forkom 2", keputusan: "Setuju" })).rejects.toMatchObject({ status: 400 });
+  });
+  it("Sekjen setuju langsung -> Disetujui, dicatat dan menotifikasi", async () => {
+    seed({ [PK.status]: "Menunggu Sekjen" });
+    peran = { ...emptyPeran, sekjen: true };
+    const { putuskan } = await import("../src/lib/proker");
+    expect(await putuskan(acc, { programId: "recPPPPPPPPPPPPPP", tahap: "Sekjen", keputusan: "Setuju" })).toEqual({ status: "Disetujui" });
+    expect(db[T_PROGRAM][0].fields[PK.status]).toBe("Disetujui");
+    expect(db[T_SETUJU][0].fields[ST.oleh]).toBe("ketua@x.com");
+    expect(notifs.length).toBeGreaterThan(0);
+  });
+  it("program lama berstatus Menunggu Koord Bidang / Kolaborasi tetap bisa disetujui Sekjen", async () => {
+    for (const st of ["Menunggu Koord Bidang", "Menunggu Kolaborasi"]) {
+      seed({ [PK.status]: st }); db[T_SETUJU] = [];
+      peran = { ...emptyPeran, sekjen: true };
+      const { putuskan } = await import("../src/lib/proker");
+      expect((await putuskan(acc, { programId: "recPPPPPPPPPPPPPP", tahap: "Sekjen", keputusan: "Setuju" })).status).toBe("Disetujui");
+    }
+  });
+  it("keputusan ganda ditolak 409", async () => {
+    seed({ [PK.status]: "Menunggu Sekjen" });
+    peran = { ...emptyPeran, sekjen: true };
+    db[T_SETUJU] = [{ id: "recSSSSSSSSSSSSSS", fields: { [ST.programId]: "recPPPPPPPPPPPPPP", [ST.tahap]: "Sekjen", [ST.keputusan]: "Setuju" } }];
+    const { putuskan } = await import("../src/lib/proker");
+    await expect(putuskan(acc, { programId: "recPPPPPPPPPPPPPP", tahap: "Sekjen", keputusan: "Setuju" })).rejects.toMatchObject({ status: 409 });
+  });
+  it("program yang sudah Disetujui tidak bisa diputuskan lagi (409)", async () => {
+    seed({ [PK.status]: "Disetujui" });
     peran = { ...emptyPeran, sekjen: true };
     const { putuskan } = await import("../src/lib/proker");
     await expect(putuskan(acc, { programId: "recPPPPPPPPPPPPPP", tahap: "Sekjen", keputusan: "Setuju" })).rejects.toMatchObject({ status: 409 });
   });
-  it("Koord Bidang setuju -> Menunggu Sekjen, dicatat dan menotifikasi", async () => {
-    seed();
-    peran = { ...emptyPeran, koordBidang: ["Kesekretariatan"] };
-    const { putuskan } = await import("../src/lib/proker");
-    expect(await putuskan(acc, { programId: "recPPPPPPPPPPPPPP", tahap: "Koord Bidang", keputusan: "Setuju" })).toEqual({ status: "Menunggu Sekjen" });
-    expect(db[T_PROGRAM][0].fields[PK.status]).toBe("Menunggu Sekjen");
-    expect(db[T_SETUJU][0].fields[ST.oleh]).toBe("ketua@x.com");
-    expect(notifs.length).toBeGreaterThan(0);
-  });
-  it("keputusan ganda pada tahap yang sama ditolak 409", async () => {
-    seed({ [PK.status]: "Menunggu Koord Bidang" });
-    peran = { ...emptyPeran, koordBidang: ["Kesekretariatan"] };
-    db[T_SETUJU] = [{ id: "recSSSSSSSSSSSSSS", fields: { [ST.programId]: "recPPPPPPPPPPPPPP", [ST.tahap]: "Koord Bidang", [ST.keputusan]: "Setuju" } }];
-    const { putuskan } = await import("../src/lib/proker");
-    await expect(putuskan(acc, { programId: "recPPPPPPPPPPPPPP", tahap: "Koord Bidang", keputusan: "Setuju" })).rejects.toMatchObject({ status: 409 });
-  });
-  it("pengaju yang juga Koordinator Bidang tetap melewati satu langkah persetujuan yang tercatat atas namanya", async () => {
-    seed();
-    peran = { ...emptyPeran, koordBidang: ["Kesekretariatan"] };
-    const { putuskan } = await import("../src/lib/proker");
-    expect(db[T_PROGRAM][0].fields[PK.status]).toBe("Menunggu Koord Bidang"); // tidak otomatis lompat
-    await putuskan(acc, { programId: "recPPPPPPPPPPPPPP", tahap: "Koord Bidang", keputusan: "Setuju" });
-    expect(db[T_SETUJU].length).toBe(1);
-    expect(db[T_SETUJU][0].fields[ST.oleh]).toBe("ketua@x.com");
-    await expect(putuskan(acc, { programId: "recPPPPPPPPPPPPPP", tahap: "Sekjen", keputusan: "Setuju" })).rejects.toMatchObject({ status: 403 }); // bukan Sekjen
-  });
   it("Tolak -> Ditolak; viewAs ditolak", async () => {
-    seed();
-    peran = { ...emptyPeran, koordBidang: ["Kesekretariatan"] };
+    seed({ [PK.status]: "Menunggu Sekjen" });
+    peran = { ...emptyPeran, sekjen: true };
     const { putuskan } = await import("../src/lib/proker");
-    await expect(putuskan({ ...acc, viewAs: "t@x.com" }, { programId: "recPPPPPPPPPPPPPP", tahap: "Koord Bidang", keputusan: "Setuju" })).rejects.toMatchObject({ status: 403 });
-    expect((await putuskan(acc, { programId: "recPPPPPPPPPPPPPP", tahap: "Koord Bidang", keputusan: "Tolak" })).status).toBe("Ditolak");
-  });
-  it("kolaborasi: koordinator seksi lain menyetujui lalu lanjut Sekjen", async () => {
-    seed({ [PK.seksiTerlibat]: "Forkom 1\nForkom 2", [PK.status]: "Menunggu Kolaborasi" });
-    db[T_SETUJU] = [{ id: "recSSSSSSSSSSSSSS", fields: { [ST.programId]: "recPPPPPPPPPPPPPP", [ST.tahap]: "Koord Bidang", [ST.keputusan]: "Setuju" } }];
-    peran = { ...emptyPeran, koordSeksi: ["Forkom 2"] };
-    const { putuskan } = await import("../src/lib/proker");
-    await expect(putuskan(acc, { programId: "recPPPPPPPPPPPPPP", tahap: "Kolaborasi", seksi: "Sekolah", keputusan: "Setuju" })).rejects.toMatchObject({ status: 403 });
-    expect((await putuskan(acc, { programId: "recPPPPPPPPPPPPPP", tahap: "Kolaborasi", seksi: "Forkom 2", keputusan: "Setuju" })).status).toBe("Menunggu Sekjen");
+    await expect(putuskan({ ...acc, viewAs: "t@x.com" }, { programId: "recPPPPPPPPPPPPPP", tahap: "Sekjen", keputusan: "Setuju" })).rejects.toMatchObject({ status: 403 });
+    expect((await putuskan(acc, { programId: "recPPPPPPPPPPPPPP", tahap: "Sekjen", keputusan: "Tolak" })).status).toBe("Ditolak");
   });
 });
 
