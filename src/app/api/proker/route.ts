@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { effectiveAccess, AS_COOKIE } from "@/lib/viewas";
 import { ajukanProgram, putuskan, daftarProgram, infoProgram, ringkasanProgram } from "@/lib/proker";
+import { peranOf } from "@/lib/proker-roles";
 import { HttpError } from "@/lib/policy";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
     if (!real || real.status !== "Disetujui") throw new HttpError(403, "Tidak punya akses.");
     const a = (acc || real) as any; // saat 'Lihat sebagai' acc.viewAs terisi: aksi tulis ditolak di lib
     const b = await req.json();
-    if (b?.aksi === "daftar") return NextResponse.json({ programs: await daftarProgram(a) });
+    if (b?.aksi === "daftar") return NextResponse.json({ programs: await daftarProgram(a), bisaSetuju: (await peranOf(a)).sekjen });
     if (b?.aksi === "ringkasan") return NextResponse.json(await ringkasanProgram(a));
     if (b?.aksi === "info") return NextResponse.json(await infoProgram(a));
     if (b?.aksi === "ajukan") return NextResponse.json(await ajukanProgram(a, b));

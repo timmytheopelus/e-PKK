@@ -6,13 +6,13 @@ import { GRUP_STATUS } from "@/lib/proker-ringkas";
 const P = (nama: string, status: string, total: number) => ({ id: "rec" + nama, nama, detail: "", seksiPengaju: "Forkom 1", bidang: "K", mulai: "2027-01", seksiTerlibat: [], status,
   mode: "Total", totalPemasukan: 0, totalPengeluaran: total, baris: [], keputusan: [], baru: false, aksi: [], seksiAksi: [] });
 
-async function boot(programs: any[], extraHtml = "") {
+async function boot(programs: any[], extraHtml = "", bisaSetuju = false) {
   const dom = new JSDOM(`<body><div id="proTiles"></div><p id="proMsg"></p><table><tbody id="proBody"></tbody></table><section id="proDashCard" hidden><div id="proDashBody"></div></section>${extraHtml}</body>`, { runScripts: "outside-only", url: "https://e.test/" });
   const w: any = dom.window;
   w.__ME__ = { viewAs: false };
   w.fetch = vi.fn(async (_u: string, init: any) => {
     const b = JSON.parse(init.body);
-    if (b.aksi === "daftar") return { ok: true, status: 200, json: async () => ({ programs }) };
+    if (b.aksi === "daftar") return { ok: true, status: 200, json: async () => ({ programs, bisaSetuju }) };
     return (w.__RESP__ || { ok: true, status: 200, json: async () => ({}) });
   });
   w.EPK = {
@@ -78,5 +78,24 @@ describe("kartu ringkasan dashboard", () => {
     w.__RESP__ = { ok: false, status: 403, json: async () => ({ message: "Tidak punya akses" }) };
     await w.EPK_PROKER_DASH();
     expect(w.document.getElementById("proDashCard").hidden).toBe(true);
+  });
+});
+
+describe("kartu Menunggu tindakan saya", () => {
+  const kartu = (w: any) => w.document.querySelector("#proTiles .tile.tunggu");
+  it("tidak muncul bagi akun selain Sekjen / Koordinator BPK", async () => {
+    const w = await boot(DATA); w.EPK_PROKER_OPEN(); await wait();
+    expect(kartu(w)).toBeNull();
+    expect(w.document.getElementById("proTiles").textContent).not.toContain("Menunggu tindakan saya");
+  });
+  it("muncul berwarna bagi Sekjen / Koordinator BPK dengan jumlah program yang perlu tindakan", async () => {
+    const w = await boot([{ ...P("D", "Menunggu Sekjen", 50), aksi: ["Sekjen"] }, P("A", "Selesai", 1)], "", true); w.EPK_PROKER_OPEN(); await wait();
+    expect(kartu(w).textContent).toContain("Menunggu tindakan saya");
+    expect(digits(kartu(w).textContent)).toBe("1");
+    expect(kartu(w).className).not.toContain("nol");
+  });
+  it("tanpa antrean, kartu tampil netral (nol)", async () => {
+    const w = await boot([P("A", "Selesai", 1)], "", true); w.EPK_PROKER_OPEN(); await wait();
+    expect(kartu(w).className).toContain("nol");
   });
 });
