@@ -6,8 +6,8 @@ let akun: any = null;
 vi.mock("@/auth", () => ({ auth: async () => (sesi ? { user: { email: sesi } } : null) }));
 vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined }) }));
 vi.mock("@/lib/viewas", () => ({ AS_COOKIE: "epk_as", effectiveAccess: async () => ({ real: akun, acc: akun }) }));
-const daftar = vi.fn(async () => ({ programs: [{ id: "recP" }], bisaCatat: true }));
-const catat = vi.fn(async (_a: any, _i: any) => ({ id: "recREAL", sisa: 100 }));
+const daftar = vi.fn(async (_a?: any) => ({ programs: [{ id: "recP" }], bisaCatat: true }));
+const catat = vi.fn(async (_a?: any, _i?: any) => ({ id: "recREAL", sisa: 100 }));
 vi.mock("@/lib/realisasi", () => ({ daftarAnggaran: (a: any) => daftar(a), catatRealisasi: (a: any, i: any) => catat(a, i) }));
 import { POST } from "@/app/api/realisasi/route";
 
