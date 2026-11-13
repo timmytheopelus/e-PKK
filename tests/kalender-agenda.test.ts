@@ -111,3 +111,22 @@ describe("kegiatan batal disembunyikan dari kalender dan agenda", () => {
     expect(w.passes({ nama: "x", batal: true, plan: "Batal", libur: false })).toBe(true);
   });
 });
+
+describe("menu Event: acara Rutin tampil bila pendaftaran dibuka", () => {
+  function loadKind(): any {
+    const m = HTML.match(/function evKind\([\s\S]*?\/\* end evKind \*\//);
+    const w: any = new JSDOM("<body></body>", { runScripts: "outside-only" }).window;
+    w.eval((m ? m[0] : "") + "; window.evKind = evKind;");
+    return w;
+  }
+  it("Rutin + Open Registration tampil; Rutin tanpa pendaftaran tidak", () => {
+    const w = loadKind();
+    expect(w.evKind({ st: "Aktif", jenis: "Rutin", reg: "Open Registration", kel: "" }, 0)).toBe("next");
+    expect(w.evKind({ st: "Aktif", jenis: "Rutin", reg: "", kel: "" }, 0)).toBe("");
+  });
+  it("kelompok KEP/SSK tetap disembunyikan dan batal tidak tampil", () => {
+    const w = loadKind();
+    expect(w.evKind({ st: "Aktif", jenis: "", reg: "Open Registration", kel: "SSK" }, 0)).toBe("");
+    expect(w.evKind({ st: "Batal", jenis: "Rutin", reg: "Open Registration", kel: "" }, 0)).toBe("");
+  });
+});

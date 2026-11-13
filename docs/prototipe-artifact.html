@@ -3117,13 +3117,14 @@ function ageLbl(s) { s = String(s || "").replace(/^[^0-9A-Za-z]+/, "").trim(); r
 function ageNum(s) { if (s === "Belum diisi") return 999; if (/bawah/i.test(s)) return 0; var m = /\d+/.exec(s); return m ? +m[0] : 998; }
 function pAktif(p) { return !/^(batal|dobel)/i.test(p.st); }
 function evKind(e, n) {
-  if (/batal|libur/i.test(e.st) || e.jenis === "Rutin" || /libur/i.test(e.jenis)) return "";
   var open = /open/i.test(e.reg);
+  if (/batal|libur/i.test(e.st) || /libur/i.test(e.jenis) || (e.jenis === "Rutin" && !open)) return "";
   if (/^(KEP|KEP Exe|SSK)$/.test(e.kel)) return "";
   if (/aktif|scheduled/i.test(e.st) && (open || n > 0)) return "next";
   if (/berlalu/i.test(e.st) && n > 0) return "past";
   return "";
 }
+/* end evKind */
 function tally(list, fn) { var m = {}; list.forEach(function (x) { var k = fn(x) || "Belum diisi"; m[k] = (m[k] || 0) + 1; }); return m; }
 function hbars(title, m, sorter, di) {
   var ks = Object.keys(m); ks.sort(sorter || function (a, b) { return m[b] - m[a] || cmpId(a, b); });
