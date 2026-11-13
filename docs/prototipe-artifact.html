@@ -3477,6 +3477,32 @@ var EVMSG = function (e, pd) {
   return "Shalom " + nm + ",\n\nKami dari BPKPKK Bandung menginformasikan event:\n*" + judul + "*\n\n" + info + "\n\nSampai saat ini belum ada pendaftar dari " + pd.nama + ". Mohon informasikan kepada anggota PD dan ajak untuk mendaftar melalui link berikut:\n" + (e.link || "(link pendaftaran belum tersedia)") + "\n\n" +
     (e.pic ? "Pertanyaan hubungi: " + e.pic + (e.telp ? " - " + e.telp : "") + "\n\n" : "") + "Terima kasih, Tuhan memberkati.\nBPKPKK Bandung";
 };
+var SK = { eid: "", dasar: "", data: null, err: "", busy: false };
+function skLoad(eid, dasar) {
+  SK.eid = eid; SK.dasar = dasar; SK.busy = true; SK.err = ""; skDraw(eid);
+  fetch("/api/event-seksi", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ event: eid, dasar: dasar }) })
+    .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.message || "Gagal."); return j; }); })
+    .then(function (j) { SK.data = j; SK.busy = false; skDraw(eid); }, function (x) { SK.err = x.message; SK.busy = false; skDraw(eid); });
+}
+function skDraw(eid) {
+  var el = document.getElementById("evSeksi"); if (!el || SK.eid !== eid) return;
+  if (SK.busy) { el.innerHTML = '<p class="hint">Memuat laporan per seksi…</p>'; return; }
+  if (SK.err) { el.innerHTML = '<p class="note">' + esc(SK.err) + "</p>"; return; }
+  var d = SK.data; if (!d) return;
+  var hd = d.dasar === "hadir", kata = hd ? "hadir" : "terdaftar";
+  var h = '<div class="pan"><h4>Perwakilan per seksi <small class="note">· dari sisi ' + (hd ? "kehadiran" : "pendaftaran") + "</small></h4>" +
+    '<p class="chips"><button type="button" class="chip' + (hd ? "" : " on") + '" data-seksi="' + esc(eid) + '|daftar">Pendaftaran</button><button type="button" class="chip' + (hd ? " on" : "") + '" data-seksi="' + esc(eid) + '|hadir">Kehadiran</button></p>' +
+    '<div class="tiles">' + tile(d.ringkas.ketua, "Ketua " + kata, "seksi dengan ketua " + kata) + tile(d.ringkas.diwakili, "Ketua diwakili", "ketua belum " + kata + ", ada perwakilan seksi") + tile(d.ringkas.kosong, "Tanpa perwakilan", "tidak ada satu pun yang " + kata) + "</div>";
+  var by = {}, ord = []; d.seksi.forEach(function (r) { var k = r.bidang || "Lainnya"; if (!by[k]) { by[k] = []; ord.push(k); } by[k].push(r); });
+  var lab = { ketua: "Ketua " + kata, diwakili: "Diwakili", kosong: "Tidak ada perwakilan" };
+  ord.forEach(function (k) {
+    h += "<h5>" + esc(k) + '</h5><div class="tw"><table class="tbl"><thead><tr><th>Seksi</th><th>Ketua</th><th>Perwakilan</th><th>Status</th></tr></thead><tbody>' + by[k].map(function (r) {
+      var kt = r.ketua.length ? r.ketua.map(function (x) { return esc(x.nama) + (x.status === "hadir" ? " ✓" : x.status === "diwakili" ? " (diwakili)" : " ✗"); }).join("<br>") : '<span class="note">belum ada ketua di data</span>';
+      return "<tr><td>" + esc(r.seksi) + "</td><td>" + kt + "</td><td>" + (r.perwakilan.length ? esc(r.perwakilan.join(", ")) : "–") + '</td><td><span class="tag">' + lab[r.status] + "</span></td></tr>";
+    }).join("") + "</tbody></table></div>";
+  });
+  el.innerHTML = h + '<p class="note">Seksi dan ketua dibaca dari Pengurus periode 2026. "Diwakili" berarti ada anggota seksi itu ' + kata + " walau ketuanya belum.</p></div>";
+}
 function renderEvDetail(e, regs) {
   var el = document.getElementById("evDetail");
   var pdActive = (D.pd || []).filter(function (p) { return isAktif(p.status); });
@@ -3488,6 +3514,7 @@ function renderEvDetail(e, regs) {
   var batal = D.pend.filter(function (p) { return p.ev === e.id && !pAktif(p); }).length;
   var h = '<h3>' + esc(e.nama.replace(/^\d{6}-/, "")) + '</h3><p class="sub">' + esc(fmtDate(e.tgl, { weekday: "long", day: "numeric", month: "long", year: "numeric" })) + (e.lokasi ? " · " + esc(e.lokasi) : "") + "</p>";
   h += '<p><button type="button" class="chip" data-absen="' + esc(e.id) + '">Link absensi kehadiran</button> <span class="note" id="absenMsg"></span></p>';
+  h += '<p><button type="button" class="chip" data-seksi="' + esc(e.id) + '|' + (e.tgl < TODAY ? "hadir" : "daftar") + '">Laporan perwakilan per seksi</button></p><div id="evSeksi"></div>';
   h += '<div class="tiles">' + tile(regs.length, "Pendaftar aktif", batal ? batal + " batal / dobel daftar tidak dihitung" : "") + tile(done.length, "PD sudah mendaftar", "dari " + pdActive.length + " PD aktif") + tile(miss.length, "PD belum mendaftar", "belum ada satu pun pendaftar") + tile(bayar, "Confirmed / Paid", "validasi bendahara: " + vald) + "</div>";
   var rows = done.map(function (p) { return { n: p.nama, d: p.dekanat, l: perPd[pdKey(p.nama)] }; });
   Object.keys(other).forEach(function (k) { rows.push({ n: k, d: "(di luar daftar PD aktif)", l: other[k] }); });
@@ -3512,6 +3539,7 @@ function renderEvDetail(e, regs) {
     pdNames.map(function (n) { return '<option value="' + esc(n) + '"' + (n === EV.pdf ? " selected" : "") + ">" + esc(n) + "</option>"; }).join("") + '</select></div><div id="evRegs"></div></div>';
   el.innerHTML = h;
   el._regs = regs;
+  skDraw(e.id);
   renderEvRegs();
 }
 function renderEvRegs() {
@@ -3526,6 +3554,8 @@ function renderEvRegs() {
     l.map(function (p) { return "<tr><td>" + esc(p.nama) + "</td><td>" + esc(p.pd) + "</td><td>" + esc(ageLbl(p.usia)) + "</td><td>" + esc(p.st) + (p.val ? " ✓" : "") + "</td><td>" + esc(p.hadir) + "</td></tr>"; }).join("") + "</tbody></table></div>";
 }
 document.getElementById("tab-event").addEventListener("click", function (e) {
+  var sk = e.target.closest && e.target.closest("[data-seksi]");
+  if (sk) { var sp = sk.getAttribute("data-seksi").split("|"); skLoad(sp[0], sp[1]); return; }
   var cp = e.target.closest && e.target.closest("[data-evcopy]");
   if (cp) { try { navigator.clipboard.writeText(cp.getAttribute("data-evcopy")); cp.textContent = "Tersalin ✓"; } catch (x) { prompt("Salin link:", cp.getAttribute("data-evcopy")); } return; }
   var ab = e.target.closest && e.target.closest("[data-absen]");

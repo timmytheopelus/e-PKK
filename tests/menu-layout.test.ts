@@ -178,3 +178,15 @@ describe("link absensi: handler di tab Event", () => {
     expect(kep.slice(0, 2500)).not.toContain("data-absen");
   });
 });
+
+describe("laporan perwakilan per seksi di detail Event", () => {
+  it("tombol, pemuat dan handler ada di tab Event", () => {
+    const html = require("node:fs").readFileSync("docs/prototipe-artifact.html", "utf8");
+    expect(html).toContain("Laporan perwakilan per seksi");
+    expect(html).toContain("function skLoad(");
+    const a = html.indexOf('getElementById("tab-event").addEventListener("click"');
+    const b = html.indexOf('getElementById("tab-event").addEventListener("keydown"');
+    expect(html.slice(a, b)).toContain('closest("[data-seksi]")');
+    expect(html).toContain('"/api/event-seksi"');
+  });
+});
