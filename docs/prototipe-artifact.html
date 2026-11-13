@@ -82,6 +82,7 @@ header.brand .logo { width: 92px; height: 92px; flex: none; }
 .chip:hover { border-color: var(--accent); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .count { color: var(--muted); font-size: 13.5px; margin: 0; }
+[id$="RptTabs"] { min-width: 0; max-width: 100%; }
 .rtabs { display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 2px 0 8px; margin: 0 0 8px; scrollbar-width: thin; }
 .rtabs .chip { flex: 0 0 auto; white-space: nowrap; }
 .rtabs .chip[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
@@ -415,6 +416,7 @@ body.sep img.logo { width: 120px; height: 120px; object-fit: contain; } @media (
   .fil input, .fil select, .sel2 input, .sel2 select { width: 100%; }
   .calbar { flex-direction: column; align-items: stretch; }
 }
+.kfilter > summary { list-style: none; display: inline-block; cursor: pointer; margin: 0 0 8px; } .kfilter > summary::-webkit-details-marker { display: none; }
 .tw { overflow-x: auto; } .tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; } .tbl th, .tbl td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); } .tbl .num { text-align: right; font-variant-numeric: tabular-nums; }
 </style>
 
@@ -575,45 +577,63 @@ body.sep img.logo { width: 120px; height: 120px; object-fit: contain; } @media (
 
   <div id="tab-pd" class="tab" role="tabpanel" aria-labelledby="tabbtn-pd" hidden>
     <div class="tiles" id="pdTiles"></div>
-    <div class="dgrid">
+    <div id="pdRptTabs"></div>
+    <section id="pdSecDaftar" style="gap:12px;display:grid" aria-label="Daftar PD">
+      <div class="sel2">
+        <input type="search" id="pdQ" placeholder="Cari nama PD, koordinator, atau pastor" autocomplete="off" aria-label="Cari PD">
+        <button type="button" class="btn" id="pdFilterBtn" aria-expanded="false" aria-controls="pdFilterBox">Filter</button>
+      </div>
+      <div class="sel2" id="pdFilterBox" hidden>
+        <select id="pdStatus" aria-label="Status"></select>
+        <select id="pdDekanat" aria-label="Dekanat"></select>
+        <select id="pdKota" aria-label="Kota"></select>
+      </div>
+      <div class="link" id="pdLink" role="status"></div>
+      <p class="count" id="pdCount"></p>
+      <div class="tw tablebox">
+        <table><thead><tr><th>PD / Komunitas</th><th>Dekanat</th><th>Koordinator</th><th>Anggota terdata</th><th>Jadwal</th></tr></thead><tbody id="pdBody"></tbody></table>
+        <div class="empty" id="pdNone" hidden>Tidak ada PD yang cocok dengan filter ini.</div>
+      </div>
+    </section>
+    <section id="pdSecPeta" hidden>
+      <div class="dgrid">
       <section class="pan" aria-labelledby="h-map"><h3 id="h-map">Sebaran PD di Jawa Barat</h3><div class="mapbox" id="pdMap"></div><p class="hint">Peta skematis, bukan batas wilayah resmi. Lingkaran = kota, ukuran sesuai jumlah umat terdata, angka = jumlah PD. Klik lingkaran untuk melihat PD-nya.</p></section>
       <section class="pan" aria-labelledby="h-dek"><h3 id="h-dek">Per dekanat</h3><p class="hint" id="pdSpread"></p><div id="pdDek"></div></section>
-    </div>
-    <div class="sel2">
-      <input type="search" id="pdQ" placeholder="Cari nama PD, koordinator, atau pastor" autocomplete="off" aria-label="Cari PD">
-      <select id="pdStatus" aria-label="Status"></select>
-      <select id="pdDekanat" aria-label="Dekanat"></select>
-      <select id="pdKota" aria-label="Kota"></select>
-    </div>
-    <div class="link" id="pdLink" role="status"></div>
-    <p class="count" id="pdCount"></p>
-    <div class="tablebox">
-      <table><thead><tr><th>PD / Komunitas</th><th>Dekanat</th><th>Koordinator</th><th>Anggota terdata</th><th>Jadwal</th></tr></thead><tbody id="pdBody"></tbody></table>
-      <div class="empty" id="pdNone" hidden>Tidak ada PD yang cocok dengan filter ini.</div>
-    </div>
+      </div>
+    </section>
   </div>
 
   <div id="tab-luar" class="tab" role="tabpanel" aria-labelledby="tabbtn-luar" hidden>
     <div class="link" id="luLink" role="status"></div>
     <div class="tiles" id="luTiles"></div>
-    <div class="dgrid">
-      <section class="pan" aria-labelledby="h-lus"><h3 id="h-lus">Paling sering diundang</h3><div class="lst" id="luTop"></div></section>
-      <section class="pan" aria-labelledby="h-lut"><h3 id="h-lut">Tujuan terbanyak (PD)</h3><div class="lst" id="luDest"></div></section>
-    </div>
-    <div class="sel2">
-      <input type="search" id="luQ" placeholder="Cari nama pewarta atau PD tujuan" autocomplete="off" aria-label="Cari">
-      <select id="luAsal" aria-label="Asal BPK"></select>
-      <select id="luTahun" aria-label="Tahun"></select>
-    </div>
-    <p class="count" id="luCount"></p>
-    <div class="tablebox">
-      <table><thead><tr><th>Pewarta</th><th>Asal</th><th>Diundang</th><th>Terakhir</th><th>Tujuan</th></tr></thead><tbody id="luBody"></tbody></table>
-      <div class="empty" id="luNone" hidden>Tidak ada pewarta luar kota yang cocok.</div>
-    </div>
-    <section class="pan" aria-labelledby="h-tamu" style="margin-top:8px"><h3 id="h-tamu">Pewarta tamu dari keuskupan lain</h3>
-      <p class="hint" id="tmCount"></p>
-      <div class="sel2"><input type="search" id="tmQ" placeholder="Cari nama pewarta tamu" autocomplete="off" aria-label="Cari pewarta tamu"><select id="tmAsal" aria-label="Asal"></select></div>
-      <div class="tablebox"><table><thead><tr><th>Pewarta</th><th>Asal</th><th>Status</th><th>Usia</th><th>Pewartaan</th></tr></thead><tbody id="tmBody"></tbody></table></div>
+    <div id="luRptTabs"></div>
+    <section id="luSecDaftar" style="gap:12px;display:grid" aria-label="Daftar pewarta luar kota">
+      <div class="sel2">
+        <input type="search" id="luQ" placeholder="Cari nama pewarta atau PD tujuan" autocomplete="off" aria-label="Cari">
+        <button type="button" class="btn" id="luFilterBtn" aria-expanded="false" aria-controls="luFilterBox">Filter</button>
+      </div>
+      <div class="sel2" id="luFilterBox" hidden>
+        <select id="luAsal" aria-label="Asal BPK"></select>
+        <select id="luTahun" aria-label="Tahun"></select>
+      </div>
+      <p class="count" id="luCount"></p>
+      <div class="tw tablebox">
+        <table><thead><tr><th>Pewarta</th><th>Asal</th><th>Diundang</th><th>Terakhir</th><th>Tujuan</th></tr></thead><tbody id="luBody"></tbody></table>
+        <div class="empty" id="luNone" hidden>Tidak ada pewarta luar kota yang cocok.</div>
+      </div>
+    </section>
+    <section id="luSecTop" hidden>
+      <div class="dgrid">
+        <section class="pan" aria-labelledby="h-lus"><h3 id="h-lus">Paling sering diundang</h3><div class="lst" id="luTop"></div></section>
+        <section class="pan" aria-labelledby="h-lut"><h3 id="h-lut">Tujuan terbanyak (PD)</h3><div class="lst" id="luDest"></div></section>
+      </div>
+    </section>
+    <section id="luSecTamu" hidden>
+      <section class="pan" aria-labelledby="h-tamu"><h3 id="h-tamu">Pewarta tamu dari keuskupan lain</h3>
+        <p class="hint" id="tmCount"></p>
+        <div class="sel2"><input type="search" id="tmQ" placeholder="Cari nama pewarta tamu" autocomplete="off" aria-label="Cari pewarta tamu"><select id="tmAsal" aria-label="Asal"></select></div>
+        <div class="tw tablebox"><table><thead><tr><th>Pewarta</th><th>Asal</th><th>Status</th><th>Usia</th><th>Pewartaan</th></tr></thead><tbody id="tmBody"></tbody></table></div>
+      </section>
     </section>
   </div>
 
@@ -1132,7 +1152,7 @@ function ocTree(n, depth, ci) {
   var col = n.kids.length > 0 && depth >= OC_COLD;
   return "<li" + (col ? ' class="oc-col"' : "") + ">" + ocCard(n, color, kind, col) + kids + "</li>";
 }
-var bagMode = (function () { try { var m = localStorage.getItem("epk_bagan_mode"); if (m === "v" || m === "t") return m; } catch (e) {} return window.innerWidth <= 860 ? "v" : "t"; })();
+var bagMode = (function () { try { var m = localStorage.getItem("epk_bagan_mode"); if (m === "v" || m === "t") return m; } catch (e) {} return "t"; })();
 function setBagMode(m) { bagMode = m; try { localStorage.setItem("epk_bagan_mode", m); } catch (e) {} }
 function vPeople(n, kind) {
   var mem = n.persons.filter(function (p) { return p.peran === "Anggota" && !p.lead && p.d.nama; });
@@ -2669,6 +2689,9 @@ function pwClick(e) {
 }
 ["pwBody", "pwPdBody", "pwModulBody", "pwPaBody", "tmBody"].forEach(function (id) { document.getElementById(id).addEventListener("click", pwClick); });
 document.getElementById("pwRptTabs").addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-pv]"); if (!b) return; pw.view = b.dataset.pv; renderPewarta(); });
+reportTabs(document.getElementById("luRptTabs"), [{ id: "daftar", label: "Pewarta luar kota", sectionId: "luSecDaftar" }, { id: "top", label: "Paling sering & tujuan", sectionId: "luSecTop" }, { id: "tamu", label: "Pewarta tamu", sectionId: "luSecTamu" }], { storeKey: "epk_rpt_luar" });
+reportTabs(document.getElementById("pdRptTabs"), [{ id: "daftar", label: "Daftar PD", sectionId: "pdSecDaftar" }, { id: "peta", label: "Peta & dekanat", sectionId: "pdSecPeta" }], { storeKey: "epk_rpt_pd" });
+["lu", "pd"].forEach(function (k) { document.getElementById(k + "FilterBtn").addEventListener("click", function () { var bx = document.getElementById(k + "FilterBox"); bx.hidden = !bx.hidden; this.setAttribute("aria-expanded", bx.hidden ? "false" : "true"); }); });
 document.getElementById("pwFilterBtn").addEventListener("click", function () { var bx = document.getElementById("pwFilterBox"); bx.hidden = !bx.hidden; this.setAttribute("aria-expanded", bx.hidden ? "false" : "true"); });
 document.getElementById("pwPdChips").addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-pdf]"); if (!b) return; pw.pdf = b.dataset.pdf; renderPewarta(); });
 [["pwStatus", "status"], ["pwUsia", "usia"], ["pwModul", "modul"], ["pwKat", "kat"], ["pwPd", "pd"]].forEach(function (p) {
@@ -3260,9 +3283,9 @@ function kpDemog(psl) {
 function kpBar(all) {
   var yrs = uniq(all.map(function (x) { return x.yr; })).sort().reverse(), pks = {}; all.forEach(function (x) { pks[x.key] = x.pk; });
   var pkk = Object.keys(pks).sort(function (a, b) { return cmpId(pks[a], pks[b]); });
-  return '<div class="fil"><select id="kpYr" aria-label="Tahun"><option value="">Semua tahun</option>' + yrs.map(function (y) { return '<option value="' + y + '"' + (KP.yr === y ? " selected" : "") + ">" + y + "</option>"; }).join("") + '</select>' +
+  return '<details class="kfilter"' + (KP.yr || KP.pk || KP.st ? " open" : "") + '><summary class="btn">Filter</summary><div class="fil"><select id="kpYr" aria-label="Tahun"><option value="">Semua tahun</option>' + yrs.map(function (y) { return '<option value="' + y + '"' + (KP.yr === y ? " selected" : "") + ">" + y + "</option>"; }).join("") + '</select>' +
     '<select id="kpPk" aria-label="Paroki"><option value="">Semua paroki</option>' + pkk.map(function (k) { return '<option value="' + esc(k) + '"' + (KP.pk === k ? " selected" : "") + ">" + esc(pks[k]) + "</option>"; }).join("") + "</select>" +
-    '<select id="kpSt" aria-label="Status"><option value="">Semua (tanpa batal)</option><option value="done"' + (KP.st === "done" ? " selected" : "") + '>Sudah berjalan</option><option value="nxt"' + (KP.st === "nxt" ? " selected" : "") + '>Terjadwal</option><option value="batal"' + (KP.st === "batal" ? " selected" : "") + ">Dibatalkan</option></select></div>";
+    '<select id="kpSt" aria-label="Status"><option value="">Semua (tanpa batal)</option><option value="done"' + (KP.st === "done" ? " selected" : "") + '>Sudah berjalan</option><option value="nxt"' + (KP.st === "nxt" ? " selected" : "") + '>Terjadwal</option><option value="batal"' + (KP.st === "batal" ? " selected" : "") + ">Dibatalkan</option></select></div></details>";
 }
 function kpChips() {
   var c = [];
@@ -3271,9 +3294,16 @@ function kpChips() {
   return c.length ? '<div class="kchip">Filter: ' + esc(c.join(", ")) + ' <button type="button" data-kpclr="1">Hapus ✕</button></div>' : "";
 }
 function kpNav(all) {
-  var t = [["home", "Ringkasan"], ["keg", "Kegiatan"], ["peserta", "Peserta"], ["par", "Paroki"]];
+  var t = [["home", "Ringkasan"], ["keg", "Kegiatan"], ["peserta", "Peserta"], ["par", "Paroki"], ["lap", "Grafik"]];
   if (sepRole() !== "view") { var np = (D.spen || []).filter(function (p) { return p.st === "Menunggu"; }).length; t.push(["appr", "Persetujuan" + (np ? " (" + np + ")" : "")], ["baru", "＋ KEP baru"]); }
   return '<div class="chips" role="tablist">' + t.map(function (x) { return '<button type="button" class="chip" data-kpv="' + x[0] + '" aria-pressed="' + (KP.v === x[0]) + '">' + x[1] + "</button>"; }).join("") + "</div>";
+}
+function kpTabelKeg(f) {
+  if (!f.length) return '<p class="note">Tidak ada kegiatan untuk filter ini.</p>';
+  return '<div class="tw tablebox"><table class="tbl"><thead><tr><th>Kegiatan</th><th>Tanggal</th><th>Paroki</th><th>Status</th><th class="num">Peserta</th></tr></thead><tbody>' +
+    f.slice().sort(function (a, b) { return b.tgl.localeCompare(a.tgl); }).map(function (x) {
+      return '<tr class="clk" data-kpe="' + esc(x.id) + '" tabindex="0"><td>' + esc(x.nama) + "</td><td>" + esc(fmtDate(x.tgl, { day: "numeric", month: "short", year: "numeric" })) + "</td><td>" + esc(x.pk) + '</td><td><span class="tag' + (x.done ? " alt" : "") + '">' + kpStat(x) + '</span></td><td class="num">' + x.ps.length + "</td></tr>";
+    }).join("") + "</tbody></table></div>";
 }
 function kpStat(x) { return x.batal ? "Dibatalkan" : x.keg ? (x.keg.status === "Selesai" ? "Selesai" : "Berjalan") : x.done ? "Sudah berjalan" : "Terjadwal"; }
 function kpEvCard(x) {
@@ -3317,18 +3347,21 @@ function renderKep() {
     h = '<button type="button" class="btn" data-kpv="' + (KP.from || "evd") + '">← Kembali</button><h2>' + esc(p.nama) + '</h2><div class="pan"><dl class="epk-dl">' + rows.map(function (r) { return "<dt>" + esc(r[0]) + "</dt><dd>" + esc(r[1] || "-") + "</dd>"; }).join("") + "</dl></div>";
   } else {
     h = '<h2>KEP</h2><p class="hint">Kegiatan KEP dan KEP Exe: di mana sudah berjalan, kapan, bagaimana trennya, dan siapa pesertanya. Pembekalan Pengajar tidak dihitung sebagai KEP.</p>' + kpNav(all);
-    if (KP.v === "home" || KP.v === "keg" || KP.v === "peserta") h += kpBar(all) + kpChips();
+    if (KP.v === "home" || KP.v === "keg" || KP.v === "peserta" || KP.v === "lap") h += kpBar(all) + kpChips();
     var psl = kpPs(f).filter(function (o) { return !KP.dim || KDIM[KP.dim.t][1](o.p) === KP.dim.v; }), prk = kpParoki(all);
     if (KP.v === "home") {
       var ok = f.filter(function (x) { return !x.batal; });
       h += '<div class="tiles">' + kpTile(f.length, "Kegiatan KEP", "klik untuk melihat daftar", "keg", KP.st) + kpTile(f.filter(function (x) { return x.done; }).length, "Sudah berjalan", "", "keg", "done") + kpTile(f.filter(function (x) { return x.nxt; }).length, "Terjadwal ke depan", "", "keg", "nxt") +
         kpTile(prk.sl.length, "Paroki sudah menjalankan", prk.belum.length + " paroki belum", "par") + kpTile(psl.length, "Peserta terdaftar", "klik untuk melihat daftar", "peserta") + "</div>";
+      h += kpTabelKeg(f);
+    } else if (KP.v === "lap") {
+      var ok = f.filter(function (x) { return !x.batal; });
       h += '<div class="pan"><h4>Infografis peserta</h4>' + (psl.length ? kpDemog(psl) : '<p class="note">Belum ada peserta tercatat untuk filter ini.</p>') + "</div>";
       var sy = kSeries(ok, false), sm = kSeries(ok, true);
       h += '<div class="pan"><h4>Trend <small class="note">· klik titik untuk melihat kegiatannya</small></h4>' + '<div class="dgrid kg">' + kLine("Kegiatan per tahun", sy.l, sy.v, sy.k, "y") + kLine("Kegiatan per bulan", sm.l, sm.v, sm.k, "m") + "</div></div>";
       h += '<div class="pan"><h4>Per paroki</h4>' + kBars("Kegiatan per paroki", tally(ok, function (x) { return x.pk; }), null, "data-kppn") + "</div>";
     } else if (KP.v === "keg") {
-      h += '<div class="evlist">' + (f.length ? f.slice().sort(function (a, b) { return b.tgl.localeCompare(a.tgl); }).map(kpEvCard).join("") : '<p class="note">Tidak ada kegiatan untuk filter ini.</p>') + "</div>";
+      h += kpTabelKeg(f);
     } else if (KP.v === "peserta") {
       h += '<p class="note">' + psl.length + " peserta terdaftar sesuai filter. Klik nama untuk detail.</p>" + kpPersonRows(psl);
     } else if (KP.v === "par") {

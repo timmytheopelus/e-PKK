@@ -58,4 +58,8 @@ describe("reportTabs", () => {
     expect(html).toMatch(/\.rtabs \{[^}]*overflow-x: auto/);
     expect(html).toContain(".dash-short {");
   });
+  it("baris tab tidak melebarkan halaman HP (min-width 0 pada pembungkus)", () => {
+    const { html } = boot();
+    expect(html).toContain('[id$="RptTabs"] { min-width: 0; max-width: 100%; }');
+  });
 });
