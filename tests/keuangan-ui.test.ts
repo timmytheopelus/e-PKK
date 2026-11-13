@@ -56,7 +56,7 @@ describe("laporan keuangan: halaman depan", () => {
     expect(digits(c[3].value)).toBe("600000");
     expect(w.document.querySelector("table")).toBeNull(); // tabel rinci tidak muncul di halaman depan
     expect(w.document.body.textContent).not.toContain("Salah input");
-    expect([...w.document.querySelectorAll(".keu-tab")].map((b: any) => b.textContent)).toEqual(["Ringkasan", "Transaksi", "Per Bulan", "Per Bidang", "Per Rekening"]);
+    expect([...w.document.querySelectorAll(".keu-tab")].map((b: any) => b.textContent)).toEqual(["Ringkasan", "Transaksi", "Per Bulan", "Per Bidang", "Per Rekening", "Anggaran"]);
   });
   it("nomor urut di depan nama bidang dibuang untuk tampilan", async () => {
     const w = await boot();
