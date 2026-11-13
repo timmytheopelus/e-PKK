@@ -224,3 +224,33 @@ describe("laporan per seksi: baris bisa diklik dan memuat siapa saja", () => {
     expect(html).toContain('closest("[data-skf]")');
   });
 });
+
+describe("event live dan tombol Buka", () => {
+  const html = require("node:fs").readFileSync("docs/prototipe-artifact.html", "utf8");
+  it("event hari ini ditandai Live dengan angka hadir; event lain tidak", async () => {
+    const { JSDOM } = await import("jsdom");
+    const ek = html.match(/function evKind\([\s\S]*?\/\* end evKind \*\//)[0];
+    const lv = html.match(/var LV = [\s\S]*?\/\* end evLive \*\//)[0];
+    const w: any = new JSDOM('<body><div id="r"></div></body>', { runScripts: "outside-only" }).window;
+    w.eval('function esc(s){return String(s).replace(/&/g,"&amp;")} var TODAY="2026-11-14"; var D={evx:[' +
+      '{id:"recA",nama:"261114-Rapat Tim Kerja",tgl:"2026-11-14",st:"Aktif",reg:"Open",jenis:"Non Rutin",kel:"BPK"},' +
+      '{id:"recB",nama:"261121-Misa",tgl:"2026-11-21",st:"Aktif",reg:"Open",jenis:"Non Rutin",kel:"BPK"}]};' + ek + lv + ";window.liveToday=liveToday;window.livePanel=livePanel;window.liveApply=liveApply;");
+    const today = w.liveToday({});
+    expect(today.map((e: any) => e.id)).toEqual(["recA"]);
+    const d = w.document;
+    d.getElementById("r").innerHTML = w.livePanel(today) + '<span data-live-b="recA">● Live</span>';
+    expect(d.getElementById("r").textContent).toContain("Sedang berlangsung hari ini");
+    expect(d.getElementById("r").textContent).not.toContain("Misa");
+    w.liveApply(d.getElementById("r"), { recA: { hadir: 6, daftar: 38 } });
+    expect(d.querySelector("[data-live-n=recA]").textContent).toBe("6");
+    expect(d.querySelector("[data-live-t=recA]").textContent).toBe("hadir dari 38 terdaftar");
+    expect(d.querySelector("[data-live-b=recA]").textContent).toBe("● Live · 6 hadir / 38");
+    expect(w.livePanel([])).toBe("");
+  });
+  it("popup kegiatan punya tombol Buka yang membawa ke detail event", () => {
+    expect(html).toContain('id="evOpen"');
+    expect(html).toContain('navOk("event")');
+    expect(html).toMatch(/getElementById\("evOpen"\)\.addEventListener\("click"[\s\S]{0,200}nav\("evt:" \+ id\)/);
+    expect(html).toContain("tidak memakai pendaftaran");
+  });
+});

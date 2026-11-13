@@ -185,3 +185,22 @@ export async function tambahGoShow(token: string, o: { umat?: string; baru?: { n
   const peserta = { id: pendId, nama, pgl, wa, seksi: seksi ? [...new Set(seksi.jab.map((j) => j.seksi).filter(Boolean))].join(", ") : "", asal, hadir: true };
   return { baru, peserta };
 }
+
+/** Ringkas untuk acara berlangsung: pendaftar aktif dan berapa yang sudah ditandai hadir. */
+export async function ringkasHadir(eventId: string) {
+  if (!REC.test(eventId)) throw new HttpError(400, "Event tidak valid.");
+  const ev = await getRecord(BASE_BPK, T.events, eventId).catch(() => null);
+  if (!ev) throw new HttpError(404, "Event tidak ditemukan.");
+  const formula = `FIND("${esc(String(ev.fields[EVF.nama] || ""))}", ARRAYJOIN({Event}))`;
+  const [pd, kh] = await Promise.all([
+    listUntil(BASE_BPK, T.pendaftaran, { fieldIds: [PD.event, PD.st], want: Infinity, maxPages: 20, formula }),
+    listUntil(BASE_BPK, T_HADIR, { fieldIds: [KH.event, KH.pend, KH.status], want: Infinity, maxPages: 20, formula }),
+  ]);
+  const aktif = new Set(pd.records.filter((r) => ((r.fields[PD.event] as string[]) || []).includes(eventId) && !/^(batal|dobel)/i.test(sel(r.fields[PD.st]))).map((r) => r.id));
+  const hadir = new Set<string>();
+  for (const r of kh.records) {
+    if (!((r.fields[KH.event] as string[]) || []).includes(eventId) || !/hadir/i.test(sel(r.fields[KH.status]))) continue;
+    for (const p of (r.fields[KH.pend] as string[]) || []) if (aktif.has(p)) hadir.add(p);
+  }
+  return { hadir: hadir.size, daftar: aktif.size };
+}
