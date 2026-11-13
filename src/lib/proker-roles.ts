@@ -27,37 +27,63 @@ export function peranFromRows(rows: JabRow[], sekjen: boolean): Peran {
   return { koordBidang: uniq(koordBidang), koordSeksi: uniq(koordSeksi), sekjen, bendahara, pimpinan };
 }
 
-const cache = new Map<string, { at: number; v: Promise<Peran> }>();
+type Peta = { byEmail: Map<string, JabRow[]>; seksi: Set<string>; sekjen: Set<string> };
+let petaCache: { at: number; v: Promise<Peta> } | null = null;
 
-/** Peran akun, cache 5 menit. Superadmin/Sekjen: sekjen=true. */
-export function peranOf(acc: Pick<Access, "email" | "level" | "jabatan">): Promise<Peran> {
-  const key = (acc.email || "").trim().toLowerCase();
-  const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < 300_000) return hit.v;
-  const v = (async () => {
-    const sekjen = canApprove(acc);
-    const us = await listUntil(BASE_BPK, T.pengguna, { fieldIds: [AF.email, AF.umat], want: Infinity, maxPages: 10 });
-    const me = us.records.find((r) => String(r.fields[AF.email] || "").trim().toLowerCase() === key);
-    const umat = new Set<string>(((me?.fields[AF.umat] as any[]) || []).map((u) => (typeof u === "string" ? u : u?.id)));
-    if (!umat.size) return peranFromRows([], sekjen);
-    const jab = await listUntil(BASE_BPK, T.jabatan, { fieldIds: [JAB.bidang, JAB.seksi, JAB.peran], want: Infinity, maxPages: 10 });
+/** Peta email akun -> baris jabatan (Pengurus periode 2026), daftar seksi master, dan email Sekretaris Jenderal. Cache 5 menit. */
+function muatPeta(): Promise<Peta> {
+  if (petaCache && Date.now() - petaCache.at < 300_000) return petaCache.v;
+  const v = (async (): Promise<Peta> => {
+    const [us, jab, pg] = await Promise.all([
+      listUntil(BASE_BPK, T.pengguna, { fieldIds: [AF.email, AF.umat, AF.status, AF.jabLk], want: Infinity, maxPages: 10 }),
+      listUntil(BASE_BPK, T.jabatan, { fieldIds: [JAB.bidang, JAB.seksi, JAB.peran], want: Infinity, maxPages: 10 }),
+      listUntil(BASE_BPK, T.pengurus, { fieldIds: [PGR.umat, PGR.jabatan, PGR.periode], want: Infinity, maxPages: 30 }),
+    ]);
     const master = new Map<string, JabRow>(jab.records.map((r) => [r.id, { bidang: sel(r.fields[JAB.bidang]), seksi: sel(r.fields[JAB.seksi]), peran: sel(r.fields[JAB.peran]) }]));
-    const pg = await listUntil(BASE_BPK, T.pengurus, { fieldIds: [PGR.umat, PGR.jabatan, PGR.periode], want: Infinity, maxPages: 30 });
-    const rows: JabRow[] = [];
+    const seksi = new Set<string>([...master.values()].map((m) => m.seksi).filter(Boolean));
+    const rowsByUmat = new Map<string, JabRow[]>();
     for (const r of pg.records) {
       const ptxt = sel(r.fields[PGR.periode]);
       if (ptxt && !ptxt.includes("2026")) continue;
-      const us2: any[] = r.fields[PGR.umat] || [];
-      if (!us2.some((u) => umat.has(typeof u === "string" ? u : u?.id))) continue;
-      for (const j of (r.fields[PGR.jabatan] as any[]) || []) {
-        const m = master.get(typeof j === "string" ? j : j?.id);
-        if (m) rows.push(m);
+      const ms: JabRow[] = ((r.fields[PGR.jabatan] as any[]) || []).map((j) => master.get(typeof j === "string" ? j : j?.id)).filter(Boolean) as JabRow[];
+      for (const u of (r.fields[PGR.umat] as any[]) || []) {
+        const id = typeof u === "string" ? u : u?.id;
+        rowsByUmat.set(id, [...(rowsByUmat.get(id) || []), ...ms]);
       }
     }
-    return peranFromRows(rows, sekjen);
+    const byEmail = new Map<string, JabRow[]>(), sekjen = new Set<string>();
+    for (const r of us.records) {
+      const email = String(r.fields[AF.email] || "").trim().toLowerCase();
+      if (!email || (r.fields[AF.status] && r.fields[AF.status] !== "Disetujui")) continue;
+      const rows = ((r.fields[AF.umat] as any[]) || []).flatMap((u) => rowsByUmat.get(typeof u === "string" ? u : u?.id) || []);
+      byEmail.set(email, rows);
+      if (/sekretaris jenderal/i.test(JSON.stringify(r.fields[AF.jabLk] ?? ""))) sekjen.add(email);
+    }
+    return { byEmail, seksi, sekjen };
   })();
-  cache.set(key, { at: Date.now(), v });
-  v.catch(() => cache.delete(key));
+  petaCache = { at: Date.now(), v };
+  v.catch(() => { petaCache = null; });
   return v;
 }
-export function clearPeranCache() { cache.clear(); }
+
+/** Baris jabatan akun (Pengurus periode 2026). */
+export async function rowsOf(email: string): Promise<JabRow[]> {
+  return (await muatPeta()).byEmail.get((email || "").trim().toLowerCase()) || [];
+}
+
+/** Peran akun. Superadmin/Sekjen: sekjen=true. */
+export async function peranOf(acc: Pick<Access, "email" | "level" | "jabatan">): Promise<Peran> {
+  return peranFromRows(await rowsOf(acc.email), canApprove(acc));
+}
+
+/** Nama seksi yang dikenal di master Jabatan. */
+export async function semuaSeksi(): Promise<Set<string>> { return (await muatPeta()).seksi; }
+
+/** Email akun yang peran turunannya memenuhi pred; sekjen=true menambahkan pemegang jabatan Sekretaris Jenderal. */
+export async function emailsWhere(pred: (p: Peran) => boolean): Promise<string[]> {
+  const m = await muatPeta();
+  const out: string[] = [];
+  for (const [email, rows] of m.byEmail) if (pred(peranFromRows(rows, m.sekjen.has(email)))) out.push(email);
+  return out;
+}
+export function clearPeranCache() { petaCache = null; }

@@ -11,6 +11,7 @@ export const TAB_IDS: Record<string, string> = {
   KEP: "kep",
   Inventaris: "inventaris",
   Keuangan: "keuangan",
+  "Program Kerja": "proker",
   Administrasi: "admin",
 };
 export const ALL_TABS = Object.keys(TAB_IDS);
