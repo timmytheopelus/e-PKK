@@ -82,6 +82,11 @@ header.brand .logo { width: 92px; height: 92px; flex: none; }
 .chip:hover { border-color: var(--accent); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .count { color: var(--muted); font-size: 13.5px; margin: 0; }
+.rtabs { display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 2px 0 8px; margin: 0 0 8px; scrollbar-width: thin; }
+.rtabs .chip { flex: 0 0 auto; white-space: nowrap; }
+.rtabs .chip[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.dash-short { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; max-height: calc(100vh - 220px); overflow: hidden; }
+@media (max-width: 520px) { .dash-short { gap: 8px; } }
 
 .tablebox { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; min-width: 640px; }
@@ -796,6 +801,34 @@ body.sep img.logo { width: 120px; height: 120px; object-fit: contain; } @media (
 </div>
 
 <script>
+function reportTabs(root, tabs, opts) {
+  var key = (opts && opts.storeKey) || "";
+  var cur = tabs.length ? tabs[0].id : "";
+  try { var sv = key ? window.localStorage.getItem(key) : null; if (sv && tabs.some(function (t) { return t.id === sv; })) cur = sv; } catch (e) {}
+  var list = document.createElement("div");
+  list.className = "rtabs"; list.setAttribute("role", "tablist");
+  var btns = {};
+  function show(id) {
+    cur = id;
+    tabs.forEach(function (t) {
+      var on = t.id === id, sec = document.getElementById(t.sectionId);
+      if (sec) sec.hidden = !on;
+      btns[t.id].setAttribute("aria-selected", on ? "true" : "false");
+      btns[t.id].tabIndex = on ? 0 : -1;
+    });
+  }
+  tabs.forEach(function (t) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.setAttribute("role", "tab"); b.textContent = t.label;
+    b.addEventListener("click", function () {
+      show(t.id);
+      try { if (key) window.localStorage.setItem(key, t.id); } catch (e) {}
+    });
+    btns[t.id] = b; list.appendChild(b);
+  });
+  root.insertBefore(list, root.firstChild);
+  show(cur);
+} /* end reportTabs */
 var RAW = [
 ];
 var TINGKAT = {

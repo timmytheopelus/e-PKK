@@ -68,7 +68,7 @@
 - Modify: `docs/prototipe-artifact.html` (tab `tab-pengurus`, `tab-pd`, `tab-luar`, `tab-umat`, `tab-kep`)
 - Test: `tests/menu-layout.test.ts`
 
-**Interfaces:** Consumes `reportTabs`. Setiap menu: kartu ringkasan maksimal satu layar, lalu tab Laporan dengan tabel `.tw`/`.tablebox` sebagai tab pertama. Pengurus: Tabel, Bagan (urutan Bagan/Tabel mengikuti keputusan pemilik, lihat Open Question di bawah). Filter banyak diganti satu tombol "Filter".
+**Interfaces:** Consumes `reportTabs`. Setiap menu: kartu ringkasan maksimal satu layar, lalu tab Laporan dengan tabel `.tw`/`.tablebox` sebagai tab pertama. Pengurus: Bagan (model Pohon/lebar) dulu, lalu Tabel (keputusan pemilik di bawah). Filter banyak diganti satu tombol "Filter".
 
 - [ ] **Step 1: Test** per menu: ada `#<menu>RptTabs` (atau chip view yang sudah ada), tab pertama adalah tabel, jumlah kontrol filter yang tampil sekaligus <= 2 (pencarian + tombol Filter).
 - [ ] **Step 2: Run** (FAIL). **Step 3: Implement** per menu. **Step 4: Run** PASS. **Step 5: Commit** per menu.
@@ -132,5 +132,5 @@
 - [ ] **Step 2:** Buka halaman di Playwright (lebar 390 px) untuk setiap menu: tidak ada geser horizontal halaman, header tabel terkunci, tampilan pertama tabel; ambil screenshot.
 - [ ] **Step 3:** `git pull --rebase`, push, pastikan deployment Vercel sukses; laporkan ke pemilik, termasuk email laporan tabel/field baru.
 
-## Open Question untuk pemilik
-"Selalu tampilan pertama tabel" bertabrakan dengan permintaan sebelumnya agar menu Pengurus membuka Bagan dulu. Rencana ini mengikuti permintaan terbaru: Pengurus membuka Tabel dulu, kecuali pemilik menyatakan Pengurus tetap Bagan dulu.
+## Keputusan pemilik
+Menu Pengurus tetap membuka Bagan dulu, dalam model Pohon (lebar); Vertikal tinggal satu ketukan. Semua menu lain membuka tabel dulu.
