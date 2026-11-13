@@ -52,6 +52,8 @@ const shim = `<style>
 .epk-pop button:hover, .epk-pop a:hover { background: var(--accent-soft); }
 .epk-bellpop { min-width: 280px; }
 .epk-empty { margin: 8px 10px; color: var(--muted); }
+.epk-notif { display: block; width: 100%; text-align: left; font: inherit; padding: 8px 10px; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; overflow-wrap: anywhere; }
+.epk-notif.baru { font-weight: 600; background: var(--surface); }
 .epk-scrim { position: fixed; inset: 0; background: rgba(15,25,35,.5); z-index: 100; display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; padding: 4vh 12px; }
 .epk-box { background: var(--surface); border-radius: 14px; width: min(760px, 100%); padding: 18px 20px 22px; }
 .epk-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
@@ -123,6 +125,27 @@ var EPK = {
     var m = EPK.el("div", { id: "epkModal", class: "epk-scrim", onclick: function (e) { if (e.target === m) close(); } }, [box]);
     document.body.appendChild(m); return { close: close, box: box };
   },
+  bellStart: function (menu) {
+    function render(items) {
+      var n = items.filter(function (x) { return !x.dibaca; }).length, b = document.getElementById("epkBadge");
+      if (b) { b.textContent = n > 99 ? "99+" : String(n); b.hidden = !n; }
+      menu.textContent = "";
+      if (!items.length) { menu.appendChild(EPK.el("p", { class: "epk-empty", text: "Tidak ada notifikasi." })); return; }
+      items.forEach(function (x) {
+        menu.appendChild(EPK.el("button", { type: "button", class: "epk-notif" + (x.dibaca ? "" : " baru"), text: x.pesan, onclick: function () {
+          EPK.menuClose();
+          call({ aksi: "baca", ids: [x.id] }).then(load);
+          var m = /^proker:(rec[A-Za-z0-9]{14})$/.exec(x.tautan || "");
+          if (m) { window.__PROKER_OPEN = m[1]; var tb = document.getElementById("tabbtn-proker"); if (tb) tb.click(); if (window.prokerOpen) window.prokerOpen(m[1]); }
+        } }));
+      });
+    }
+    function call(body) {
+      return fetch("/api/notif", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).then(function (r) { return r.json(); });
+    }
+    function load() { return call({ aksi: "daftar" }).then(function (j) { render(j.items || []); }).catch(function () {}); }
+    load(); setInterval(load, 60000);
+  },
   menuClose: function () { Array.prototype.forEach.call(document.querySelectorAll(".epk-pop"), function (x) { x.hidden = true; }); },
   profile: function () {
     var me = window.__ME__, rows = [["Nama", me.nama || "-"], ["Email", me.email], ["Level", me.level === "Superadmin" ? "Superadmin" : me.level === "Edit" ? "Edit" : me.level === "Admin" ? "Admin" : "Hanya lihat"], ["Jabatan", me.jabatan || "-"],
@@ -146,10 +169,11 @@ function applyMe() {
   var who = EPK.el("button", { type: "button", class: "epk-who", "aria-haspopup": "true", onclick: function (e) { e.stopPropagation(); var h = menu.hidden; EPK.menuClose(); menu.hidden = !h; } },
     [(me.nama || me.email) + " ▾"]);
   el.textContent = "";
-  if (me.level === "Superadmin" && !me.viewAs) {
+  if (!me.viewAs) {
     var bell = EPK.el("button", { type: "button", class: "epk-bell", id: "epkBell", "aria-label": "Notifikasi", onclick: function (e) { e.stopPropagation(); var h = bellMenu.hidden; EPK.menuClose(); bellMenu.hidden = !h; } }, ["🔔", EPK.el("span", { class: "epk-badge", id: "epkBadge", hidden: "" })]);
     var bellMenu = EPK.el("div", { class: "epk-pop epk-bellpop", id: "epkBellMenu", hidden: "" }, [EPK.el("p", { class: "epk-empty", text: "Tidak ada tugas." })]);
     el.appendChild(EPK.el("span", { class: "epk-wrap" }, [bell, bellMenu]));
+    EPK.bellStart(bellMenu);
   }
   el.appendChild(EPK.el("span", { class: "epk-wrap" }, [who, menu]));
   el.appendChild(EPK.el("span", { class: "epk-lvl", text: me.level === "Superadmin" ? "Superadmin" : me.level === "Admin" ? "Admin" : me.level === "Edit" ? "Akses edit" : "Hanya lihat" }));
