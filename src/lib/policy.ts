@@ -54,10 +54,12 @@ type Spec = {
   base: string;
   read: string[]; // tab (nama tampilan) yang boleh membaca
   readFields?: string[]; // bila ada: hanya field ini yang boleh diminta
-  update?: { tabs: string[]; fields: string[] };
+  update?: { tabs: string[]; fields: string[]; record?: "event-owner" };
   create?: { tabs: string[]; fields: string[] };
 };
 
+/** Event BPK: email pembuat (diisi server saat event dibuat dari aplikasi; tidak boleh diubah dari browser). */
+export const EV_OLEH = "fldPHO7qPmtfuxhbQ";
 const EF = ["fld0d9tIyi4nyTZsM", "fldoIkx9wLMaKOa38", "fldMO46zH4SDzIypy", "fld4i5iQ6zTY8UTSm", "fldrYLgd8LCDjwmLZ", "fldhgv2WlvqytF6zA", "fldCGnuPOkqzb5jx2", "fldROaJ8rPAZQPTED", "fld4qestIo5EjWAvk", "fldY0qw1v0a4fK9Sp", "fldSNUErmbrKEOCcf", "fldG7mLTlU3TDeXoF", "fldCFtFJH9S16bjl3"];
 /** Pendaftaran Events: hanya kolom demografis. Tanpa kontak, riwayat penyakit, kontak darurat, dll. */
 export const PEND_READ = ["flduf15moMpZSklGL", "fld9ucFxEU0cUSHWw", "fldMBf67dQxv51kY1", "fldAZzqERt3oFHRRx", "fldylW3JpqB1DJ0Fh", "fldArgqtlZOnnRIvX", "fldmecbafGeLtqCSd", "fldIgnkqdrDPz8gCV", "fldNGGEcwHqIsQPct", "fldqB6h9rzzC5VhKI", "fldCqIqQmVnFXqrOU", "fldcpfpO2QvPGmgd7"];
@@ -90,7 +92,7 @@ export const TABLES: Record<string, Spec> = {
     update: { tabs: ["Pengurus", "Pewarta"], fields: PERSON },
     create: { tabs: ["PD"], fields: [PERSON[0], PERSON[2], "fldrHJ6q3HZvApccl"] },
   },
-  [T.events]: { base: BASE_BPK, read: ["Kalender", "Dashboard", "Event", "KEP"], create: { tabs: ["Kalender"], fields: EF } },
+  [T.events]: { base: BASE_BPK, read: ["Kalender", "Dashboard", "Event", "KEP"], update: { tabs: ["Kalender", "Event"], fields: EF, record: "event-owner" }, create: { tabs: ["Kalender"], fields: EF } },
   [T.pd]: { base: BASE_BPK, read: ALL_TABS, update: { tabs: ["PD"], fields: ["fldagyoKQyhfenB7u"] } },
   [T.smpEvents]: { base: BASE_SMP, read: ["Dashboard", "Pewarta luar kota"] },
   [T.smpKui]: { base: BASE_SMP, read: ["Dashboard"] },
@@ -130,7 +132,9 @@ export function checkRead(spec: Spec, tableId: string, input: any, acc: Access) 
 export function checkWrite(spec: Spec, kind: "update" | "create", records: any[], acc: Access) {
   const rule = spec[kind];
   if (!rule) throw new HttpError(403, "Penulisan ke tabel ini tidak diizinkan.");
-  if (!canEdit(acc)) throw new HttpError(403, "Level Anda View saja, tidak boleh mengubah data.");
+  // Event: hak edit per record (Admin, Kesekretariatan, pembuat) diperiksa di proxy, bukan lewat level.
+  const perRecord = kind === "update" && (rule as any).record === "event-owner";
+  if (!perRecord && !canEdit(acc)) throw new HttpError(403, "Level Anda View saja, tidak boleh mengubah data.");
   if (!any(acc, rule.tabs)) throw new HttpError(403, "Anda tidak punya izin mengubah data ini.");
   for (const r of records) {
     for (const k of Object.keys(r.fields || {})) {

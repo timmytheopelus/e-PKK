@@ -76,3 +76,19 @@ describe("menu Event: yang sudah lewat lewat tombol", () => {
     expect(t.querySelectorAll("#evHome .fil select").length).toBe(0);
   });
 });
+
+describe("klik agenda: edit kegiatan", () => {
+  const d = new JSDOM(renderDashboard({ ...acc, level: "Edit", tabs: ["Dashboard", "Kalender"] })).window.document;
+  it("detail kegiatan punya tombol Edit, tersembunyi awalnya", () => {
+    const b = d.getElementById("evEdit") as HTMLElement;
+    expect(b).toBeTruthy();
+    expect(b.hidden).toBe(true);
+  });
+  it("formulir edit memakai update_records_for_table ke tabel Event dengan id rekaman", () => {
+    expect(HTML).toContain("function openEdit(");
+    expect(HTML).toMatch(/call\("update_records_for_table", \{ baseId: BASE, tableId: T_EVENTS, records: \[\{ id: editId, fields: f \}\] \}\)/);
+  });
+  it("Dibuat oleh tidak pernah dikirim dari browser", () => {
+    expect(HTML).not.toContain("fldPHO7qPmtfuxhbQ");
+  });
+});

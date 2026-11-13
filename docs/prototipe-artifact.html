@@ -786,7 +786,7 @@ body.sep img.logo { width: 120px; height: 120px; object-fit: contain; } @media (
     <h2 id="evTitle"></h2>
     <p class="sub" id="evSub"></p>
     <div id="evBody"></div>
-    <div class="row"><button type="button" class="btn" id="evClose">Tutup</button></div>
+    <div class="row"><button type="button" class="btn primary" id="evEdit" hidden>Edit kegiatan</button><button type="button" class="btn" id="evClose">Tutup</button></div>
   </div>
 </div>
 
@@ -804,7 +804,7 @@ body.sep img.logo { width: 120px; height: 120px; object-fit: contain; } @media (
 <div class="scrim" id="addScrim" hidden>
   <form class="dlg wide" id="addForm" role="dialog" aria-modal="true" aria-labelledby="addTitle" novalidate>
     <h2 id="addTitle">Tambah kegiatan</h2>
-    <p class="sub">Disimpan sebagai baris baru di tabel Events di Airtable.</p>
+    <p class="sub" id="addSub">Disimpan sebagai baris baru di tabel Events di Airtable.</p>
     <label for="a_nama">Nama kegiatan *</label>
     <input id="a_nama" type="text" autocomplete="off">
     <div class="two">
@@ -1842,6 +1842,7 @@ function fmtWhen(e) {
 }
 function dd(label, html) { return html ? "<dt>" + label + "</dt><dd>" + html + "</dd>" : ""; }
 function linkHtml(u, label) { var s = safeUrl(u); return s ? '<a href="' + esc(s) + '" target="_blank" rel="noopener">' + esc(label) + "</a>" : (u ? esc(u) : ""); }
+var evCur = "", editId = "";
 function openEv(id, opener) {
   var e = evById(id); if (!e) return;
   hideScrim("dayScrim");
@@ -1857,6 +1858,7 @@ function openEv(id, opener) {
     dd("Penyelenggara", esc(e.pengundang)) + dd("PIC", pic) + dd("Undangan", und) + dd("Registrasi", esc(e.reg)) +
     dd("Flyer", linkHtml(e.flyer, "Buka flyer")) + dd("Dokumentasi", linkHtml(e.dok, "Buka dokumentasi")) + "</dl>";
   document.getElementById("evBody").innerHTML = html;
+  evCur = e.id; document.getElementById("evEdit").hidden = !(mcp && !window.__ME__.viewAs);
   showScrim("evScrim", opener);
   document.getElementById("evClose").focus();
 }
@@ -1884,7 +1886,8 @@ document.getElementById("a_und").innerHTML = UND_OPTS.map(function (u, i) { retu
 function setAddMsg(t, bad) { addMsg.textContent = t || ""; addMsg.className = "msg" + (bad ? " bad" : ""); }
 function openAdd(dateKey, opener) {
   if (!mcp) { cal.state = mcpState === "none" ? "unavailable" : cal.state; calStatus(); return; }
-  hideScrim("dayScrim");
+  hideScrim("dayScrim"); editId = "";
+  document.getElementById("addTitle").textContent = "Tambah kegiatan"; document.getElementById("addSub").textContent = "Disimpan sebagai baris baru di tabel Events di Airtable.";
   ["a_nama", "a_tglSel", "a_mulai", "a_selesai", "a_lokasi", "a_peng", "a_pic", "a_telp"].forEach(function (id) { document.getElementById(id).value = ""; });
   document.getElementById("a_tgl").value = dateKey || TODAY;
   ["a_kel", "a_jenis", "a_sifat"].forEach(function (id) { document.getElementById(id).value = ""; });
@@ -1894,6 +1897,24 @@ function openAdd(dateKey, opener) {
   showScrim("addScrim", opener);
   document.getElementById("a_nama").focus();
 }
+function hhmm(iso) { if (!iso || isNaN(new Date(iso))) return ""; var d = new Date(iso); return pad(d.getHours()) + ":" + pad(d.getMinutes()); }
+function openEdit(id, opener) {
+  var e = evById(id); if (!e || !mcp) return;
+  hideScrim("evScrim"); editId = id;
+  document.getElementById("addTitle").textContent = "Edit kegiatan";
+  document.getElementById("addSub").textContent = "Perubahan disimpan ke Airtable. Hanya Admin, Kesekretariatan, atau pembuat kegiatan yang boleh menyimpan.";
+  var set = function (k, v) { document.getElementById(k).value = v || ""; };
+  set("a_nama", e.nama); set("a_tgl", e.date); set("a_mulai", hhmm(e.mulai));
+  var d2 = e.selesai && !isNaN(new Date(e.selesai)) ? dkey(new Date(e.selesai)) : "";
+  set("a_tglSel", d2 && d2 !== e.date ? d2 : ""); set("a_selesai", hhmm(e.selesai));
+  set("a_lokasi", e.lokasi); set("a_kel", e.kelompok); set("a_jenis", e.jenis); set("a_sifat", e.sifat); set("a_plan", e.plan || "Planned");
+  set("a_peng", e.pengundang); set("a_pic", e.pic); set("a_telp", e.telp);
+  Array.prototype.forEach.call(document.querySelectorAll("#a_und input"), function (c) { c.checked = e.undangan.indexOf(c.value) >= 0; });
+  addSave.disabled = false; setAddMsg("");
+  showScrim("addScrim", opener);
+  document.getElementById("a_nama").focus();
+}
+document.getElementById("evEdit").addEventListener("click", function (ev) { openEdit(evCur, ev.currentTarget); });
 document.getElementById("addBtn").addEventListener("click", function (e) { openAdd("", e.currentTarget); });
 document.getElementById("dayAdd").addEventListener("click", function () { openAdd(dayKey, openers.dayScrim); });
 document.getElementById("addCancel").addEventListener("click", function () { hideScrim("addScrim"); });
@@ -1917,10 +1938,11 @@ document.getElementById("addForm").addEventListener("submit", function (e) {
   var und = Array.prototype.filter.call(document.querySelectorAll("#a_und input"), function (c) { return c.checked; }).map(function (c) { return c.value; });
   if (und.length) f[EF.undangan] = und;
   addSave.disabled = true; setAddMsg("Menyimpan ke Airtable…");
-  call("create_records_for_table", { baseId: BASE, tableId: T_EVENTS, records: [{ fields: f }] }).then(function () {
+  var isEdit = !!editId;
+  (isEdit ? call("update_records_for_table", { baseId: BASE, tableId: T_EVENTS, records: [{ id: editId, fields: f }] }) : call("create_records_for_table", { baseId: BASE, tableId: T_EVENTS, records: [{ fields: f }] })).then(function () {
     hideScrim("addScrim");
     cal.y = +tgl.slice(0, 4); cal.m = +tgl.slice(5, 7) - 1;
-    cal.msg = "Kegiatan \"" + nama + "\" ditambahkan ke Airtable.";
+    cal.msg = "Kegiatan \"" + nama + "\" " + (isEdit ? "diperbarui di Airtable." : "ditambahkan ke Airtable.");
     loadEvents();
   }, function (err) {
     var i = errInfo(err);

@@ -1,5 +1,6 @@
 // Menerjemahkan panggilan gaya konektor (list/update/create) menjadi REST Airtable, dengan pemeriksaan izin.
-import { Access, HttpError, INV, JAB, KEU, REK, T, TABLES, checkRead, checkWrite } from "./policy";
+import { Access, EV_OLEH, HttpError, INV, JAB, KEU, REK, T, TABLES, checkRead, checkWrite } from "./policy";
+import { canEditEvent, sekretariatEmails } from "./event-edit";
 import { notifyOwner } from "./mail";
 import { at, clearCaches, getSchema, listPage, listUntil, resolveLinks, Rec } from "./airtable";
 import { evalFilter } from "./filters";
@@ -42,6 +43,17 @@ export async function handleCall(tool: string, input: any, acc: Access) {
       if (!r.fields || typeof r.fields !== "object") throw new HttpError(400, "fields tidak valid");
     }
     checkWrite(spec, kind, records, acc);
+    if (kind === "update" && spec.update?.record === "event-owner") {
+      let sek: boolean | null = null;
+      for (const r of records) {
+        const cur = await at(`/v0/${base}/${table}/${r.id}?returnFieldsByFieldId=true&fields%5B%5D=${EV_OLEH}`);
+        const creator = String(cur?.fields?.[EV_OLEH] || "");
+        if (canEditEvent(acc, creator, false)) continue;
+        if (sek === null) sek = (await sekretariatEmails()).has((acc.email || "").trim().toLowerCase());
+        if (!canEditEvent(acc, creator, sek)) throw new HttpError(403, "Hanya Admin, anggota Kesekretariatan, atau pembuat event yang boleh mengubah event ini.");
+      }
+    }
+    if (kind === "create" && table === T.events) for (const r of records) r.fields[EV_OLEH] = (acc.email || "").trim().toLowerCase();
     // Lokasi baru: Airtable membuat opsi select baru lewat typecast. Dibatasi ketat agar field lain tidak ikut membuat opsi.
     let typecast = false, newLokasi = "";
     if (input.newLokasi !== undefined) {
