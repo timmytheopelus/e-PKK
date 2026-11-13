@@ -678,21 +678,26 @@ body.sep img.logo { width: 120px; height: 120px; object-fit: contain; } @media (
       </div>
       <div class="calright">
         <div class="seg" role="group" aria-label="Tampilan kalender">
-          <button type="button" data-view="bulan" aria-pressed="true">Bulan</button>
-          <button type="button" data-view="daftar" aria-pressed="false">Daftar</button>
+          <button type="button" data-view="agenda" aria-pressed="true">Agenda view</button>
+          <button type="button" data-view="bulan" aria-pressed="false">Calendar view</button>
         </div>
         <button type="button" class="btn primary" id="addBtn">+ Tambah kegiatan</button>
       </div>
     </div>
     <div class="fil">
       <input type="search" id="cq" placeholder="Cari nama, lokasi, atau PIC" autocomplete="off" aria-label="Cari kegiatan">
-      <select id="cJenis" aria-label="Jenis"><option value="">Semua jenis</option><option value="Rutin">Rutin</option><option value="Non Rutin">Non Rutin</option></select>
-      <select id="cSifat" aria-label="Sifat"><option value="">Internal dan eksternal</option><option value="Internal">Internal</option><option value="External">Eksternal</option></select>
-      <select id="cPlan" aria-label="Status perencanaan"><option value="">Semua status</option><option value="Planned">Direncanakan</option><option value="Confirmed">Terkonfirmasi</option><option value="Batal">Batal</option></select>
-      <select id="cWaktu" aria-label="Waktu"><option value="all">Semua waktu</option><option value="next">Mendatang</option><option value="past">Sudah berlalu</option></select>
-      <label class="chk"><input type="checkbox" id="cLibur" checked> Hari libur</label>
+      <button type="button" class="btn" id="calFilterBtn" aria-expanded="false" aria-controls="calFilterBox">Filter</button>
+      <button type="button" class="btn" id="calPast" aria-pressed="false">Tampilkan yang sudah lewat</button>
     </div>
-    <div class="kel" id="kelChips" aria-label="Filter kelompok"></div>
+    <div id="calFilterBox" hidden>
+      <div class="fil">
+        <select id="cJenis" aria-label="Jenis"><option value="">Semua jenis</option><option value="Rutin">Rutin</option><option value="Non Rutin">Non Rutin</option></select>
+        <select id="cSifat" aria-label="Sifat"><option value="">Internal dan eksternal</option><option value="Internal">Internal</option><option value="External">Eksternal</option></select>
+        <select id="cPlan" aria-label="Status perencanaan"><option value="">Semua status</option><option value="Planned">Direncanakan</option><option value="Confirmed">Terkonfirmasi</option><option value="Batal">Batal</option></select>
+        <label class="chk"><input type="checkbox" id="cLibur" checked> Hari libur</label>
+      </div>
+      <div class="kel" id="kelChips" aria-label="Filter kelompok"></div>
+    </div>
     <div class="link" id="calStatus" role="status"></div>
     <p class="count" id="calCount"></p>
     <div id="calBody"></div>
@@ -722,7 +727,7 @@ body.sep img.logo { width: 120px; height: 120px; object-fit: contain; } @media (
     <div id="evDash"></div>
     <div class="fil">
       <input type="search" id="evQ" placeholder="Cari nama event" autocomplete="off" aria-label="Cari event">
-      <select id="evWaktu" aria-label="Waktu event"><option value="next">Berjalan dan akan datang</option><option value="past">Sudah berlalu</option><option value="all">Semua</option></select>
+      <button type="button" class="btn" id="evPast" aria-pressed="false">Tampilkan yang sudah lewat</button>
     </div>
     <div class="tw tablebox"><table class="tbl"><thead><tr><th>Event</th><th>Tanggal</th><th>Pendaftaran</th><th class="num">Pendaftar</th></tr></thead><tbody id="evBody"></tbody></table><div class="empty" id="evNone" hidden>Tidak ada event untuk filter ini.</div></div>
     </div>
@@ -840,6 +845,15 @@ body.sep img.logo { width: 120px; height: 120px; object-fit: contain; } @media (
 </div>
 
 <script>
+function agendaItems(events, today, showPast) {
+  function sd(e) { return e.date || (e.tgl ? String(e.tgl).slice(0, 10) : ""); }
+  function ed(e) { var x = e.selesai ? String(e.selesai).slice(0, 10) : ""; return /^\d{4}-\d\d-\d\d$/.test(x) ? x : sd(e); }
+  return events.filter(function (e) { var d = sd(e); return d ? (showPast || ed(e) >= today) : showPast; }).sort(function (a, b) {
+    var x = sd(a), y = sd(b);
+    if (!x || !y) return x ? -1 : y ? 1 : 0;
+    return x.localeCompare(y) || String(a.mulai || "~").localeCompare(String(b.mulai || "~"));
+  });
+} /* end agendaItems */
 function reportTabs(root, tabs, opts) {
   var key = (opts && opts.storeKey) || "";
   var cur = tabs.length ? tabs[0].id : "";
@@ -1637,7 +1651,7 @@ function fromKey(k) { var p = k.split("-"); return new Date(+p[0], +p[1] - 1, +p
 function fmtDate(k, opt) { return fromKey(k).toLocaleDateString("id-ID", opt); }
 function fmtTime(iso) { if (!iso) return ""; var d = new Date(iso); return isNaN(d) ? "" : pad(d.getHours()) + ":" + pad(d.getMinutes()); }
 var NOW = new Date(), TODAY = dkey(NOW);
-var cal = { events: null, state: "idle", msg: "", view: "bulan", y: NOW.getFullYear(), m: NOW.getMonth(), q: "", kel: "", jenis: "", sifat: "", plan: "", waktu: "all", libur: true };
+var cal = { events: null, state: "idle", msg: "", view: "agenda", showPast: false, y: NOW.getFullYear(), m: NOW.getMonth(), q: "", kel: "", jenis: "", sifat: "", plan: "", libur: true };
 
 function sOne(c) { if (c == null) return ""; if (typeof c === "string") return c.trim(); return c.name ? String(c.name).trim() : ""; }
 function sMany(c) { return Array.isArray(c) ? c.map(sOne).filter(Boolean) : []; }
@@ -1704,8 +1718,6 @@ function passes(e) {
   if (cal.jenis && e.jenis !== cal.jenis) return false;
   if (cal.sifat && e.sifat !== cal.sifat) return false;
   if (cal.plan && e.plan !== cal.plan) return false;
-  if (cal.waktu === "next" && !(e.date && e.date >= TODAY)) return false;
-  if (cal.waktu === "past" && !(e.date && e.date < TODAY)) return false;
   if (cal.q && (e.nama + " " + e.lokasi + " " + e.pic + " " + e.pengundang + " " + e.kelompok).toLowerCase().indexOf(cal.q) < 0) return false;
   return true;
 }
@@ -1721,10 +1733,12 @@ document.getElementById("kelChips").addEventListener("click", function (e) {
   var b = e.target.closest && e.target.closest("[data-kel]"); if (!b) return;
   cal.kel = b.dataset.kel; buildKelChips(); calRender();
 });
-[["cJenis", "jenis"], ["cSifat", "sifat"], ["cPlan", "plan"], ["cWaktu", "waktu"]].forEach(function (p) {
+[["cJenis", "jenis"], ["cSifat", "sifat"], ["cPlan", "plan"]].forEach(function (p) {
   document.getElementById(p[0]).addEventListener("change", function (e) { cal[p[1]] = e.target.value; calRender(); });
 });
 document.getElementById("cq").addEventListener("input", function (e) { cal.q = e.target.value.toLowerCase().trim(); calRender(); });
+document.getElementById("calFilterBtn").addEventListener("click", function () { var bx = document.getElementById("calFilterBox"); bx.hidden = !bx.hidden; this.setAttribute("aria-expanded", bx.hidden ? "false" : "true"); });
+document.getElementById("calPast").addEventListener("click", function () { cal.showPast = !cal.showPast; calRender(); });
 document.getElementById("cLibur").addEventListener("change", function (e) { cal.libur = e.target.checked; calRender(); });
 Array.prototype.forEach.call(document.querySelectorAll(".seg [data-view]"), function (b) {
   b.addEventListener("click", function () {
@@ -1759,13 +1773,15 @@ function rowHtml(e) {
 function calRender() {
   var body = document.getElementById("calBody"), cnt = document.getElementById("calCount");
   document.getElementById("calNav").hidden = cal.view !== "bulan";
+  var pb = document.getElementById("calPast"); pb.hidden = cal.view !== "agenda"; pb.setAttribute("aria-pressed", cal.showPast ? "true" : "false"); pb.textContent = cal.showPast ? "Sembunyikan yang sudah lewat" : "Tampilkan yang sudah lewat";
   if (!cal.events) { body.innerHTML = ""; cnt.textContent = ""; document.getElementById("calTitle").textContent = new Date(cal.y, cal.m, 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" }); return; }
   var list = cal.events.filter(passes).sort(function (a, b) { return (a.date || "~").localeCompare(b.date || "~") || byTime(a, b); });
   var title = new Date(cal.y, cal.m, 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
   document.getElementById("calTitle").textContent = title;
-  if (cal.view === "daftar") {
-    cnt.textContent = "Menampilkan " + list.length + " dari " + cal.events.length + " kegiatan, urut menurut tanggal";
-    if (!list.length) { body.innerHTML = '<div class="empty tablebox">Tidak ada kegiatan yang cocok dengan filter ini.</div>'; return; }
+  if (cal.view === "agenda") {
+    list = agendaItems(list, TODAY, cal.showPast);
+    cnt.textContent = (cal.showPast ? "Semua kegiatan" : "Mulai " + fmtDate(TODAY, { day: "numeric", month: "long", year: "numeric" }) + " ke depan") + ": " + list.length + " kegiatan, urut menurut tanggal";
+    if (!list.length) { body.innerHTML = '<div class="empty tablebox">' + (cal.showPast ? "Tidak ada kegiatan yang cocok dengan filter ini." : "Tidak ada kegiatan mendatang yang cocok. Tekan “Tampilkan yang sudah lewat” untuk melihat yang lalu.") + "</div>"; return; }
     var html = '<div class="ag">', cur = "";
     list.forEach(function (e) {
       var mk = e.date ? e.date.slice(0, 7) : "none";
@@ -2160,7 +2176,7 @@ function nav(spec) {
   else if (k === "pw") { pw.view = v; goTab("pewarta"); renderPewarta(); }
   else if (k === "pwf") { var kv = v.split("|"); pwFilterGo(kv[0], kv.slice(1).join("|")); }
   else if (k === "cal") { var m = v.split("-"); cal.y = +m[0]; cal.m = +m[1] - 1; goTab("kalender"); }
-  else if (k === "evt") { EV.sel = v; EV.waktu = "all"; document.getElementById("evWaktu").value = "all"; EV.open = true; EV.dim = -1; EV.dv = ""; EV.pdf = ""; EV.rq = ""; goTab("event"); renderEvent(); }
+  else if (k === "evt") { EV.sel = v; EV.waktu = "all"; EV.open = true; EV.dim = -1; EV.dv = ""; EV.pdf = ""; EV.rq = ""; goTab("event"); renderEvent(); }
   else if (k === "dash" && v === "appr") openApprAdmin(document.activeElement);
   else if (k === "dash") openDash(v, document.activeElement);
   else if (k === "evd") { goTab("kalender"); openEv(v, null); }
@@ -3108,6 +3124,7 @@ function renderEvent() {
   srcStatus("evLink", ["evx", "pend", "pd"]);
   if (!D.evx || !D.pend) { box.innerHTML = ""; document.getElementById("evDetail").innerHTML = ""; return; }
   document.getElementById("evHome").hidden = EV.open; document.getElementById("evBackBar").hidden = !EV.open;
+  var epb = document.getElementById("evPast"); epb.setAttribute("aria-pressed", EV.waktu === "next" ? "false" : "true"); epb.textContent = EV.waktu === "next" ? "Tampilkan yang sudah lewat" : "Sembunyikan yang sudah lewat";
   document.getElementById("evDetail").hidden = !EV.open;
   var by = {};
   D.pend.forEach(function (p) { if (pAktif(p)) (by[p.ev] = by[p.ev] || []).push(p); });
@@ -3513,9 +3530,9 @@ document.getElementById("tab-event").addEventListener("input", function (e) {
   if (e.target.id === "evQ") { EV.q = e.target.value; renderEvent(); }
   else if (e.target.id === "evRq") { EV.rq = e.target.value; renderEvRegs(); }
 });
+document.getElementById("evPast").addEventListener("click", function () { EV.waktu = EV.waktu === "next" ? "all" : "next"; renderEvent(); });
 document.getElementById("tab-event").addEventListener("change", function (e) {
-  if (e.target.id === "evWaktu") { EV.waktu = e.target.value; renderEvent(); }
-  else if (e.target.id === "evPd") { EV.pdf = e.target.value; renderEvRegs(); }
+  if (e.target.id === "evPd") { EV.pdf = e.target.value; renderEvRegs(); }
 });
 
 function refreshViews() { renderEvent(); renderKep(); renderBeranda(); renderPewarta(); renderLuar(); renderTamu(); renderPd(); renderUmat(); }
