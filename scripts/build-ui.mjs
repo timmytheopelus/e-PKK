@@ -48,21 +48,41 @@ const PROKER_HTML = `  <div id="tab-proker" class="tab" role="tabpanel" aria-lab
     </div>
     <div id="proSecAjukan" hidden>
       <form id="proForm" novalidate>
-        <div class="fil"><input type="text" id="proNama" maxlength="200" placeholder="Nama program" aria-label="Nama program"></div>
-        <div class="fil"><textarea id="proDetail" rows="3" maxlength="5000" placeholder="Detail program" aria-label="Detail program" style="width:100%"></textarea></div>
-        <div class="fil">
-          <select id="proMulaiMode" aria-label="Bentuk perkiraan mulai"><option value="bln">Bulan dan tahun</option><option value="tgl">Tanggal lengkap</option></select>
-          <input type="month" id="proMulaiBln" aria-label="Bulan mulai"><input type="date" id="proMulaiTgl" aria-label="Tanggal mulai" hidden>
-        </div>
-        <div id="proPengajuBox" class="fil" hidden></div>
-        <h4>Seksi terlibat</h4>
-        <div id="proSeksi" class="epk-picklist"></div>
-        <h4>Anggaran</h4>
-        <div class="fil"><select id="proAgMode" aria-label="Bentuk anggaran"><option value="Total">Total saja</option><option value="Rincian">Rincian pemasukan dan pengeluaran</option></select></div>
-        <div id="proTotalBox" class="fil"><input type="number" id="proTotal" min="0" step="1" placeholder="Total anggaran (Rp)" aria-label="Total anggaran"></div>
-        <div id="proRincianBox" hidden><div id="proRincian"></div><button type="button" class="btn" id="proTambah">Tambah baris</button></div>
-        <div class="epk-row"><button type="submit" class="epk-btn">Ajukan program</button></div>
-        <p id="proFormMsg" class="epk-msg"></p>
+        <ol class="pf-steps" id="pfSteps" aria-label="Langkah pengajuan">
+          <li data-s="1"><b>1</b><span>Program</span></li><li data-s="2"><b>2</b><span>Waktu &amp; seksi</span></li><li data-s="3"><b>3</b><span>Anggaran</span></li><li data-s="4"><b>4</b><span>Tinjau</span></li>
+        </ol>
+        <section class="pf-step" data-step="1">
+          <h3>Apa program yang diajukan?</h3>
+          <label class="pf-l" for="proNama">Nama program</label>
+          <input type="text" id="proNama" maxlength="200" placeholder="Contoh: Retret Pengurus 2027" autocomplete="off">
+          <label class="pf-l" for="proDetail">Tujuan dan gambaran singkat</label>
+          <textarea id="proDetail" rows="4" maxlength="5000" placeholder="Apa tujuannya, siapa sasarannya, bagaimana pelaksanaannya"></textarea>
+          <div id="proPengajuBox" hidden></div>
+        </section>
+        <section class="pf-step" data-step="2" hidden>
+          <h3>Kapan dan siapa yang terlibat?</h3>
+          <div class="pf-l">Perkiraan bulan mulai</div>
+          <div class="pf-years" id="proTahun" role="group" aria-label="Tahun"></div>
+          <div class="pf-months" id="proBulan" role="group" aria-label="Bulan"></div>
+          <input type="hidden" id="proMulaiBln">
+          <div class="pf-l">Seksi lain yang terlibat <small>(opsional)</small></div>
+          <input type="search" id="proSeksiQ" placeholder="Cari seksi" aria-label="Cari seksi" autocomplete="off">
+          <div id="proSeksi" class="epk-picklist"></div>
+        </section>
+        <section class="pf-step" data-step="3" hidden>
+          <h3>Berapa anggarannya?</h3>
+          <select id="proAgMode" hidden><option value="Total">Total saja</option><option value="Rincian">Rincian</option></select>
+          <div class="pf-seg" id="proAgSeg" role="group" aria-label="Bentuk anggaran"><button type="button" class="pf-segb on" data-m="Total">Total saja</button><button type="button" class="pf-segb" data-m="Rincian">Rincian pemasukan dan pengeluaran</button></div>
+          <div id="proTotalBox"><label class="pf-l" for="proTotal">Total anggaran (Rp)</label><input type="number" id="proTotal" min="0" step="1" inputmode="numeric" placeholder="0"><p class="pf-rp" id="proTotalRp"></p></div>
+          <div id="proRincianBox" hidden><div id="proRincian"></div><button type="button" class="btn" id="proTambah">+ Tambah baris</button><p class="pf-rp" id="proRincianRp"></p></div>
+        </section>
+        <section class="pf-step" data-step="4" hidden>
+          <h3>Tinjau lalu ajukan</h3>
+          <dl class="pf-sum" id="proRingkas"></dl>
+          <p class="hint">Setelah diajukan, program menunggu persetujuan Sekretaris Jenderal / Koordinator BPK.</p>
+        </section>
+        <p id="proFormMsg" class="epk-msg" role="status"></p>
+        <div class="pf-nav"><button type="button" class="btn" id="pfBack">Kembali</button><button type="button" class="epk-btn" id="pfNext">Lanjut</button><button type="submit" class="epk-btn" id="pfSubmit" hidden>Ajukan program</button></div>
       </form>
     </div>
   </div>
@@ -117,6 +137,28 @@ const shim = `<style>
 .epk-lvl { color: var(--muted); }
 .epk-asbar { position: sticky; top: 0; z-index: 50; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: center; background: #8a4b00; color: #fff; padding: 8px 12px; margin: -28px -16px 16px; font-size: 14px; }
 .epk-asbar .epk-btn { background: #fff; color: #8a4b00; border-color: #fff; padding: 4px 12px; }
+.pf-steps { display: flex; gap: 6px; list-style: none; padding: 0; margin: 0 0 14px; }
+.pf-steps li { flex: 1 1 0; display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: var(--bg); color: var(--muted); font-size: 13px; min-width: 0; }
+.pf-steps li b { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--line); color: var(--fg); font-size: 12px; }
+.pf-steps li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-steps li.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; } .pf-steps li.on b, .pf-steps li.done b { background: var(--accent); color: #fff; } .pf-steps li.done { color: var(--fg); }
+@media (max-width: 560px) { .pf-steps li span { display: none; } .pf-steps li.on span { display: inline; } .pf-steps li { justify-content: center; } .pf-steps li.on { flex: 3 1 0; justify-content: flex-start; } }
+.pf-step { display: grid; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+.pf-step[hidden] { display: none; }
+.pf-step h3 { font-family: var(--font-display); font-size: 1.15rem; margin: 0 0 4px; }
+.pf-l { font-size: 13px; font-weight: 600; color: var(--muted); margin-top: 6px; } .pf-l small { font-weight: 400; }
+.pf-step input[type=text], .pf-step input[type=number], .pf-step input[type=search], .pf-step textarea, .pf-step select { font: inherit; width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg); }
+.pf-step input:focus, .pf-step textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; background: var(--surface); }
+.pf-years, .pf-months, .pf-seg { display: flex; flex-wrap: wrap; gap: 8px; }
+.pf-months { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); } @media (max-width: 560px) { .pf-months { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.pf-chip, .pf-segb { font: inherit; padding: 9px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--fg); cursor: pointer; text-align: center; }
+.pf-chip:hover:not(:disabled), .pf-segb:hover { border-color: var(--accent); }
+.pf-chip.on, .pf-segb.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.pf-chip:disabled { opacity: .4; cursor: not-allowed; }
+.pf-rp { margin: 0; font-size: 13px; color: var(--accent); font-weight: 600; min-height: 1.2em; }
+.pf-sum { display: grid; grid-template-columns: minmax(110px, 160px) minmax(0, 1fr); gap: 8px 12px; margin: 0; } .pf-sum dt { color: var(--muted); font-size: 13px; } .pf-sum dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.pf-nav { display: flex; justify-content: space-between; gap: 8px; margin-top: 12px; } .pf-nav .epk-btn, .pf-nav .btn { min-width: 110px; padding: 10px 18px; } .pf-nav [hidden] { display: none; }
+.pro-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; margin-bottom: 8px; } @media (max-width: 560px) { .pro-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .pro-row .ag-ket { grid-column: 1 / -1; } }
 .epk-picklist { display: grid; gap: 4px; max-height: 280px; overflow-y: auto; margin: 6px 0 10px; }
 .epk-pickrow { font: inherit; text-align: left; display: grid; gap: 1px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--fg); cursor: pointer; }
 .epk-pickrow small { color: var(--muted); }
