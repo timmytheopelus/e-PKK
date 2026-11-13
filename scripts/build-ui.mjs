@@ -86,6 +86,13 @@ const shim = `<style>
 .epk-pickrow:disabled { opacity: .55; cursor: not-allowed; }
 .meta { gap: 8px 12px; }
 body.ro [data-act="edit"], body.ro [data-pw="edit"], body.ro [data-go^="koor"], body.ro #addBtn, body.ro #dayAdd { display: none !important; }
+/* Semua tabel laporan di menu sidebar: kotak bisa digeser, header menempel di atas, baris selang-seling. */
+.tablebox, .tw, .inv-tw { overflow: auto; max-height: 70vh; -webkit-overflow-scrolling: touch; }
+.tablebox table, .tw table, .inv-tw table { border-collapse: separate; border-spacing: 0; }
+.tablebox thead th, .tw thead th, .inv-tw thead th { position: sticky; top: 0; z-index: 2; background: var(--accent-soft); color: var(--fg); font-size: 15px; font-weight: 700; text-transform: none; letter-spacing: 0; border-bottom: 2px solid var(--accent); }
+.tw thead th { font-size: 14px; }
+:where(.tablebox, .tw, .inv-tw) tbody tr:where(:nth-child(even):not(.grp, .grp2, .det, .inv-g1, .inv-g2)) td { background: var(--bg); }
+:where(.tablebox, .tw, .inv-tw) :where(tbody:has(> tr.det)) > tr.clk:where(:nth-child(4n+3)) > td { background: var(--bg); }
 </style>
 <script>
 window.__ME__ = __ME_JSON__;
