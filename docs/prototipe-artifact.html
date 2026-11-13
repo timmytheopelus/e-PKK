@@ -3533,13 +3533,13 @@ function skDraw(eid) {
   var hd = d.dasar === "hadir", kata = hd ? "hadir" : "terdaftar";
   var h = '<div class="pan"><h4>Perwakilan per seksi <small class="note">· dari sisi ' + (hd ? "kehadiran" : "pendaftaran") + "</small></h4>" +
     '<p class="chips"><button type="button" class="chip' + (hd ? "" : " on") + '" data-seksi="' + esc(eid) + '|daftar">Pendaftaran</button><button type="button" class="chip' + (hd ? " on" : "") + '" data-seksi="' + esc(eid) + '|hadir">Kehadiran</button></p>' +
-    '<div class="tiles">' + skTile(d.ringkas.ketua, "Ketua " + kata, "seksi dengan ketua " + kata, "ketua") + skTile(d.ringkas.diwakili, "Ketua diwakili", "ketua belum " + kata + ", ada perwakilan seksi", "diwakili") + skTile(d.ringkas.kosong, "Tanpa perwakilan", "tidak ada satu pun yang " + kata, "kosong") + "</div>";
-  var fl = [["", "Semua"], ["ketua", "Ketua " + kata], ["diwakili", "Diwakili"], ["kosong", "Tanpa perwakilan"]];
+    '<div class="tiles">' + skTile(d.ringkas.ketua, "Ketua " + kata, "seksi dengan ketua " + kata, "ketua") + skTile(d.ringkas.diwakili, "Ketua diwakili", "ketua belum " + kata + ", ada perwakilan seksi", "diwakili") + skTile(d.ringkas.kosong, "Seksi yang tidak hadir", "tidak ada satu pun yang " + kata, "kosong") + "</div>";
+  var fl = [["", "Semua"], ["ketua", "Ketua " + kata], ["diwakili", "Diwakili"], ["kosong", "Seksi yang tidak hadir"]];
   h += '<p class="chips">' + fl.map(function (x) { return '<button type="button" class="chip' + (SK.f === x[0] ? " on" : "") + '" data-skf="' + x[0] + '">' + x[1] + "</button>"; }).join("") + '</p><p class="note">Klik baris seksi untuk melihat siapa saja anggotanya dan siapa yang ' + kata + ".</p>";
   var vis = d.seksi.filter(function (r) { return !SK.f || r.status === SK.f; });
   h += '<div id="skList"></div>' + (SK.f ? '<p class="count"><b>' + vis.length + " seksi</b>: " + (vis.map(function (r) { return esc(r.seksi); }).join(", ") || "tidak ada") + "</p>" : "");
   var by = {}, ord = []; d.seksi.filter(function (r) { return !SK.f || r.status === SK.f; }).forEach(function (r) { var k = r.bidang || "Lainnya"; if (!by[k]) { by[k] = []; ord.push(k); } by[k].push(r); });
-  var lab = { ketua: "Ketua " + kata, diwakili: "Diwakili", kosong: "Tidak ada perwakilan" };
+  var lab = { ketua: "Ketua " + kata, diwakili: "Diwakili", kosong: "Tidak hadir" };
   ord.forEach(function (k) {
     h += "<h5>" + esc(k) + '</h5><div class="tw"><table class="tbl"><thead><tr><th>Seksi</th><th>Ketua</th><th>Perwakilan</th><th>Status</th></tr></thead><tbody>' + by[k].map(function (r) {
       var kt = r.ketua.length ? r.ketua.map(function (x) { return esc(x.nama) + (x.status === "hadir" ? " ✓" : x.status === "diwakili" ? " (diwakili)" : " ✗"); }).join("<br>") : '<span class="note">belum ada ketua di data</span>';
