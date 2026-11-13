@@ -6,7 +6,7 @@ export const T_RIWAYAT = "tbl61LZu0kBVjKQzc";
 const RW = { ringkasan: "fldm4T3vYT65EW3hs", event: "flducSfpZxQktRWID", nama: "fldOsrCeeOrlJbs4O", field: "fldV1Z69OgVXYmkbQ", lama: "flddwgQRmwtIMW79l", baru: "fldPW6sNUmkhASq8F", oleh: "fld1ZEkxFexR1hpzV", waktu: "fld62n0vhBtmEwXyR" };
 /** Field Event BPK yang dipantau dan labelnya. */
 export const WATCH_LABEL: Record<string, string> = {
-  fld0d9tIyi4nyTZsM: "Nama", fldoIkx9wLMaKOa38: "Tanggal", fldMO46zH4SDzIypy: "Jam mulai", fld4i5iQ6zTY8UTSm: "Jam selesai", fldY0qw1v0a4fK9Sp: "Lokasi", fldG7mLTlU3TDeXoF: "Status",
+  fld0d9tIyi4nyTZsM: "Nama", fldoIkx9wLMaKOa38: "Tanggal", fldMO46zH4SDzIypy: "Jam mulai", fld4i5iQ6zTY8UTSm: "Jam selesai", fldY0qw1v0a4fK9Sp: "Lokasi", fldG7mLTlU3TDeXoF: "Status", fldvJxqvazI3GQGha: "Buka registrasi", fldI1RKkKVaua8DH0: "Tutup registrasi",
 };
 export const WATCH = Object.keys(WATCH_LABEL);
 

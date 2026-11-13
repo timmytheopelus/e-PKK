@@ -62,7 +62,7 @@ type Spec = {
 
 /** Event BPK: email pembuat (diisi server saat event dibuat dari aplikasi; tidak boleh diubah dari browser). */
 export const EV_OLEH = "fldPHO7qPmtfuxhbQ";
-const EF = ["fld0d9tIyi4nyTZsM", "fldoIkx9wLMaKOa38", "fldMO46zH4SDzIypy", "fld4i5iQ6zTY8UTSm", "fldrYLgd8LCDjwmLZ", "fldhgv2WlvqytF6zA", "fldCGnuPOkqzb5jx2", "fldROaJ8rPAZQPTED", "fld4qestIo5EjWAvk", "fldY0qw1v0a4fK9Sp", "fldSNUErmbrKEOCcf", "fldG7mLTlU3TDeXoF", "fldCFtFJH9S16bjl3"];
+const EF = ["fld0d9tIyi4nyTZsM", "fldoIkx9wLMaKOa38", "fldMO46zH4SDzIypy", "fld4i5iQ6zTY8UTSm", "fldrYLgd8LCDjwmLZ", "fldhgv2WlvqytF6zA", "fldCGnuPOkqzb5jx2", "fldROaJ8rPAZQPTED", "fld4qestIo5EjWAvk", "fldY0qw1v0a4fK9Sp", "fldSNUErmbrKEOCcf", "fldG7mLTlU3TDeXoF", "fldCFtFJH9S16bjl3", "fldvJxqvazI3GQGha", "fldI1RKkKVaua8DH0"];
 /** Pendaftaran Events: hanya kolom demografis. Tanpa kontak, riwayat penyakit, kontak darurat, dll. */
 export const PEND_READ = ["flduf15moMpZSklGL", "fld9ucFxEU0cUSHWw", "fldMBf67dQxv51kY1", "fldAZzqERt3oFHRRx", "fldylW3JpqB1DJ0Fh", "fldArgqtlZOnnRIvX", "fldmecbafGeLtqCSd", "fldIgnkqdrDPz8gCV", "fldNGGEcwHqIsQPct", "fldqB6h9rzzC5VhKI", "fldCqIqQmVnFXqrOU", "fldcpfpO2QvPGmgd7"];
 /** Inventaris BPK: field yang boleh dibaca (termasuk Foto Barang, hanya baca) dan ditulis dari tab Inventaris. */

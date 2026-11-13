@@ -819,6 +819,10 @@ body.sep img.logo { width: 120px; height: 120px; object-fit: contain; } @media (
       <div class="fld"><label for="a_jenis">Jenis</label><select id="a_jenis"></select></div>
       <div class="fld"><label for="a_sifat">Sifat</label><select id="a_sifat"></select></div>
     </div>
+    <div class="two">
+      <div class="fld"><label for="a_regBuka">Buka registrasi (tanggal &amp; jam)</label><input id="a_regBuka" type="datetime-local"></div>
+      <div class="fld"><label for="a_regTutup">Tutup registrasi (tanggal &amp; jam)</label><input id="a_regTutup" type="datetime-local"></div>
+    </div>
     <label for="a_lokasi">Lokasi</label>
     <input id="a_lokasi" type="text" autocomplete="off">
     <label for="a_peng">Kelompok yang mengadakan</label>
@@ -1642,7 +1646,7 @@ window.addEventListener("hashchange", function () { showTab(location.hash.replac
 var T_EVENTS = "tblbAIILkeRIwn3kl";
 var EF = { nama: "fld0d9tIyi4nyTZsM", tgl: "fldoIkx9wLMaKOa38", mulai: "fldMO46zH4SDzIypy", selesai: "fld4i5iQ6zTY8UTSm", status: "fldHs8NnkUlEXDqLy",
   jenis: "fldrYLgd8LCDjwmLZ", kelompok: "fldhgv2WlvqytF6zA", pengundang: "fldCGnuPOkqzb5jx2", pic: "fldROaJ8rPAZQPTED", telp: "fld4qestIo5EjWAvk",
-  lokasi: "fldY0qw1v0a4fK9Sp", sifat: "fldSNUErmbrKEOCcf", plan: "fldG7mLTlU3TDeXoF", undangan: "fldCFtFJH9S16bjl3", reg: "fldoiwyP9YTF40RIw",
+  lokasi: "fldY0qw1v0a4fK9Sp", sifat: "fldSNUErmbrKEOCcf", plan: "fldG7mLTlU3TDeXoF", undangan: "fldCFtFJH9S16bjl3", reg: "fldoiwyP9YTF40RIw", regBuka: "fldvJxqvazI3GQGha", regTutup: "fldI1RKkKVaua8DH0",
   flyer: "fldzFhxooAs9Il5aE", dok: "fldJdajFChjshhLwi" };
 var KEL_ORDER = ["BPK", "ElShaddai", "KEP", "KEP Exe", "CFM", "SSK", "BPN", "BPPG"];
 var UND_OPTS = ["Tim BPK", "Tim PD", "Umum", "Pewarta/Pengajar", "Konselor", "Undangan only", "BPK Harian", "Pastor moderator", "Pewarta", "Pewarta Pengajar"];
@@ -1651,6 +1655,7 @@ function pad(n) { return (n < 10 ? "0" : "") + n; }
 function dkey(dt) { return dt.getFullYear() + "-" + pad(dt.getMonth() + 1) + "-" + pad(dt.getDate()); }
 function fromKey(k) { var p = k.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
 function fmtDate(k, opt) { return fromKey(k).toLocaleDateString("id-ID", opt); }
+function fmtWib(iso) { if (!iso || isNaN(new Date(iso))) return ""; var d = new Date(iso); return d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) + ", pukul " + pad(d.getHours()) + ":" + pad(d.getMinutes()); }
 function fmtTime(iso) { if (!iso) return ""; var d = new Date(iso); return isNaN(d) ? "" : pad(d.getHours()) + ":" + pad(d.getMinutes()); }
 var NOW = new Date(), TODAY = dkey(NOW);
 var cal = { events: null, state: "idle", msg: "", view: "agenda", showPast: false, y: NOW.getFullYear(), m: NOW.getMonth(), q: "", kel: "", jenis: "", sifat: "", plan: "", libur: true };
@@ -1664,7 +1669,7 @@ function normEvent(r) {
   var v = r.cellValuesByFieldId || {};
   var e = { id: r.id, nama: sTxt(v[EF.nama]), tgl: sTxt(v[EF.tgl]), mulai: sTxt(v[EF.mulai]), selesai: sTxt(v[EF.selesai]), status: sTxt(v[EF.status]),
     jenis: sOne(v[EF.jenis]), kelompok: sOne(v[EF.kelompok]), pengundang: sTxt(v[EF.pengundang]), pic: sTxt(v[EF.pic]), telp: sTxt(v[EF.telp]),
-    lokasi: sTxt(v[EF.lokasi]), sifat: sOne(v[EF.sifat]), plan: sOne(v[EF.plan]), undangan: sMany(v[EF.undangan]), reg: sOne(v[EF.reg]),
+    lokasi: sTxt(v[EF.lokasi]), sifat: sOne(v[EF.sifat]), plan: sOne(v[EF.plan]), undangan: sMany(v[EF.undangan]), reg: sOne(v[EF.reg]), regBuka: sTxt(v[EF.regBuka]), regTutup: sTxt(v[EF.regTutup]),
     flyer: sTxt(v[EF.flyer]), dok: sTxt(v[EF.dok]) };
   e.date = e.tgl ? e.tgl.slice(0, 10) : (e.mulai && !isNaN(new Date(e.mulai)) ? dkey(new Date(e.mulai)) : "");
   e.libur = e.plan === "Hari Besar" || e.jenis === "Hari Libur";
@@ -1858,7 +1863,7 @@ function openEv(id, opener) {
     dd("Kelompok", kchip(e)) + dd("Lokasi", esc(e.lokasi)) +
     dd("Jenis", esc([e.jenis, e.sifat].filter(Boolean).join(" · "))) +
     dd("Perencanaan", esc(PLAN_LABEL[e.plan] || e.plan)) + dd("Status", esc(e.status)) +
-    dd("Penyelenggara", esc(e.pengundang)) + dd("PIC", pic) + dd("Undangan", und) + dd("Registrasi", esc(e.reg)) +
+    dd("Penyelenggara", esc(e.pengundang)) + dd("PIC", pic) + dd("Undangan", und) + dd("Registrasi", esc(e.reg)) + dd("Buka registrasi", esc(fmtWib(e.regBuka))) + dd("Tutup registrasi", esc(fmtWib(e.regTutup))) +
     dd("Flyer", linkHtml(e.flyer, "Buka flyer")) + dd("Dokumentasi", linkHtml(e.dok, "Buka dokumentasi")) + "</dl>";
   document.getElementById("evBody").innerHTML = html;
   evCur = e.id; document.getElementById("evEdit").hidden = !(mcp && !window.__ME__.viewAs); document.getElementById("evOpen").hidden = !navOk("event");
@@ -1895,12 +1900,14 @@ function openAdd(dateKey, opener) {
   document.getElementById("a_tgl").value = dateKey || TODAY;
   ["a_kel", "a_jenis", "a_sifat"].forEach(function (id) { document.getElementById(id).value = ""; });
   document.getElementById("a_plan").value = "Planned";
+  document.getElementById("a_regBuka").value = ""; document.getElementById("a_regTutup").value = "";
   Array.prototype.forEach.call(document.querySelectorAll("#a_und input"), function (c) { c.checked = false; });
   addSave.disabled = false; setAddMsg("");
   showScrim("addScrim", opener);
   document.getElementById("a_nama").focus();
 }
 function hhmm(iso) { if (!iso || isNaN(new Date(iso))) return ""; var d = new Date(iso); return pad(d.getHours()) + ":" + pad(d.getMinutes()); }
+function dtLocal(iso) { if (!iso || isNaN(new Date(iso))) return ""; var d = new Date(iso); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes()); }
 function openEdit(id, opener) {
   var e = evById(id); if (!e || !mcp) return;
   hideScrim("evScrim"); editId = id;
@@ -1912,6 +1919,7 @@ function openEdit(id, opener) {
   set("a_tglSel", d2 && d2 !== e.date ? d2 : ""); set("a_selesai", hhmm(e.selesai));
   set("a_lokasi", e.lokasi); set("a_kel", e.kelompok); set("a_jenis", e.jenis); set("a_sifat", e.sifat); set("a_plan", e.plan || "Planned");
   set("a_peng", e.pengundang); set("a_pic", e.pic); set("a_telp", e.telp);
+  set("a_regBuka", dtLocal(e.regBuka)); set("a_regTutup", dtLocal(e.regTutup));
   Array.prototype.forEach.call(document.querySelectorAll("#a_und input"), function (c) { c.checked = e.undangan.indexOf(c.value) >= 0; });
   addSave.disabled = false; setAddMsg("");
   showScrim("addScrim", opener);
@@ -1933,8 +1941,12 @@ document.getElementById("addForm").addEventListener("submit", function (e) {
   var start = t1 ? isoLocal(tgl, t1) : "", end = "";
   if (t2 || tglSel) end = isoLocal(tglSel || tgl, t2 || "23:59");
   if (start && end && end < start) { setAddMsg("Waktu selesai tidak boleh lebih awal dari waktu mulai.", true); return; }
+  var rb = v("a_regBuka"), rt = v("a_regTutup");
+  if (rb && rt && new Date(rt) < new Date(rb)) { setAddMsg("Tutup registrasi tidak boleh lebih awal dari buka registrasi.", true); return; }
   var f = {};
   f[EF.nama] = nama; f[EF.tgl] = tgl;
+  if (rb) f[EF.regBuka] = new Date(rb).toISOString(); else if (editId) f[EF.regBuka] = null;
+  if (rt) f[EF.regTutup] = new Date(rt).toISOString(); else if (editId) f[EF.regTutup] = null;
   if (start) f[EF.mulai] = start;
   if (end) f[EF.selesai] = end;
   var map = [[EF.lokasi, "a_lokasi"], [EF.kelompok, "a_kel"], [EF.jenis, "a_jenis"], [EF.sifat, "a_sifat"], [EF.plan, "a_plan"], [EF.pengundang, "a_peng"], [EF.pic, "a_pic"], [EF.telp, "a_telp"]];

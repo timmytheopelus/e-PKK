@@ -7,7 +7,7 @@ vi.mock("@/lib/event-edit", async (orig) => {
 });
 import { canEditEvent } from "@/lib/event-edit";
 import { handleCall } from "@/lib/proxy";
-import { BASE_BPK, T, EV_OLEH } from "@/lib/policy";
+import { BASE_BPK, T, EV_OLEH, TABLES, checkWrite } from "@/lib/policy";
 
 const A = (level: string, email = "u@x.com") => ({ email, level });
 
@@ -86,4 +86,24 @@ it("GET rekaman tunggal tidak memakai fields[] (Airtable menolaknya: parameter v
   await getRecord("appIGR8Duhj3Vsz48", "tblbAIILkeRIwn3kl", "recAAAAAAAAAAAAAA");
   expect(urls[0]).toContain("returnFieldsByFieldId=true");
   expect(urls[0]).not.toMatch(/fields(%5B|\[)/i);
+});
+
+describe("policy: buka/tutup registrasi event", () => {
+  it("field TanggalOpenRegistrasi dan TanggalCloseRegistrasi boleh diubah dan dibuat", () => {
+    const spec = (TABLES as any)[T.events];
+    const acc: any = { level: "Admin", tabs: ["Event", "Kalender"], email: "a@x.com", status: "Disetujui" };
+    const f = { fldvJxqvazI3GQGha: "2026-11-01T01:00:00.000Z", fldI1RKkKVaua8DH0: null };
+    expect(() => checkWrite(spec, "update", [{ id: "recAAAAAAAAAAAAAA", fields: f }], acc)).not.toThrow();
+    expect(() => checkWrite(spec, "create", [{ fields: { fld0d9tIyi4nyTZsM: "x", ...f } }], acc)).not.toThrow();
+  });
+});
+
+describe("UI: form kegiatan memuat buka/tutup registrasi", () => {
+  it("ada input datetime-local dan disimpan ke field Airtable yang benar", () => {
+    const h = require("fs").readFileSync("docs/prototipe-artifact.html", "utf8");
+    expect(h).toMatch(/id="a_regBuka" type="datetime-local"/);
+    expect(h).toMatch(/id="a_regTutup" type="datetime-local"/);
+    expect(h).toContain('regBuka: "fldvJxqvazI3GQGha"');
+    expect(h).toContain('regTutup: "fldI1RKkKVaua8DH0"');
+  });
 });
