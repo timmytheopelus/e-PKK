@@ -1,6 +1,7 @@
 // Menerjemahkan panggilan gaya konektor (list/update/create) menjadi REST Airtable, dengan pemeriksaan izin.
 import { Access, EV_OLEH, HttpError, INV, JAB, KEU, REK, T, TABLES, checkRead, checkWrite } from "./policy";
 import { canEditEvent, sekretariatEmails } from "./event-edit";
+import { WATCH, diffEvent, logEventChange } from "./event-log";
 import { notifyOwner } from "./mail";
 import { at, clearCaches, getSchema, listPage, listUntil, resolveLinks, Rec } from "./airtable";
 import { evalFilter } from "./filters";
@@ -43,10 +44,12 @@ export async function handleCall(tool: string, input: any, acc: Access) {
       if (!r.fields || typeof r.fields !== "object") throw new HttpError(400, "fields tidak valid");
     }
     checkWrite(spec, kind, records, acc);
+    const evBefore = new Map<string, Record<string, any>>();
     if (kind === "update" && spec.update?.record === "event-owner") {
       let sek: boolean | null = null;
       for (const r of records) {
-        const cur = await at(`/v0/${base}/${table}/${r.id}?returnFieldsByFieldId=true&fields%5B%5D=${EV_OLEH}`);
+        const cur = await at(`/v0/${base}/${table}/${r.id}?returnFieldsByFieldId=true&` + [EV_OLEH, ...WATCH].map((f) => "fields%5B%5D=" + f).join("&"));
+        evBefore.set(r.id, cur?.fields || {});
         const creator = String(cur?.fields?.[EV_OLEH] || "");
         if (canEditEvent(acc, creator, false)) continue;
         if (sek === null) sek = (await sekretariatEmails()).has((acc.email || "").trim().toLowerCase());
@@ -76,6 +79,9 @@ export async function handleCall(tool: string, input: any, acc: Access) {
       out.push(...(j.records || []));
     }
     cache.clear(); clearCaches();
+    if (kind === "update" && table === T.events) {
+      for (const r of records) await logEventChange(r.id, (acc.email || "").trim().toLowerCase(), diffEvent(evBefore.get(r.id) || {}, r.fields, WATCH), String(r.fields[WATCH[0]] ?? evBefore.get(r.id)?.[WATCH[0]] ?? ""));
+    }
     if (newLokasi) {
       console.log(JSON.stringify({ audit: "lokasi-baru", who: acc.email, lokasi: newLokasi }));
       const emailed = await notifyOwner('[e-PKK] Opsi Lokasi baru di Airtable: "' + newLokasi + '"',
