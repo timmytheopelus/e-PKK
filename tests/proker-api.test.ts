@@ -137,6 +137,16 @@ describe("putuskan", () => {
     const { putuskan } = await import("../src/lib/proker");
     await expect(putuskan(acc, { programId: "recPPPPPPPPPPPPPP", tahap: "Koord Bidang", keputusan: "Setuju" })).rejects.toMatchObject({ status: 409 });
   });
+  it("pengaju yang juga Koordinator Bidang tetap melewati satu langkah persetujuan yang tercatat atas namanya", async () => {
+    seed();
+    peran = { ...emptyPeran, koordBidang: ["Kesekretariatan"] };
+    const { putuskan } = await import("../src/lib/proker");
+    expect(db[T_PROGRAM][0].fields[PK.status]).toBe("Menunggu Koord Bidang"); // tidak otomatis lompat
+    await putuskan(acc, { programId: "recPPPPPPPPPPPPPP", tahap: "Koord Bidang", keputusan: "Setuju" });
+    expect(db[T_SETUJU].length).toBe(1);
+    expect(db[T_SETUJU][0].fields[ST.oleh]).toBe("ketua@x.com");
+    await expect(putuskan(acc, { programId: "recPPPPPPPPPPPPPP", tahap: "Sekjen", keputusan: "Setuju" })).rejects.toMatchObject({ status: 403 }); // bukan Sekjen
+  });
   it("Tolak -> Ditolak; viewAs ditolak", async () => {
     seed();
     peran = { ...emptyPeran, koordBidang: ["Kesekretariatan"] };
