@@ -23,6 +23,7 @@ async function boot(programs: any[], extraHtml = "", bisaSetuju = false) {
       return e;
     },
   };
+  w.EPK.modal = (title: string, box: any) => { const m = w.document.createElement("div"); m.id = "modal"; m.appendChild(w.document.createTextNode(title)); m.appendChild(box); w.document.body.appendChild(m); };
   w.eval(PROKER_JS);
   return w;
 }
@@ -106,5 +107,27 @@ describe("status lama ditampilkan sebagai Menunggu Sekjen", () => {
     const r = rows(w); expect(r.length).toBe(2);
     r.forEach((x: string) => { expect(x).toContain("Menunggu Sekjen"); expect(x).not.toContain("Koord Bidang"); expect(x).not.toContain("Kolaborasi"); });
     expect(digits(tile(w, "menunggu").textContent)).toBe("2" + "30");
+  });
+});
+
+describe("popup detail program: realisasi anggaran", () => {
+  const R = { ...P("Retret", "Disetujui", 700000), terpakai: 200000, sisa: 500000, realisasi: [{ tanggal: "2026-11-01", nominal: 200000, keterangan: "DP tempat", penerima: "Gereja" }] };
+  it("menampilkan terpakai, sisa, dan catatan realisasi", async () => {
+    const w = await boot([R]); w.EPK_PROKER_OPEN(); await wait();
+    click(w, w.document.querySelector("#proBody tr")); await wait();
+    const t = w.document.querySelector("#modal").textContent;
+    expect(t).toContain("Realisasi anggaran");
+    expect(digits(t)).toContain("200000"); expect(digits(t)).toContain("500000");
+    expect(t).toContain("DP tempat"); expect(t).toContain("Gereja");
+  });
+  it("belum ada realisasi: tulisan Belum ada realisasi", async () => {
+    const w = await boot([{ ...R, terpakai: 0, sisa: 700000, realisasi: [] }]); w.EPK_PROKER_OPEN(); await wait();
+    click(w, w.document.querySelector("#proBody tr")); await wait();
+    expect(w.document.querySelector("#modal").textContent).toContain("Belum ada realisasi");
+  });
+  it("program yang belum disetujui tidak menampilkan bagian realisasi", async () => {
+    const w = await boot([{ ...R, status: "Menunggu Sekjen", terpakai: 0, sisa: 0, realisasi: [] }]); w.EPK_PROKER_OPEN(); await wait();
+    click(w, w.document.querySelector("#proBody tr")); await wait();
+    expect(w.document.querySelector("#modal").textContent).not.toContain("Realisasi anggaran");
   });
 });

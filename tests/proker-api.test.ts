@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { T_PROGRAM, T_ANGGARAN, T_SETUJU, PK, ST } from "../src/lib/proker-schema";
+import { T_PROGRAM, T_ANGGARAN, T_SETUJU, T_REALISASI, PK, ST, RZ } from "../src/lib/proker-schema";
 
 // Airtable palsu di memori: tabel -> baris. Mendukung list (+ filter {Program ID}="rec…"), create, update.
 let db: Record<string, any[]>;
@@ -160,6 +160,29 @@ describe("putuskan (alur baru: cukup Sekjen / Koordinator BPK)", () => {
     const { putuskan } = await import("../src/lib/proker");
     await expect(putuskan({ ...acc, viewAs: "t@x.com" }, { programId: "recPPPPPPPPPPPPPP", tahap: "Sekjen", keputusan: "Setuju" })).rejects.toMatchObject({ status: 403 });
     expect((await putuskan(acc, { programId: "recPPPPPPPPPPPPPP", tahap: "Sekjen", keputusan: "Tolak" })).status).toBe("Ditolak");
+  });
+});
+
+describe("daftarProgram: realisasi anggaran", () => {
+  it("tiap program membawa terpakai, sisa, dan riwayat realisasinya sendiri", async () => {
+    seed({ [PK.status]: "Disetujui" });
+    db[T_REALISASI] = [
+      { id: "z1", fields: { [RZ.programId]: "recPPPPPPPPPPPPPP", [RZ.nominal]: 120, [RZ.tanggal]: "2026-11-01", [RZ.keterangan]: "DP", [RZ.penerima]: "Gereja" } },
+      { id: "z2", fields: { [RZ.programId]: "recPPPPPPPPPPPPPP", [RZ.nominal]: 30, [RZ.tanggal]: "2026-11-05", [RZ.keterangan]: "Konsumsi", [RZ.penerima]: "" } },
+      { id: "z3", fields: { [RZ.programId]: "recLAINNNNNNNNNNN", [RZ.nominal]: 999, [RZ.tanggal]: "2026-11-05", [RZ.keterangan]: "Milik lain" } },
+    ];
+    peran = { ...emptyPeran, sekjen: true };
+    const { daftarProgram } = await import("../src/lib/proker");
+    const p = (await daftarProgram(acc))[0];
+    expect(p.terpakai).toBe(150); expect(p.sisa).toBe(350);
+    expect(p.realisasi.map((r: any) => r.keterangan)).toEqual(["Konsumsi", "DP"]); // terbaru dulu
+    expect(p.realisasi[1]).toEqual({ tanggal: "2026-11-01", nominal: 120, keterangan: "DP", penerima: "Gereja" });
+  });
+  it("tanpa realisasi: terpakai 0 dan sisa = anggaran", async () => {
+    seed({ [PK.status]: "Disetujui" }); peran = { ...emptyPeran, sekjen: true };
+    const { daftarProgram } = await import("../src/lib/proker");
+    const p = (await daftarProgram(acc))[0];
+    expect(p).toMatchObject({ terpakai: 0, sisa: 500, realisasi: [] });
   });
 });
 

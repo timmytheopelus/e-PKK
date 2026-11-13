@@ -77,6 +77,15 @@ export const PROKER_JS = String.raw`
       p.baris.forEach(function (b) { tb.appendChild(EPK.el("tr", {}, [EPK.el("td", { text: b.keterangan }), EPK.el("td", { text: b.jenis }), EPK.el("td", { class: "num", text: rp(b.nominal) })])); });
       box.appendChild(EPK.el("div", { class: "tw tablebox" }, [EPK.el("table", {}, [EPK.el("thead", {}, [EPK.el("tr", {}, [EPK.el("th", { text: "Keterangan" }), EPK.el("th", { text: "Jenis" }), EPK.el("th", { text: "Nominal" })])]), tb])]));
     }
+    if (p.status === "Disetujui" || p.status === "Berjalan" || p.status === "Selesai") {
+      box.appendChild(EPK.el("h4", { text: "Realisasi anggaran" }));
+      box.appendChild(EPK.el("p", { text: "Terpakai " + rp(p.terpakai || 0) + " · sisa " + rp(p.sisa || 0) }));
+      if ((p.realisasi || []).length) {
+        var rb = EPK.el("tbody");
+        p.realisasi.forEach(function (r) { rb.appendChild(EPK.el("tr", {}, [EPK.el("td", { text: r.tanggal }), EPK.el("td", { text: r.keterangan + (r.penerima ? " (" + r.penerima + ")" : "") }), EPK.el("td", { class: "num", text: rp(r.nominal) })])); });
+        box.appendChild(EPK.el("div", { class: "tw tablebox" }, [EPK.el("table", {}, [EPK.el("thead", {}, [EPK.el("tr", {}, [EPK.el("th", { text: "Tanggal" }), EPK.el("th", { text: "Keterangan" }), EPK.el("th", { text: "Jumlah" })])]), rb])]));
+      } else box.appendChild(EPK.el("p", { class: "hint", text: "Belum ada realisasi." }));
+    }
     if (p.keputusan.length) {
       box.appendChild(EPK.el("h4", { text: "Riwayat persetujuan" }));
       p.keputusan.forEach(function (k) { box.appendChild(EPK.el("p", { class: "hint", text: k.tahap + (k.seksi ? " (" + k.seksi + ")" : "") + ": " + k.keputusan + (k.catatan ? " — " + k.catatan : "") })); });
