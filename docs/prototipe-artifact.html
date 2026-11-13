@@ -86,8 +86,10 @@ header.brand .logo { width: 92px; height: 92px; flex: none; }
 .rtabs { display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 2px 0 8px; margin: 0 0 8px; scrollbar-width: thin; }
 .rtabs .chip { flex: 0 0 auto; white-space: nowrap; }
 .rtabs .chip[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
-.dash-short { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; max-height: calc(100vh - 220px); overflow: hidden; }
-@media (max-width: 520px) { .dash-short { gap: 8px; } }
+#dashTiles.collapsed .tile:nth-child(n+5) { display: none; }
+.dash-short { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.dash-short .lst { max-height: 36vh; overflow-y: auto; }
+@media (max-width: 700px) { .dash-short { grid-template-columns: minmax(0, 1fr); } }
 
 .tablebox { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; min-width: 640px; }
@@ -198,6 +200,8 @@ tr.alias td.nama { font-weight: 500; }
 .tabbtn:hover { color: var(--fg); }
 .tabbtn[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
 .tab { display: grid; gap: 20px; min-width: 0; }
+.tab > * { min-width: 0; }
+.evdetail > * { min-width: 0; }
 .calbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 14px; }
 .calnav { display: flex; align-items: center; gap: 8px; }
 .calnav h2 { font-family: var(--font-display); font-size: 1.3rem; margin: 0; min-width: 10.5ch; text-align: center; text-transform: capitalize; }
@@ -282,6 +286,7 @@ tr.alias td.nama { font-weight: 500; }
 @media (max-width: 860px) { .dgrid { grid-template-columns: minmax(0, 1fr); } }
 .pan { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 10px; min-width: 0; align-content: start; }
 .pan.full { grid-column: 1 / -1; }
+.pan { grid-template-columns: minmax(0, 1fr); }
 .pan h3 { font-family: var(--font-display); font-size: 1.05rem; margin: 0; }
 .pan .hint { color: var(--muted); font-size: 13px; margin: 0; }
 .pan .row2 { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
@@ -416,7 +421,7 @@ body.sep img.logo { width: 120px; height: 120px; object-fit: contain; } @media (
   .fil input, .fil select, .sel2 input, .sel2 select { width: 100%; }
   .calbar { flex-direction: column; align-items: stretch; }
 }
-.kfilter > summary { list-style: none; display: inline-block; cursor: pointer; margin: 0 0 8px; } .kfilter > summary::-webkit-details-marker { display: none; }
+.kfilter > summary, .evgraf > summary { list-style: none; display: inline-block; cursor: pointer; margin: 0 0 8px; } .kfilter > summary::-webkit-details-marker, .evgraf > summary::-webkit-details-marker { display: none; }
 .tw { overflow-x: auto; } .tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; } .tbl th, .tbl td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); } .tbl .num { text-align: right; font-variant-numeric: tabular-nums; }
 </style>
 
@@ -491,16 +496,26 @@ body.sep img.logo { width: 120px; height: 120px; object-fit: contain; } @media (
   <div id="tab-beranda" class="tab" role="tabpanel" aria-labelledby="tabbtn-beranda">
     <div class="link" id="dashStatus" role="status"></div>
     <div id="dashAppr"></div>
-    <div class="tiles" id="dashTiles"></div>
-    <div class="dgrid">
+    <div class="tiles collapsed" id="dashTiles"></div>
+    <button type="button" class="btn" id="dashTilesMore" aria-expanded="false" style="justify-self:start">Semua angka ▾</button>
+    <div class="dash-short">
       <section class="pan" aria-labelledby="h-agenda"><div class="row2"><h3 id="h-agenda">Agenda terdekat</h3><button type="button" class="btn" data-nav="tab:kalender">Kalender →</button></div><div class="lst" id="dashAgenda"></div></section>
       <section class="pan" id="dashEvPan" aria-labelledby="h-evd" hidden><div class="row2"><h3 id="h-evd">Event dan pendaftar</h3><button type="button" class="btn" data-nav="tab:event">Semua event →</button></div><div id="dashEvent"></div></section>
+    </div>
+    <div id="berRptTabs"></div>
+    <section id="berSecTren" aria-label="Tren kegiatan">
+      <section class="pan full" aria-labelledby="h-tren"><h3 id="h-tren">Tren kegiatan BPK, 12 bulan <small class="note">· klik bulan untuk membuka kalender</small></h3><div id="dashTren"></div></section>
+    </section>
+    <section id="berSecLk" hidden aria-label="Tren permohonan pewarta luar kota">
       <section class="pan full" id="dashLkPan" aria-labelledby="h-dlk" hidden><div class="row2"><h3 id="h-dlk">Tren permohonan pewarta luar kota <small class="note">· klik bulan untuk detail</small></h3><div class="vchips" id="dashRng" role="group" aria-label="Rentang waktu"><button type="button" class="chip" data-rng="3" aria-pressed="false">3 bulan</button><button type="button" class="chip" data-rng="6" aria-pressed="true">6 bulan</button><button type="button" class="chip" data-rng="12" aria-pressed="false">12 bulan</button><button type="button" class="chip" data-rng="all" aria-pressed="false">Semua</button></div></div><div id="dashLkTren"></div></section>
+    </section>
+    <section id="berSecTema" hidden aria-label="Tema dan pewarta">
+      <div class="dgrid">
       <section class="pan" id="dashTemaPan" aria-labelledby="h-dtm" hidden><div class="row2"><h3 id="h-dtm">5 tema sedang tren di PD</h3><button type="button" class="btn" data-nav="pw:lk">Semua tema →</button></div><div id="dashTemaTop"></div></section>
       <section class="pan" id="dashRamaiPan" aria-labelledby="h-drm" hidden><div class="row2"><h3 id="h-drm">5 pewarta paling ramai diminta</h3></div><div id="dashRamai"></div></section>
       <section class="pan" id="dashSepiPan" aria-labelledby="h-dsp" hidden><div class="row2"><h3 id="h-dsp">5 pewarta paling jarang dijadwalkan</h3></div><div id="dashSepi"></div></section>
-      <section class="pan full" aria-labelledby="h-tren"><h3 id="h-tren">Tren kegiatan BPK, 12 bulan <small class="note">· klik bulan untuk membuka kalender</small></h3><div id="dashTren"></div></section>
-    </div>
+      </div>
+    </section>
   </div>
 
   <div id="tab-pewarta" class="tab" role="tabpanel" aria-labelledby="tabbtn-pewarta" hidden>
@@ -709,7 +724,7 @@ body.sep img.logo { width: 120px; height: 120px; object-fit: contain; } @media (
       <input type="search" id="evQ" placeholder="Cari nama event" autocomplete="off" aria-label="Cari event">
       <select id="evWaktu" aria-label="Waktu event"><option value="next">Berjalan dan akan datang</option><option value="past">Sudah berlalu</option><option value="all">Semua</option></select>
     </div>
-    <div class="evlist" id="evList"></div>
+    <div class="tw tablebox"><table class="tbl"><thead><tr><th>Event</th><th>Tanggal</th><th>Pendaftaran</th><th class="num">Pendaftar</th></tr></thead><tbody id="evBody"></tbody></table><div class="empty" id="evNone" hidden>Tidak ada event untuk filter ini.</div></div>
     </div>
     <div id="evBackBar" hidden><button type="button" class="btn" id="evBack">← Kembali ke daftar event</button></div>
     <div class="evdetail" id="evDetail"></div>
@@ -2689,6 +2704,8 @@ function pwClick(e) {
 }
 ["pwBody", "pwPdBody", "pwModulBody", "pwPaBody", "tmBody"].forEach(function (id) { document.getElementById(id).addEventListener("click", pwClick); });
 document.getElementById("pwRptTabs").addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-pv]"); if (!b) return; pw.view = b.dataset.pv; renderPewarta(); });
+document.getElementById("dashTilesMore").addEventListener("click", function () { var t = document.getElementById("dashTiles"), c = t.classList.toggle("collapsed"); this.setAttribute("aria-expanded", c ? "false" : "true"); this.textContent = c ? "Semua angka ▾" : "Ringkas ▴"; });
+reportTabs(document.getElementById("berRptTabs"), [{ id: "tren", label: "Tren kegiatan", sectionId: "berSecTren" }, { id: "lk", label: "Permohonan luar kota", sectionId: "berSecLk" }, { id: "tema", label: "Tema & pewarta", sectionId: "berSecTema" }], { storeKey: "epk_rpt_ber" });
 reportTabs(document.getElementById("luRptTabs"), [{ id: "daftar", label: "Pewarta luar kota", sectionId: "luSecDaftar" }, { id: "top", label: "Paling sering & tujuan", sectionId: "luSecTop" }, { id: "tamu", label: "Pewarta tamu", sectionId: "luSecTamu" }], { storeKey: "epk_rpt_luar" });
 reportTabs(document.getElementById("pdRptTabs"), [{ id: "daftar", label: "Daftar PD", sectionId: "pdSecDaftar" }, { id: "peta", label: "Peta & dekanat", sectionId: "pdSecPeta" }], { storeKey: "epk_rpt_pd" });
 ["lu", "pd"].forEach(function (k) { document.getElementById(k + "FilterBtn").addEventListener("click", function () { var bx = document.getElementById(k + "FilterBox"); bx.hidden = !bx.hidden; this.setAttribute("aria-expanded", bx.hidden ? "false" : "true"); }); });
@@ -3082,11 +3099,11 @@ function evDashHtml(by) {
   var max = Math.max.apply(null, run.map(function (e) { return (by[e.id] || []).length; }).concat([1]));
   var h = '<div class="pan"><h4>Event berjalan <small class="note">· ringkasan pendaftaran saat ini</small></h4><div class="tiles">' + tile(run.length, "Event berjalan / akan datang", "yang memakai sistem pendaftaran") + tile(buka, "Pendaftaran masih dibuka", "") + tile(tot, "Total pendaftar aktif", "di semua event berjalan") +
     tile(nx ? fmtDate(nx.tgl, { day: "numeric", month: "short" }) : "-", "Event terdekat", nx ? nx.nama.replace(/^\d{6}-/, "") : "Belum ada") + tile(past, "Event sudah berlalu", "dengan data pendaftar") + "</div>";
-  if (run.length) h += '<div class="hb"><h4>Pendaftar per event</h4>' + run.map(function (e) { var n = (by[e.id] || []).length; return '<button type="button" class="hbr" data-ev="' + esc(e.id) + '"><span>' + esc(e.nama.replace(/^\d{6}-/, "")) + '</span><i style="width:' + (n / max * 100).toFixed(1) + '%"></i><em>' + n + "</em></button>"; }).join("") + "</div>";
+  if (run.length) h += '<details class="evgraf"><summary class="btn">Grafik pendaftar per event</summary><div class="hb"><h4>Pendaftar per event</h4>' + run.map(function (e) { var n = (by[e.id] || []).length; return '<button type="button" class="hbr" data-ev="' + esc(e.id) + '"><span>' + esc(e.nama.replace(/^\d{6}-/, "")) + '</span><i style="width:' + (n / max * 100).toFixed(1) + '%"></i><em>' + n + "</em></button>"; }).join("") + "</div></details>";
   return h + '<p class="note">Event SSK dan KEP tidak ditampilkan di sini (SSK hanya di Kalender, KEP punya menu sendiri).</p></div><h4>Detail event</h4>';
 }
 function renderEvent() {
-  var box = document.getElementById("evList");
+  var box = document.getElementById("evBody");
   if (!box) return;
   srcStatus("evLink", ["evx", "pend", "pd"]);
   if (!D.evx || !D.pend) { box.innerHTML = ""; document.getElementById("evDetail").innerHTML = ""; return; }
@@ -3103,18 +3120,15 @@ function renderEvent() {
     return !q || e.nama.toLowerCase().indexOf(q) >= 0;
   });
   list.sort(function (a, b) { return EV.waktu === "past" ? b.tgl.localeCompare(a.tgl) : a.tgl.localeCompare(b.tgl); });
-  if (!list.length) { box.innerHTML = '<p class="note">Tidak ada event untuk filter ini.</p>'; document.getElementById("evDetail").innerHTML = ""; EV.open = false; document.getElementById("evHome").hidden = false; document.getElementById("evBackBar").hidden = true; return; }
+  if (!list.length) { box.innerHTML = ""; document.getElementById("evNone").hidden = false; document.getElementById("evDetail").innerHTML = ""; EV.open = false; document.getElementById("evHome").hidden = false; document.getElementById("evBackBar").hidden = true; return; }
+  document.getElementById("evNone").hidden = true;
   if (!list.some(function (e) { return e.id === EV.sel; })) { EV.sel = list[0].id; EV.dim = -1; }
-  if (!EV.open) { document.getElementById("evDetail").innerHTML = ""; box.innerHTML = list.map(function (e) {
-    var n = (by[e.id] || []).length, open = /open/i.test(e.reg);
-    return '<button type="button" class="evc" data-ev="' + esc(e.id) + '"><b>' + esc(e.nama.replace(/^\d{6}-/, "")) + "</b><span>" + esc(fmtDate(e.tgl, { weekday: "short", day: "numeric", month: "short", year: "numeric" })) +
-      '</span><span class="tag' + (open ? "" : " alt") + '">' + (open ? "Pendaftaran dibuka" : "Pendaftaran ditutup") + '</span><em>' + n + " pendaftar</em></button>";
-  }).join(""); return; }
   box.innerHTML = list.map(function (e) {
     var n = (by[e.id] || []).length, open = /open/i.test(e.reg);
-    return '<button type="button" class="evc' + (e.id === EV.sel ? " on" : "") + '" data-ev="' + esc(e.id) + '"><b>' + esc(e.nama.replace(/^\d{6}-/, "")) + "</b><span>" + esc(fmtDate(e.tgl, { weekday: "short", day: "numeric", month: "short", year: "numeric" })) +
-      '</span><span class="tag' + (open ? "" : " alt") + '">' + (open ? "Pendaftaran dibuka" : "Pendaftaran ditutup") + '</span><em>' + n + " pendaftar</em></button>";
+    return '<tr class="clk' + (e.id === EV.sel ? " on" : "") + '" data-ev="' + esc(e.id) + '" tabindex="0"><td>' + esc(e.nama.replace(/^\d{6}-/, "")) + "</td><td>" + esc(fmtDate(e.tgl, { weekday: "short", day: "numeric", month: "short", year: "numeric" })) +
+      '</td><td><span class="tag' + (open ? "" : " alt") + '">' + (open ? "Dibuka" : "Ditutup") + '</span></td><td class="num">' + n + "</td></tr>";
   }).join("");
+  if (!EV.open) { document.getElementById("evDetail").innerHTML = ""; return; }
   renderEvDetail(list.filter(function (e) { return e.id === EV.sel; })[0], by[EV.sel] || []);
 }
 

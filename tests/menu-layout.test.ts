@@ -88,3 +88,37 @@ describe("menu KEP", () => {
     expect(HTML).toContain('KP.v === "lap"');
   });
 });
+
+describe("menu Beranda", () => {
+  const t = tab("beranda");
+  it("bagian atas pendek (dash-short) dan laporan di tab berRptTabs", () => {
+    expect(t.querySelector(".dash-short #dashAgenda")).toBeTruthy();
+    expect(t.querySelector("#berRptTabs")).toBeTruthy();
+    expect(hid(t, "berSecTren")).toBe(false);
+    expect(hid(t, "berSecLk")).toBe(true);
+    expect(hid(t, "berSecTema")).toBe(true);
+  });
+  it("kartu angka dilipat: empat pertama saja, sisanya lewat tombol", () => {
+    expect(t.querySelector("#dashTiles.collapsed")).toBeTruthy();
+    expect(t.querySelector("#dashTilesMore")).toBeTruthy();
+    expect(HTML).toContain("#dashTiles.collapsed .tile:nth-child(n+5) { display: none; }");
+  });
+  it("panel laporan tidak ada di dalam dash-short", () => {
+    expect(t.querySelector(".dash-short #dashTren, .dash-short #dashLk, .dash-short #dashTemaTop")).toBeNull();
+  });
+  it("dash-short tidak memotong isi: daftar di dalamnya bergulir sendiri", () => {
+    expect(HTML).toContain(".dash-short .lst { max-height: 36vh; overflow-y: auto; }");
+    expect(HTML).not.toMatch(/\.dash-short \{[^}]*overflow: hidden/);
+  });
+});
+
+describe("menu Event", () => {
+  it("daftar event berbentuk tabel gulir (.tw), bukan kartu", () => {
+    const t = tab("event");
+    expect(t.querySelector(".tw table #evBody")).toBeTruthy();
+    expect(t.querySelector("#evList")).toBeNull();
+  });
+  it("grafik pendaftar per event dilipat dalam details", () => {
+    expect(HTML).toContain('<details class="evgraf"><summary class="btn">Grafik pendaftar per event</summary>');
+  });
+});

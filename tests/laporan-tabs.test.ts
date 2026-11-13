@@ -61,5 +61,8 @@ describe("reportTabs", () => {
   it("baris tab tidak melebarkan halaman HP (min-width 0 pada pembungkus)", () => {
     const { html } = boot();
     expect(html).toContain('[id$="RptTabs"] { min-width: 0; max-width: 100%; }');
+    expect(html).toContain(".tab > * { min-width: 0; }");
+    expect(html).toContain(".evdetail > * { min-width: 0; }");
+    expect(html).toContain(".pan { grid-template-columns: minmax(0, 1fr); }");
   });
 });
