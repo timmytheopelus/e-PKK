@@ -730,7 +730,7 @@ body.sep img.logo { width: 120px; height: 120px; object-fit: contain; } @media (
       <input type="search" id="evQ" placeholder="Cari nama event" autocomplete="off" aria-label="Cari event">
       <button type="button" class="btn" id="evPast" aria-pressed="false">Tampilkan yang sudah lewat</button>
     </div>
-    <div class="tw tablebox"><table class="tbl"><thead><tr><th>Event</th><th>Tanggal</th><th>Pendaftaran</th><th class="num">Pendaftar</th></tr></thead><tbody id="evBody"></tbody></table><div class="empty" id="evNone" hidden>Tidak ada event untuk filter ini.</div></div>
+    <div class="tw tablebox"><table class="tbl"><thead><tr><th>Event</th><th>Tanggal</th><th>Pendaftaran</th><th class="num">Pendaftar</th></tr></thead><tbody id="evBody"></tbody></table><div class="fil" id="evMoreBar" hidden><button type="button" class="btn" id="evMore">Tampilkan 10 event lagi</button><span class="note" id="evCnt"></span></div><div class="empty" id="evNone" hidden>Tidak ada event untuk filter ini.</div></div>
     </div>
     <div id="evBackBar" hidden><button type="button" class="btn" id="evBack">← Kembali ke daftar event</button></div>
     <div class="evdetail" id="evDetail"></div>
@@ -3087,7 +3087,7 @@ document.getElementById("uaBody").addEventListener("click", function (e) {
 var T_PEND = "tbltiJ1qDJEwfWPLg";
 var PF = { ev: "flduf15moMpZSklGL", nama: "fld9ucFxEU0cUSHWw", pd: "fldMBf67dQxv51kY1", dek: "fldAZzqERt3oFHRRx", jk: "fldylW3JpqB1DJ0Fh", usia: "fldArgqtlZOnnRIvX", nikah: "fldmecbafGeLtqCSd", kat: "fldIgnkqdrDPz8gCV", st: "fldNGGEcwHqIsQPct", val: "fldqB6h9rzzC5VhKI", inap: "fldCqIqQmVnFXqrOU", hadir: "fldcpfpO2QvPGmgd7" };
 var EVX = { nama: "fld0d9tIyi4nyTZsM", tgl: "fldoIkx9wLMaKOa38", st: "fldHs8NnkUlEXDqLy", reg: "fldUqEnDI4GCqdwAk", jenis: "fldrYLgd8LCDjwmLZ", kel: "fldhgv2WlvqytF6zA", lokasi: "fldY0qw1v0a4fK9Sp", link: "fldyZyxxhZXUjhrqa", msg: "fldbLYDWk87mIC9yV", pic: "fldROaJ8rPAZQPTED", telp: "fld4qestIo5EjWAvk" };
-var EV = { sel: "", waktu: "next", q: "", pdf: "", rq: "", open: false, dim: -1, dv: "", want: "", msg: "" };
+var EV = { limit: 10, sel: "", waktu: "next", q: "", pdf: "", rq: "", open: false, dim: -1, dv: "", want: "", msg: "" };
 SRC_LABEL.evx = "Event"; SRC_LABEL.pend = "Pendaftaran event";
 function loadEvx() {
   return fetchAll(BASE, T_EVENTS, Object.keys(EVX).map(function (k) { return EVX[k]; })).then(function (recs) {
@@ -3119,10 +3119,9 @@ function ageLbl(s) { s = String(s || "").replace(/^[^0-9A-Za-z]+/, "").trim(); r
 function ageNum(s) { if (s === "Belum diisi") return 999; if (/bawah/i.test(s)) return 0; var m = /\d+/.exec(s); return m ? +m[0] : 998; }
 function pAktif(p) { return !/^(batal|dobel)/i.test(p.st); }
 function evKind(e, n) {
-  var open = /open/i.test(e.reg);
-  if (/batal|libur/i.test(e.st) || /libur/i.test(e.jenis) || (e.jenis === "Rutin" && !open)) return "";
+  if (/batal|libur/i.test(e.st) || /libur/i.test(e.jenis)) return "";
   if (/^(KEP|KEP Exe|SSK)$/.test(e.kel)) return "";
-  if (/aktif|scheduled/i.test(e.st) && (open || n > 0)) return "next";
+  if (/aktif|scheduled/i.test(e.st)) return "next";
   if (/berlalu/i.test(e.st) && n > 0) return "past";
   return "";
 }
@@ -3162,9 +3161,10 @@ function liveTick(today) {
   if (LV.ids !== ids.join(",") || !LV.t) { if (LV.t) clearInterval(LV.t); LV.ids = ids.join(","); LV.t = setInterval(go, 30000); }
 }
 function evDashHtml(by) {
-  var run = D.evx.filter(function (e) { return evKind(e, (by[e.id] || []).length) === "next"; }).sort(function (a, b) { return a.tgl.localeCompare(b.tgl); });
+  var up = D.evx.filter(function (e) { return evKind(e, (by[e.id] || []).length) === "next"; }).sort(function (a, b) { return a.tgl.localeCompare(b.tgl); });
+  var run = up.filter(function (e) { return /open/i.test(e.reg) || (by[e.id] || []).length > 0; });
   var tot = 0, buka = 0; run.forEach(function (e) { tot += (by[e.id] || []).length; if (/open/i.test(e.reg)) buka++; });
-  var nx = run.filter(function (e) { return e.tgl >= TODAY; })[0];
+  var nx = up.filter(function (e) { return e.tgl >= TODAY; })[0];
   var past = D.evx.filter(function (e) { return evKind(e, (by[e.id] || []).length) === "past"; }).length;
   var max = Math.max.apply(null, run.map(function (e) { return (by[e.id] || []).length; }).concat([1]));
   var h = (EV.msg ? '<p class="note" role="status">' + esc(EV.msg) + "</p>" : "") + livePanel(liveToday(by)) + '<div class="pan"><h4>Event berjalan <small class="note">· ringkasan pendaftaran saat ini</small></h4><div class="tiles">' + tile(run.length, "Event berjalan / akan datang", "yang memakai sistem pendaftaran") + tile(buka, "Pendaftaran masih dibuka", "") + tile(tot, "Total pendaftar aktif", "di semua event berjalan") +
@@ -3191,7 +3191,7 @@ function renderEvent() {
     return !q || e.nama.toLowerCase().indexOf(q) >= 0;
   });
   list.sort(function (a, b) { return EV.waktu === "past" ? b.tgl.localeCompare(a.tgl) : a.tgl.localeCompare(b.tgl); });
-  if (!list.length) { box.innerHTML = ""; document.getElementById("evNone").hidden = false; document.getElementById("evDetail").innerHTML = ""; EV.open = false; document.getElementById("evHome").hidden = false; document.getElementById("evBackBar").hidden = true; return; }
+  if (!list.length) { box.innerHTML = ""; document.getElementById("evMoreBar").hidden = true; document.getElementById("evNone").hidden = false; document.getElementById("evDetail").innerHTML = ""; EV.open = false; document.getElementById("evHome").hidden = false; document.getElementById("evBackBar").hidden = true; return; }
   document.getElementById("evNone").hidden = true;
   EV.msg = "";
   if (EV.want) {
@@ -3200,7 +3200,10 @@ function renderEvent() {
     else { EV.open = false; EV.msg = "Kegiatan itu tidak memakai pendaftaran, jadi tidak ada di menu Event."; document.getElementById("evHome").hidden = false; document.getElementById("evBackBar").hidden = true; document.getElementById("evDetail").hidden = true; document.getElementById("evDash").innerHTML = evDashHtml(by); }
   }
   if (!list.some(function (e) { return e.id === EV.sel; })) { EV.sel = list[0].id; EV.dim = -1; }
-  box.innerHTML = list.map(function (e) {
+  var shown = list.slice(0, Math.max(EV.limit, list.indexOf(list.filter(function (e) { return e.id === EV.sel; })[0]) + 1));
+  document.getElementById("evMoreBar").hidden = shown.length >= list.length;
+  document.getElementById("evCnt").textContent = "Menampilkan " + shown.length + " dari " + list.length + " event";
+  box.innerHTML = shown.map(function (e) {
     var n = (by[e.id] || []).length, open = /open/i.test(e.reg);
     return '<tr class="clk' + (e.id === EV.sel ? " on" : "") + '" data-ev="' + esc(e.id) + '" tabindex="0"><td>' + esc(e.nama.replace(/^\d{6}-/, "")) + (e.tgl === TODAY ? ' <span class="tag live" data-live-b="' + esc(e.id) + '">● Live</span>' : "") + "</td><td>" + esc(fmtDate(e.tgl, { weekday: "short", day: "numeric", month: "short", year: "numeric" })) +
       '</td><td><span class="tag' + (open ? "" : " alt") + '">' + (open ? "Dibuka" : "Ditutup") + '</span></td><td class="num">' + n + "</td></tr>";
@@ -3656,10 +3659,11 @@ function drill(btn) {
   var t = document.getElementById("evRegsPan"); if (t && t.scrollIntoView) t.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 document.getElementById("tab-event").addEventListener("input", function (e) {
-  if (e.target.id === "evQ") { EV.q = e.target.value; renderEvent(); }
+  if (e.target.id === "evQ") { EV.q = e.target.value; EV.limit = 10; renderEvent(); }
   else if (e.target.id === "evRq") { EV.rq = e.target.value; renderEvRegs(); }
 });
-document.getElementById("evPast").addEventListener("click", function () { EV.waktu = EV.waktu === "next" ? "all" : "next"; renderEvent(); });
+document.getElementById("evPast").addEventListener("click", function () { EV.waktu = EV.waktu === "next" ? "all" : "next"; EV.limit = 10; renderEvent(); });
+document.getElementById("evMore").addEventListener("click", function () { EV.limit += 10; renderEvent(); });
 document.getElementById("tab-event").addEventListener("change", function (e) {
   if (e.target.id === "evPd") { EV.pdf = e.target.value; renderEvRegs(); }
 });

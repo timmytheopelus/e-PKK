@@ -119,10 +119,11 @@ describe("menu Event: acara Rutin tampil bila pendaftaran dibuka", () => {
     w.eval((m ? m[0] : "") + "; window.evKind = evKind;");
     return w;
   }
-  it("Rutin + Open Registration tampil; Rutin tanpa pendaftaran tidak", () => {
+  it("semua event mendatang tampil, juga yang pendaftarannya tutup dan belum ada pendaftar", () => {
     const w = loadKind();
     expect(w.evKind({ st: "Aktif", jenis: "Rutin", reg: "Open Registration", kel: "" }, 0)).toBe("next");
-    expect(w.evKind({ st: "Aktif", jenis: "Rutin", reg: "", kel: "" }, 0)).toBe("");
+    expect(w.evKind({ st: "Aktif", jenis: "Rutin", reg: "", kel: "" }, 0)).toBe("next");
+    expect(w.evKind({ st: "⏰Scheduled", jenis: "Non Rutin", reg: "🔴Closed Registration", kel: "BPK" }, 0)).toBe("next");
   });
   it("kelompok KEP/SSK tetap disembunyikan dan batal tidak tampil", () => {
     const w = loadKind();
