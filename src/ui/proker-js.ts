@@ -199,6 +199,17 @@ export const PROKER_JS = String.raw`
     $("proFilterBtn").addEventListener("click", function () { var bx = $("proFilterBox"); bx.hidden = !bx.hidden; this.setAttribute("aria-expanded", bx.hidden ? "false" : "true"); });
   }
 
+  /* Kartu ringkasan di dashboard utama (Pimpinan, Sekjen, Bendahara). Server menjawab 403 untuk peran lain: kartu disembunyikan. */
+  window.EPK_PROKER_DASH = function () {
+    var card = $("proDashCard"), body = $("proDashBody"); if (!card || !body) return;
+    return api({ aksi: "ringkasan" }).then(function (j) {
+      body.textContent = "";
+      var b = j.berjalan || { n: 0, nilai: 0 };
+      body.appendChild(EPK.el("p", { text: b.n + " program disetujui/berjalan, total " + rp(b.nilai) }));
+      body.appendChild(EPK.el("p", { class: "hint", text: (j.menungguSekjen || 0) + " menunggu Sekjen" }));
+      card.hidden = false;
+    }).catch(function () { card.hidden = true; });
+  };
   window.prokerOpen = function (id) { var p = items.filter(function (x) { return x.id === id; })[0]; if (p) detail(id); else window.__PROKER_OPEN = id; };
   window.EPK_PROKER_OPEN = function () { buildTabs(); load(); };
 })();

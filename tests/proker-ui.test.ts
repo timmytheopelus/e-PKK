@@ -7,7 +7,7 @@ const P = (nama: string, status: string, total: number) => ({ id: "rec" + nama, 
   mode: "Total", totalPemasukan: 0, totalPengeluaran: total, baris: [], keputusan: [], baru: false, aksi: [], seksiAksi: [] });
 
 async function boot(programs: any[], extraHtml = "") {
-  const dom = new JSDOM(`<body><div id="proTiles"></div><p id="proMsg"></p><table><tbody id="proBody"></tbody></table><div id="proDashCard" hidden></div>${extraHtml}</body>`, { runScripts: "outside-only", url: "https://e.test/" });
+  const dom = new JSDOM(`<body><div id="proTiles"></div><p id="proMsg"></p><table><tbody id="proBody"></tbody></table><section id="proDashCard" hidden><div id="proDashBody"></div></section>${extraHtml}</body>`, { runScripts: "outside-only", url: "https://e.test/" });
   const w: any = dom.window;
   w.__ME__ = { viewAs: false };
   w.fetch = vi.fn(async (_u: string, init: any) => {
@@ -58,5 +58,25 @@ describe("menu Program Kerja: tiga angka", () => {
   });
   it("kelompok status di skrip sama dengan modul server", () => {
     for (const s of Object.values(GRUP_STATUS).flat()) expect(PROKER_JS).toContain(`"${s}"`);
+  });
+});
+
+describe("kartu ringkasan dashboard", () => {
+  it("menampilkan jumlah, nilai, dan yang menunggu Sekjen", async () => {
+    const w = await boot([]);
+    w.__RESP__ = { ok: true, status: 200, json: async () => ({ selesai: { n: 1, nilai: 100 }, berjalan: { n: 2, nilai: 500 }, menunggu: { n: 2, nilai: 75 }, menungguSekjen: 1 }) };
+    await w.EPK_PROKER_DASH();
+    const c = w.document.getElementById("proDashCard");
+    expect(c.hidden).toBe(false);
+    expect(c.textContent).toContain("2 program");
+    expect(c.textContent).toContain("Rp 500");
+    expect(c.textContent).toContain("1 menunggu Sekjen");
+  });
+  it("disembunyikan saat server menolak (403)", async () => {
+    const w = await boot([]);
+    w.document.getElementById("proDashCard").hidden = false;
+    w.__RESP__ = { ok: false, status: 403, json: async () => ({ message: "Tidak punya akses" }) };
+    await w.EPK_PROKER_DASH();
+    expect(w.document.getElementById("proDashCard").hidden).toBe(true);
   });
 });

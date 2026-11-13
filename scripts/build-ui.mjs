@@ -73,7 +73,7 @@ swap('    <button type="button" class="tabbtn" role="tab" id="tabbtn-admin"',
 swap('  <div id="tab-admin" class="tab"', PROKER_HTML + '  <div id="tab-admin" class="tab"');
 swap('"keuangan", "admin"];', '"keuangan", "proker", "admin"];');
 swap('  if (name === "keuangan") { if (window.EPK_KEU_OPEN) window.EPK_KEU_OPEN(); }',
-  '  if (name === "proker") { if (window.EPK_PROKER_OPEN) window.EPK_PROKER_OPEN(); }\n  else if (name === "keuangan") { if (window.EPK_KEU_OPEN) window.EPK_KEU_OPEN(); }');
+  '  if (name === "beranda" && window.EPK_PROKER_DASH) window.EPK_PROKER_DASH();\n  if (name === "proker") { if (window.EPK_PROKER_OPEN) window.EPK_PROKER_OPEN(); }\n  else if (name === "keuangan") { if (window.EPK_KEU_OPEN) window.EPK_KEU_OPEN(); }');
 
 // bagian RAW (daftar pengurus) dipisah supaya bisa dikosongkan untuk pengguna tanpa tab Pengurus
 const i = h.indexOf("var RAW = [") + "var RAW = [".length;
