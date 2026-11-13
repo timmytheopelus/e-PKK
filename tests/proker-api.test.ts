@@ -230,3 +230,37 @@ describe("Superadmin dan grup koordinator boleh mengajukan", () => {
     expect(r.seksiPilihan).toEqual(expect.arrayContaining(["Forkom 1", "Sekolah"]));
   });
 });
+
+describe("daftarProgram cakupan", () => {
+  const prog = (id: string, seksi: string, bidang: string, terlibat = seksi) => ({ id, fields: {
+    [PK.nama]: id, [PK.seksiPengaju]: seksi, [PK.bidang]: bidang, [PK.seksiTerlibat]: terlibat,
+    [PK.status]: "Menunggu Koord Bidang", [PK.dibuatOleh]: "lain@x.com", [PK.modeAnggaran]: "Total", [PK.totalAnggaran]: 100,
+    [PK.waktuDibuat]: new Date().toISOString() } });
+  const seedAll = () => { db[T_PROGRAM] = [
+    prog("recAAAAAAAAAAAAAA", "Forkom 1", "Kesekretariatan"),
+    prog("recBBBBBBBBBBBBBB", "Forkom 2", "Kesekretariatan"),
+    prog("recCCCCCCCCCCCCCC", "Forkom 2", "Kesekretariatan", "Forkom 2\nForkom 1"),
+    prog("recDDDDDDDDDDDDDD", "Sekolah", "Inreach (El Shaddai)"),
+  ]; };
+  const ids = (l: any[]) => l.map((p) => p.id).sort();
+  it("anggota seksi tidak melihat program seksi lain di bidang yang sama, tetapi melihat yang melibatkan seksinya", async () => {
+    seedAll(); rows = [{ bidang: "Kesekretariatan", seksi: "Forkom 1", peran: "Anggota" }];
+    const { daftarProgram } = await import("../src/lib/proker");
+    expect(ids(await daftarProgram(acc))).toEqual(["recAAAAAAAAAAAAAA", "recCCCCCCCCCCCCCC"]);
+  });
+  it("Koordinator Bidang melihat semua program bidangnya saja", async () => {
+    seedAll(); peran = { ...emptyPeran, koordBidang: ["Kesekretariatan"] }; rows = [{ bidang: "Kesekretariatan", seksi: "", peran: "Ketua" }];
+    const { daftarProgram } = await import("../src/lib/proker");
+    expect(ids(await daftarProgram(acc))).toEqual(["recAAAAAAAAAAAAAA", "recBBBBBBBBBBBBBB", "recCCCCCCCCCCCCCC"]);
+  });
+  it("akun tanpa jabatan mendapat daftar kosong", async () => {
+    seedAll(); rows = [];
+    const { daftarProgram } = await import("../src/lib/proker");
+    expect(await daftarProgram(acc)).toEqual([]);
+  });
+  it("pimpinan melihat semua", async () => {
+    seedAll(); peran = { ...emptyPeran, pimpinan: true }; rows = [];
+    const { daftarProgram } = await import("../src/lib/proker");
+    expect((await daftarProgram(acc)).length).toBe(4);
+  });
+});

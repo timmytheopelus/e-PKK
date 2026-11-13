@@ -167,6 +167,15 @@ async function beritahu(p: Prog, status: string, keputusan: string, tahap: Tahap
   }
 }
 
+export type CakupanCtx = { semua: boolean; bidangKoord: Set<string>; seksiSaya: Set<string>; email: string };
+/** Program yang boleh dilihat akun: semua (Pimpinan/Sekjen), bidang yang dikoordinir, seksi sendiri (pengaju atau terlibat), atau buatan sendiri. */
+export function dalamCakupan(p: { bidang: string; seksiPengaju: string; seksiTerlibat: string[]; dibuatOleh: string }, ctx: CakupanCtx): boolean {
+  if (ctx.semua) return true;
+  if (p.dibuatOleh === ctx.email) return true;
+  if (ctx.bidangKoord.has(norm(p.bidang))) return true;
+  return [p.seksiPengaju, ...p.seksiTerlibat].some((s) => ctx.seksiSaya.has(norm(s)));
+}
+
 export async function daftarProgram(acc: Access) {
   if (acc.level !== "Superadmin" && !acc.tabs.includes("Program Kerja")) throw new HttpError(403, "Tidak punya akses ke menu Program Kerja.");
   const [peran, rows] = await Promise.all([peranOf(acc), rowsOf(acc.email)]);
@@ -175,14 +184,16 @@ export async function daftarProgram(acc: Access) {
     listUntil(BASE_BPK, T_ANGGARAN, { fieldIds: Object.values(AG), want: Infinity, maxPages: 50 }),
     listUntil(BASE_BPK, T_SETUJU, { fieldIds: Object.values(ST), want: Infinity, maxPages: 50 }),
   ]);
-  const semua = peran.sekjen || peran.pimpinan;
-  const bidangSaya = new Set(rows.map((r) => norm(r.bidang)).filter(Boolean));
-  const seksiSaya = new Set(rows.map((r) => norm(r.seksi)).filter(Boolean));
-  const me = acc.email.trim().toLowerCase();
+  const ctx: CakupanCtx = {
+    semua: peran.sekjen || peran.pimpinan || acc.level === "Superadmin",
+    bidangKoord: new Set(peran.koordBidang.map(norm)),
+    seksiSaya: new Set(rows.map((r) => norm(r.seksi)).filter(Boolean)),
+    email: acc.email.trim().toLowerCase(),
+  };
   const out = [];
   for (const rec of pr.records) {
     const p = toProg(rec);
-    if (!semua && !(p.dibuatOleh === me || bidangSaya.has(norm(p.bidang)) || [p.seksiPengaju, ...p.seksiTerlibat].some((s) => seksiSaya.has(norm(s))))) continue;
+    if (!dalamCakupan(p, ctx)) continue;
     const baris = ag.records.filter((r) => r.fields[AG.programId] === p.id);
     const sum = (j: string) => baris.filter((r) => sel(r.fields[AG.jenis]) === j).reduce((s, r) => s + Number(r.fields[AG.nominal] || 0), 0);
     const aksi: Tahap[] = [];
