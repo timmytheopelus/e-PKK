@@ -11,7 +11,7 @@ export function canEditEvent(acc: { email: string; level: string }, creatorEmail
 }
 
 const JAB_BIDANG = "fldCCi0hV9yTL091P";
-const PGR = { umat: "fldHK8r2o5q60IDXW", jabatan: "fldwW6zQoxhbTWLDv", periode: "fldHngi5Klnm5bUmM" };
+const PGR = { umat: "fldfYrY68cNtbaXtN", jabatan: "fldwW6zQoxhbTWLDv", periode: "fldzVMmCXsP2MP293" }; // umat = link record, periode = select
 const SEKRE = /kesekretariatan|unit staf/i; // "Unit Staf" = nama lama opsi bidang di Airtable
 let cache: { at: number; v: Promise<Set<string>> } | null = null;
 
@@ -25,7 +25,7 @@ export function sekretariatEmails(): Promise<Set<string>> {
     const umat = new Set<string>();
     for (const r of pg.records) {
       const p: any = r.fields[PGR.periode], ptxt = String(typeof p === "object" && p ? p.name ?? "" : p ?? "");
-      if (ptxt && !ptxt.includes("2026")) continue;
+      if (ptxt && !/^2026/.test(ptxt)) continue;
       const js: any[] = r.fields[PGR.jabatan] || [];
       if (!js.some((j) => jabIds.has(typeof j === "string" ? j : j?.id))) continue;
       (r.fields[PGR.umat] || []).forEach((u: any) => umat.add(typeof u === "string" ? u : u?.id));
