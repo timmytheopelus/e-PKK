@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { effectiveAccess, AS_COOKIE } from "@/lib/viewas";
-import { ajukanProgram, putuskan, daftarProgram } from "@/lib/proker";
+import { ajukanProgram, putuskan, daftarProgram, infoProgram } from "@/lib/proker";
 import { HttpError } from "@/lib/policy";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +17,7 @@ export async function POST(req: Request) {
     const a = (acc || real) as any; // saat 'Lihat sebagai' acc.viewAs terisi: aksi tulis ditolak di lib
     const b = await req.json();
     if (b?.aksi === "daftar") return NextResponse.json({ programs: await daftarProgram(a) });
+    if (b?.aksi === "info") return NextResponse.json(await infoProgram(a));
     if (b?.aksi === "ajukan") return NextResponse.json(await ajukanProgram(a, b));
     if (b?.aksi === "putuskan") return NextResponse.json(await putuskan(a, b));
     throw new HttpError(400, "Aksi tidak dikenal.");

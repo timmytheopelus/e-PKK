@@ -180,3 +180,10 @@ export async function daftarProgram(acc: Access) {
   }
   return out;
 }
+
+/** Isian formulir: seksi tempat akun boleh mengajukan, dan semua seksi yang dikenal (untuk dicentang sebagai terlibat). */
+export async function infoProgram(acc: Access) {
+  guard(acc);
+  const rows = (await rowsOf(acc.email)).filter((r) => (r.peran === "Ketua" || r.peran === "Wakil") && r.seksi);
+  return { seksiSaya: [...new Set(rows.map((r) => r.seksi))], semuaSeksi: [...(await semuaSeksi())].sort((a, b) => a.localeCompare(b, "id")) };
+}

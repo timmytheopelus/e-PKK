@@ -175,3 +175,13 @@ describe("daftarProgram", () => {
     expect(list[0].aksi).toEqual(["Sekjen"]);
   });
 });
+
+describe("infoProgram", () => {
+  it("memberi seksi milik akun dan daftar seksi; ditolak tanpa tab", async () => {
+    const { infoProgram } = await import("../src/lib/proker");
+    const r = await infoProgram(acc);
+    expect(r.seksiSaya).toEqual(["Forkom 1"]);
+    expect(r.semuaSeksi).toContain("Sekolah");
+    await expect(infoProgram({ ...acc, tabs: [] })).rejects.toMatchObject({ status: 403 });
+  });
+});

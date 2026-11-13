@@ -122,3 +122,37 @@ describe("menu Event", () => {
     expect(HTML).toContain('<details class="evgraf"><summary class="btn">Grafik pendaftar per event</summary>');
   });
 });
+
+describe("menu Program Kerja (tab proker)", () => {
+  const acc2: any = { ...acc, tabs: [...acc.tabs, "Program Kerja"] };
+  const d2 = new JSDOM(renderDashboard(acc2)).window.document;
+  const t = d2.getElementById("tab-proker")!;
+  it("tab proker dan baris tab proRptTabs ada", () => {
+    expect(d2.getElementById("tabbtn-proker")).toBeTruthy();
+    expect(t).toBeTruthy();
+    expect(t.querySelector("#proRptTabs")).toBeTruthy();
+  });
+  it("saat awal hanya Daftar yang tampil", () => {
+    expect((t.querySelector("#proSecDaftar") as HTMLElement).hidden).toBe(false);
+    expect((t.querySelector("#proSecAjukan") as HTMLElement).hidden).toBe(true);
+  });
+  it("kontrol filter tampil paling banyak dua; sisanya dilipat", () => {
+    const vis = Array.from(t.querySelectorAll("#proSecDaftar input, #proSecDaftar select, #proSecDaftar button")).filter((x: any) => !x.closest("[hidden]"));
+    expect(vis.length).toBeLessThanOrEqual(2);
+    expect((t.querySelector("#proFilterBox") as HTMLElement).hidden).toBe(true);
+  });
+  it("semua tabel di dalam .tw dan tabel Daftar paling atas (sebelum formulir)", () => {
+    expect(Array.from(t.querySelectorAll("table")).filter((x: any) => !x.closest(".tw")).length).toBe(0);
+    const tbl = t.querySelector("#proTbl")!, form = t.querySelector("#proForm")!;
+    expect(tbl.compareDocumentPosition(form) & 4).toBeTruthy(); // formulir sesudah tabel
+  });
+  it("formulir tidak punya isian seksi pengaju", () => {
+    const form = t.querySelector("#proForm")!;
+    expect(form.querySelector("[name=seksiPengaju], #proSeksiPengaju")).toBeNull();
+  });
+  it("tab proker hanya terdaftar di __ME__.tabs untuk akun yang punya akses", () => {
+    const re = /"tabs":\[[^\]]*"proker"/;
+    expect(renderDashboard(acc)).not.toMatch(re);
+    expect(renderDashboard(acc2)).toMatch(re);
+  });
+});

@@ -3,7 +3,7 @@ export const ADMIN_JS = String.raw`
 (function () {
   var TABN = [["beranda","Dashboard"],["pengurus","Pengurus"],["pewarta","Pewarta"],["luar","Pewarta luar kota"],["pd","PD"],["umat","Umat"],["kalender","Kalender"],["event","Event"],["kep","KEP"],["inventaris","Inventaris"],["keuangan","Keuangan"],["admin","Administrasi"]];
   var TABLABEL = { Dashboard: 1, Pengurus: 1, Pewarta: 1, "Pewarta luar kota": 1, PD: 1, Umat: 1, Kalender: 1, Event: 1, KEP: 1, Inventaris: 1, Keuangan: 1, Administrasi: 1 };
-  var ALLT = ["Dashboard","Pengurus","Pewarta","Pewarta luar kota","PD","Umat","Kalender","Event","KEP","Inventaris","Keuangan","Administrasi"];
+  var ALLT = ["Dashboard","Pengurus","Pewarta","Pewarta luar kota","PD","Umat","Kalender","Event","KEP","Inventaris","Keuangan","Program Kerja","Administrasi"];
   var users = [];
   function api(action, input) {
     return fetch("/api/admin", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: action, input: input }) })

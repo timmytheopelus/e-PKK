@@ -31,6 +31,49 @@ swap('"kep", "inventaris", "admin"];', '"kep", "inventaris", "keuangan", "admin"
 swap('  if (name === "inventaris") { if (window.EPK_INV_OPEN) window.EPK_INV_OPEN(); }',
   '  if (name === "keuangan") { if (window.EPK_KEU_OPEN) window.EPK_KEU_OPEN(); }\n  else if (name === "inventaris") { if (window.EPK_INV_OPEN) window.EPK_INV_OPEN(); }');
 
+// Menu Program Kerja (pengajuan dan persetujuan; isi diisi oleh src/ui/proker-js.ts)
+const PROKER_HTML = `  <div id="tab-proker" class="tab" role="tabpanel" aria-labelledby="tabbtn-proker" hidden>
+    <div class="dash-short" id="proTiles"></div>
+    <div id="proRptTabs"></div>
+    <div id="proSecDaftar">
+      <div class="fil">
+        <input type="search" id="proQ" placeholder="Cari program atau seksi" autocomplete="off" aria-label="Cari program">
+        <button type="button" class="btn" id="proFilterBtn" aria-expanded="false" aria-controls="proFilterBox">Filter</button>
+      </div>
+      <div id="proFilterBox" hidden>
+        <div class="fil"><select id="proSt" aria-label="Status"><option value="">Semua status</option></select></div>
+      </div>
+      <p class="hint" id="proMsg">Memuat…</p>
+      <div class="tw tablebox"><table id="proTbl"><thead><tr><th>Program</th><th>Seksi</th><th>Mulai</th><th>Status</th><th class="num">Anggaran</th></tr></thead><tbody id="proBody"></tbody></table></div>
+    </div>
+    <div id="proSecAjukan" hidden>
+      <form id="proForm" novalidate>
+        <div class="fil"><input type="text" id="proNama" maxlength="200" placeholder="Nama program" aria-label="Nama program"></div>
+        <div class="fil"><textarea id="proDetail" rows="3" maxlength="5000" placeholder="Detail program" aria-label="Detail program" style="width:100%"></textarea></div>
+        <div class="fil">
+          <select id="proMulaiMode" aria-label="Bentuk perkiraan mulai"><option value="bln">Bulan dan tahun</option><option value="tgl">Tanggal lengkap</option></select>
+          <input type="month" id="proMulaiBln" aria-label="Bulan mulai"><input type="date" id="proMulaiTgl" aria-label="Tanggal mulai" hidden>
+        </div>
+        <h4>Seksi terlibat</h4>
+        <div id="proSeksi" class="epk-picklist"></div>
+        <h4>Anggaran</h4>
+        <div class="fil"><select id="proAgMode" aria-label="Bentuk anggaran"><option value="Total">Total saja</option><option value="Rincian">Rincian pemasukan dan pengeluaran</option></select></div>
+        <div id="proTotalBox" class="fil"><input type="number" id="proTotal" min="0" step="1" placeholder="Total anggaran (Rp)" aria-label="Total anggaran"></div>
+        <div id="proRincianBox" hidden><div id="proRincian"></div><button type="button" class="btn" id="proTambah">Tambah baris</button></div>
+        <div class="epk-row"><button type="submit" class="epk-btn">Ajukan program</button></div>
+        <p id="proFormMsg" class="epk-msg"></p>
+      </form>
+    </div>
+  </div>
+
+`;
+swap('    <button type="button" class="tabbtn" role="tab" id="tabbtn-admin"',
+  '    <button type="button" class="tabbtn" role="tab" id="tabbtn-proker" aria-controls="tab-proker" aria-selected="false" tabindex="-1" data-tab="proker">Program Kerja</button>\n    <button type="button" class="tabbtn" role="tab" id="tabbtn-admin"');
+swap('  <div id="tab-admin" class="tab"', PROKER_HTML + '  <div id="tab-admin" class="tab"');
+swap('"keuangan", "admin"];', '"keuangan", "proker", "admin"];');
+swap('  if (name === "keuangan") { if (window.EPK_KEU_OPEN) window.EPK_KEU_OPEN(); }',
+  '  if (name === "proker") { if (window.EPK_PROKER_OPEN) window.EPK_PROKER_OPEN(); }\n  else if (name === "keuangan") { if (window.EPK_KEU_OPEN) window.EPK_KEU_OPEN(); }');
+
 // bagian RAW (daftar pengurus) dipisah supaya bisa dikosongkan untuk pengguna tanpa tab Pengurus
 const i = h.indexOf("var RAW = [") + "var RAW = [".length;
 const j = h.indexOf("\n];", i);
@@ -156,7 +199,7 @@ var EPK = {
 };
 function applyMe() {
   var me = window.__ME__; if (!me) return;
-  ["beranda", "pengurus", "pewarta", "luar", "pd", "umat", "kalender", "event", "kep", "inventaris", "keuangan", "admin"].forEach(function (t) {
+  ["beranda", "pengurus", "pewarta", "luar", "pd", "umat", "kalender", "event", "kep", "inventaris", "keuangan", "proker", "admin"].forEach(function (t) {
     var b = document.getElementById("tabbtn-" + t); if (b && me.tabs.indexOf(t) < 0) b.hidden = true;
   });
   var kb = document.getElementById("admKelola"); if (kb && me.level !== "Superadmin") kb.hidden = true;
