@@ -254,3 +254,11 @@ describe("event live dan tombol Buka", () => {
     expect(html).toContain("tidak memakai pendaftaran");
   });
 });
+
+describe("link absensi di mode Lihat sebagai", () => {
+  it("tombol dinonaktifkan dengan keterangan, bukan menampilkan galat", () => {
+    const html = require("node:fs").readFileSync("docs/prototipe-artifact.html", "utf8");
+    expect(html).toContain('window.__ME__.viewAs);\n  h += \'<p><button type="button" class="chip" data-absen="');
+    expect(html).toContain("Tidak tersedia di mode Lihat sebagai");
+  });
+});

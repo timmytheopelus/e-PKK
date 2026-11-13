@@ -3561,7 +3561,8 @@ function renderEvDetail(e, regs) {
   var batal = D.pend.filter(function (p) { return p.ev === e.id && !pAktif(p); }).length;
   var h = '<h3>' + esc(e.nama.replace(/^\d{6}-/, "")) + '</h3><p class="sub">' + esc(fmtDate(e.tgl, { weekday: "long", day: "numeric", month: "long", year: "numeric" })) + (e.lokasi ? " · " + esc(e.lokasi) : "") + "</p>";
   if (e.tgl === TODAY) h += '<p><span class="tag live" data-live-b="' + esc(e.id) + '">● Live</span></p>';
-  h += '<p><button type="button" class="chip" data-absen="' + esc(e.id) + '">Link absensi kehadiran</button> <span class="note" id="absenMsg"></span></p>';
+  var va = !!(window.__ME__ && window.__ME__.viewAs);
+  h += '<p><button type="button" class="chip" data-absen="' + esc(e.id) + '"' + (va ? " disabled" : "") + '>Link absensi kehadiran</button> <span class="note" id="absenMsg">' + (va ? "Tidak tersedia di mode Lihat sebagai. Kembali ke akun Anda untuk membuat link." : "") + "</span></p>";
   h += '<p><button type="button" class="chip" data-seksi="' + esc(e.id) + '|' + (e.tgl < TODAY ? "hadir" : "daftar") + '">Laporan perwakilan per seksi</button></p><div id="evSeksi"></div>';
   h += '<div class="tiles">' + tile(regs.length, "Pendaftar aktif", batal ? batal + " batal / dobel daftar tidak dihitung" : "") + tile(done.length, "PD sudah mendaftar", "dari " + pdActive.length + " PD aktif") + tile(miss.length, "PD belum mendaftar", "belum ada satu pun pendaftar") + tile(bayar, "Confirmed / Paid", "validasi bendahara: " + vald) + "</div>";
   var rows = done.map(function (p) { return { n: p.nama, d: p.dekanat, l: perPd[pdKey(p.nama)] }; });

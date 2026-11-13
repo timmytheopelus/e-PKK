@@ -15,7 +15,8 @@ export async function POST(req: Request) {
     const b = await req.json();
     // Membuat link: pemegang menu Event atau Absensi (akun asli, bukan Lihat sebagai).
     if (b?.aksi === "link") {
-      if (!real || real.status !== "Disetujui" || acc?.viewAs || !(real.tabs.includes("Event") || real.tabs.includes("Absensi"))) throw new HttpError(403, "Tidak punya akses.");
+      if (acc?.viewAs) throw new HttpError(403, "Mode Lihat sebagai hanya pratinjau. Klik Kembali ke akun saya, lalu buat link absensi dari akun Anda sendiri.");
+      if (!real || real.status !== "Disetujui" || !(real.tabs.includes("Event") || real.tabs.includes("Absensi"))) throw new HttpError(403, "Tidak punya akses.");
       return NextResponse.json({ token: buatToken(String(b.event || "")) });
     }
     // Daftar nama dan tandai hadir: hanya akun dengan menu Absensi.
