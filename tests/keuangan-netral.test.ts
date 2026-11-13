@@ -74,8 +74,8 @@ describe("laporan keuangan: perpindahan uang tidak dihitung sebagai uang masuk/k
     click(w, tab(w, "Per Rekening"));
     const rows = [...w.document.querySelectorAll("tbody tr")].map((r: any) => [...r.children].map((c: any) => c.textContent));
     const kedua = rows.find((r: any) => r[0] === "Kedua (BCA)");
-    expect(kedua[2].replace(/\D/g, "")).toBe("300"); // uang masuk rekening kedua
-    expect(rows.find((r: any) => r[0] === "Utama (BCA)")[3].replace(/\D/g, "")).toBe("1250"); // 300 + 900 + 50 keluar
+    expect(kedua![2].replace(/\D/g, "")).toBe("300"); // uang masuk rekening kedua
+    expect(rows.find((r: any) => r[0] === "Utama (BCA)")![3].replace(/\D/g, "")).toBe("1250"); // 300 + 900 + 50 keluar
   });
   it("Per Bulan: masuk/keluar tanpa perpindahan, saldo akhir bulan lengkap", async () => {
     const w = await boot();
