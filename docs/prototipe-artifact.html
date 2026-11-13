@@ -397,7 +397,7 @@ footer { color: var(--muted); font-size: 13px; }
 .drill { margin-top: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); } .drill h4 { margin: 0 0 8px; font-size: 14px; }
 .pdw { display: flex; flex-wrap: wrap; gap: 8px; } .pdi { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 4px 3px 12px; font-size: 13.5px; background: var(--surface); }
 .pdi .act { border-radius: 999px; padding: 5px 7px; }
-.tile.go { font: inherit; color: inherit; text-align: left; cursor: pointer; width: 100%; } .tile.go:hover, .tile.go:focus-visible { border-color: var(--accent); }
+.tile.go { font: inherit; color: inherit; text-align: left; cursor: pointer; width: 100%; } .tile.go:hover, .tile.go:focus-visible { border-color: var(--accent); } .tile.go.on { border-color: var(--accent); background: var(--accent-soft); }
 .bcol[data-nav] { cursor: pointer; } .bcol[data-nav]:hover .bl { color: var(--accent); }
 .hbr.ev { font: inherit; font-size: 13px; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; padding: 6px 0; cursor: pointer; } .hbr.ev span { flex: 1 1 100%; } .hbr.ev i { flex: 0 0 auto; max-width: calc(100% - 40px); } .hbr.ev:hover span { color: var(--accent); }
 #admBtns .chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
@@ -3484,6 +3484,9 @@ function skLoad(eid, dasar) {
     .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.message || "Gagal."); return j; }); })
     .then(function (j) { SK.data = j; SK.busy = false; skDraw(eid); }, function (x) { SK.err = x.message; SK.busy = false; skDraw(eid); });
 }
+function skTile(n, label, sub, f) {
+  return '<button type="button" class="tile go' + (SK.f === f ? " on" : "") + '" data-skf="' + f + '" aria-pressed="' + (SK.f === f) + '"><b>' + n + "</b><span>" + esc(label) + "</span><small>" + esc(sub) + "</small></button>";
+}
 function skDraw(eid) {
   var el = document.getElementById("evSeksi"); if (!el || SK.eid !== eid) return;
   if (SK.busy) { el.innerHTML = '<p class="hint">Memuat laporan per seksi…</p>'; return; }
@@ -3492,9 +3495,11 @@ function skDraw(eid) {
   var hd = d.dasar === "hadir", kata = hd ? "hadir" : "terdaftar";
   var h = '<div class="pan"><h4>Perwakilan per seksi <small class="note">· dari sisi ' + (hd ? "kehadiran" : "pendaftaran") + "</small></h4>" +
     '<p class="chips"><button type="button" class="chip' + (hd ? "" : " on") + '" data-seksi="' + esc(eid) + '|daftar">Pendaftaran</button><button type="button" class="chip' + (hd ? " on" : "") + '" data-seksi="' + esc(eid) + '|hadir">Kehadiran</button></p>' +
-    '<div class="tiles">' + tile(d.ringkas.ketua, "Ketua " + kata, "seksi dengan ketua " + kata) + tile(d.ringkas.diwakili, "Ketua diwakili", "ketua belum " + kata + ", ada perwakilan seksi") + tile(d.ringkas.kosong, "Tanpa perwakilan", "tidak ada satu pun yang " + kata) + "</div>";
+    '<div class="tiles">' + skTile(d.ringkas.ketua, "Ketua " + kata, "seksi dengan ketua " + kata, "ketua") + skTile(d.ringkas.diwakili, "Ketua diwakili", "ketua belum " + kata + ", ada perwakilan seksi", "diwakili") + skTile(d.ringkas.kosong, "Tanpa perwakilan", "tidak ada satu pun yang " + kata, "kosong") + "</div>";
   var fl = [["", "Semua"], ["ketua", "Ketua " + kata], ["diwakili", "Diwakili"], ["kosong", "Tanpa perwakilan"]];
   h += '<p class="chips">' + fl.map(function (x) { return '<button type="button" class="chip' + (SK.f === x[0] ? " on" : "") + '" data-skf="' + x[0] + '">' + x[1] + "</button>"; }).join("") + '</p><p class="note">Klik baris seksi untuk melihat siapa saja anggotanya dan siapa yang ' + kata + ".</p>";
+  var vis = d.seksi.filter(function (r) { return !SK.f || r.status === SK.f; });
+  h += '<div id="skList"></div>' + (SK.f ? '<p class="count"><b>' + vis.length + " seksi</b>: " + (vis.map(function (r) { return esc(r.seksi); }).join(", ") || "tidak ada") + "</p>" : "");
   var by = {}, ord = []; d.seksi.filter(function (r) { return !SK.f || r.status === SK.f; }).forEach(function (r) { var k = r.bidang || "Lainnya"; if (!by[k]) { by[k] = []; ord.push(k); } by[k].push(r); });
   var lab = { ketua: "Ketua " + kata, diwakili: "Diwakili", kosong: "Tidak ada perwakilan" };
   ord.forEach(function (k) {
@@ -3559,7 +3564,7 @@ function renderEvRegs() {
 }
 document.getElementById("tab-event").addEventListener("click", function (e) {
   var skf = e.target.closest && e.target.closest("[data-skf]");
-  if (skf) { SK.f = skf.getAttribute("data-skf"); skDraw(SK.eid); return; }
+  if (skf) { var nf = skf.getAttribute("data-skf"); SK.f = SK.f === nf && skf.classList.contains("tile") ? "" : nf; skDraw(SK.eid); var an = document.getElementById("skList"); if (an && SK.f && skf.classList.contains("tile")) an.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
   var sk = e.target.closest && e.target.closest("[data-seksi]");
   if (sk) { var sp = sk.getAttribute("data-seksi").split("|"); SK.f = ""; skLoad(sp[0], sp[1]); return; }
   var cp = e.target.closest && e.target.closest("[data-evcopy]");

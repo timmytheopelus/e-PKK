@@ -213,6 +213,9 @@ describe("laporan per seksi: baris bisa diklik dan memuat siapa saja", () => {
     expect(det.textContent).toContain("Budi");
     expect(det.textContent).toContain("Anggota");
     w.SK.f = "kosong"; w.skDraw("recAAAAAAAAAAAAAA");
+    expect(d.querySelector('#evSeksi button.tile[data-skf="kosong"]').classList.contains("on")).toBe(true);
+    expect(d.querySelector("#evSeksi .count").textContent).toContain("Litbang");
+    expect(d.querySelector("#evSeksi .count").textContent).not.toContain("Sekretariat");
     expect(d.querySelectorAll("#evSeksi tr[data-prow]").length).toBe(1);
     expect(d.querySelector("#evSeksi tr[data-prow]").textContent).toContain("Litbang");
   });
