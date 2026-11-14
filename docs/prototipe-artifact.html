@@ -961,7 +961,7 @@ function buildRoster(recs, jabMap) {
     };
   });
   rows.sort(function (a, b) {
-    return (a.br - b.br) || (a.sr - b.sr) || (a.rr - b.rr) || (a.pst - b.pst) || (TORDER[a.t] - TORDER[b.t]) || a.nama.localeCompare(b.nama);
+    return (a.br - b.br) || (a.sr - b.sr) || (a.rr - b.rr) || (a.rr >= 1000 ? 0 : (a.pst - b.pst) || (TORDER[a.t] - TORDER[b.t])) || a.nama.localeCompare(b.nama);
   });
   rows.forEach(function (d, i) { d.i = i; });
   /* Jabatan ganda: orang dihitung sekali di kelompok utamanya, tapi juga tampil (bertanda ↳) di seksi jabatan lainnya. */
@@ -1326,7 +1326,7 @@ function render() {
     if (state.q && (d.nama + " " + pgl(d.nama) + " " + d.jab.join(" ") + " " + d.g + " " + d.b).toLowerCase().indexOf(state.q) < 0) return false;
     return true;
   });
-  list.sort(function (a, b) { return (a.br - b.br) || (a.sr - b.sr) || (a.rr - b.rr) || ((a.pst || 0) - (b.pst || 0)) || (TORDER[a.t] - TORDER[b.t]) || a.nama.localeCompare(b.nama); });
+  list.sort(function (a, b) { return (a.br - b.br) || (a.sr - b.sr) || (a.rr - b.rr) || (a.rr >= 1000 ? 0 : ((a.pst || 0) - (b.pst || 0)) || (TORDER[a.t] - TORDER[b.t])) || a.nama.localeCompare(b.nama); });
   var html = "", no = 0, lastB = null;
   GROUPS.forEach(function (g) {
     var items = list.filter(function (d) { return d.g === g.seksi && d.b === g.bidang; });

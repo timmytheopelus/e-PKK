@@ -14,3 +14,10 @@ describe("urutan baris alias Forkom 2", () => {
     expect(html).toContain('j.seksi === "Forkom 2" && j.urut < 999 ? 1000 + j.urut : rankOf(ORDER.peran, j.peran)');
   });
 });
+
+describe("urutan alfabet di jabatan ber-urut Forkom 2", () => {
+  it("rr >= 1000 diurutkan menurut nama, bukan tingkat", () => {
+    const html = readFileSync("docs/prototipe-artifact.html", "utf8");
+    expect(html.split("(a.rr >= 1000 ? 0 :").length - 1).toBe(2);
+  });
+});
