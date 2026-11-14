@@ -3095,10 +3095,9 @@ function renderUmat() {
   document.getElementById("uaNone").hidden = list.length > 0;
   document.getElementById("uaMore").hidden = list.length <= shown.length;
   tb.innerHTML = shown.map(function (o) {
-    var num = waNumber(o.wa), em = /^[^@\s]+@[^@\s]+$/.test(o.email);
-    var wa = num ? '<a class="act wa" href="https://wa.me/' + num + '" target="_blank" rel="noopener" aria-label="Kirim WhatsApp ke ' + esc(o.nama) + '">' + ICON_WA + "<span>WA</span></a>" : '<button type="button" class="act wa" disabled title="Nomor WA belum tercatat" aria-label="WhatsApp belum tersedia">' + ICON_WA + "<span>WA</span></button>";
+    var em = /^[^@\s]+@[^@\s]+$/.test(o.email);
     var mail = em ? '<a class="act" href="mailto:' + esc(o.email) + '" aria-label="Kirim email ke ' + esc(o.nama) + '"><span>Email</span></a>' : '<button type="button" class="act" disabled title="Email belum tercatat"><span>Email</span></button>';
-    return '<tr><td class="nama"><span class="n">' + esc(o.nama) + '</span></td><td>' + esc(o.pang) + "</td><td>" + esc(o.pd || "-") + '</td><td><span class="acts"><button type="button" class="act" data-ua="' + o.id + '" aria-label="Lihat detail ' + esc(o.nama) + '">' + ICON_VIEW + "<span>View</span></button>" + wa + mail + "</span></td></tr>";
+    return '<tr><td class="nama"><span class="n">' + esc(o.nama) + '</span></td><td>' + esc(o.pang) + "</td><td>" + esc(o.pd || "-") + '</td><td><span class="acts"><button type="button" class="act" data-ua="' + o.id + '" aria-label="Lihat detail ' + esc(o.nama) + '">' + ICON_VIEW + "<span>View</span></button>" + mail + "</span></td></tr>";
   }).join("");
 }
 document.getElementById("uaQ").addEventListener("input", function (e) { ua.q = e.target.value.toLowerCase().trim(); ua.limit = 100; renderUmat(); });

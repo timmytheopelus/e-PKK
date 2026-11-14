@@ -107,3 +107,12 @@ describe("UI: form kegiatan memuat buka/tutup registrasi", () => {
     expect(h).toContain('regTutup: "fldI1RKkKVaua8DH0"');
   });
 });
+
+describe("UI: daftar Umat tanpa tombol WA", () => {
+  it("baris tabel umat hanya punya View dan Email", () => {
+    const h = require("fs").readFileSync("docs/prototipe-artifact.html", "utf8");
+    const fn = h.slice(h.indexOf("function renderUmat()"), h.indexOf('document.getElementById("uaQ")'));
+    expect(fn).not.toContain("ICON_WA");
+    expect(fn).toContain("<span>Email</span>");
+  });
+});
