@@ -178,6 +178,17 @@ describe("daftarProgram: realisasi anggaran", () => {
     expect(p.realisasi.map((r: any) => r.keterangan)).toEqual(["Konsumsi", "DP"]); // terbaru dulu
     expect(p.realisasi[1]).toEqual({ tanggal: "2026-11-01", nominal: 120, keterangan: "DP", penerima: "Gereja" });
   });
+  it("seksi yang hanya terlibat tidak melihat sisa/realisasi; seksi pengaju melihat", async () => {
+    seed({ [PK.status]: "Disetujui", [PK.seksiTerlibat]: "Forkom 1\nForkom 2" });
+    db[T_REALISASI] = [{ id: "z1", fields: { [RZ.programId]: "recPPPPPPPPPPPPPP", [RZ.nominal]: 120, [RZ.tanggal]: "2026-11-01", [RZ.keterangan]: "DP" } }];
+    const { daftarProgram } = await import("../src/lib/proker");
+    rows = [{ bidang: "Kesekretariatan", seksi: "Forkom 2", peran: "Ketua" }];
+    const lain = (await daftarProgram({ ...acc, email: "ketua2@x.com" }))[0];
+    expect(lain.nama).toBe("Retret");
+    expect(lain).toMatchObject({ milik: false, terpakai: null, sisa: null, realisasi: [] });
+    rows = [{ bidang: "Kesekretariatan", seksi: "Forkom 1", peran: "Ketua" }];
+    expect((await daftarProgram({ ...acc, email: "ketua1@x.com" }))[0]).toMatchObject({ milik: true, terpakai: 120, sisa: 380 });
+  });
   it("tanpa realisasi: terpakai 0 dan sisa = anggaran", async () => {
     seed({ [PK.status]: "Disetujui" }); peran = { ...emptyPeran, sekjen: true };
     const { daftarProgram } = await import("../src/lib/proker");

@@ -199,8 +199,10 @@ async function muatProgram(acc: Access, saring: boolean) {
       .map((r) => ({ tanggal: String(r.fields[RZ.tanggal] || ""), nominal: Number(r.fields[RZ.nominal] || 0), keterangan: String(r.fields[RZ.keterangan] || ""), penerima: String(r.fields[RZ.penerima] || "") }))
       .sort((a, b) => b.tanggal.localeCompare(a.tanggal));
     const anggaranKeluar = p.mode === "Rincian" ? sum("Pengeluaran") : p.total;
+    // Sisa dan realisasi hanya untuk anggaran milik seksi pengaju (atau pembuat, koordinator bidangnya, dan peran penuh); seksi yang hanya terlibat tidak melihatnya.
+    const milik = ctx.semua || p.dibuatOleh === ctx.email || ctx.bidangKoord.has(norm(p.bidang)) || ctx.seksiSaya.has(norm(p.seksiPengaju));
     out.push({
-      ...hitungSisa(anggaranKeluar, real.map((r) => r.nominal)), realisasi: real,
+      ...(milik ? hitungSisa(anggaranKeluar, real.map((r) => r.nominal)) : { terpakai: null as number | null, sisa: null as number | null }), realisasi: milik ? real : [], milik,
       id: p.id, nama: p.nama, detail: p.detail, seksiPengaju: p.seksiPengaju, bidang: p.bidang, mulai: p.mulai, seksiTerlibat: p.seksiTerlibat, status: p.status,
       mode: p.mode, totalPemasukan: p.mode === "Rincian" ? sum("Pemasukan") : 0, totalPengeluaran: p.mode === "Rincian" ? sum("Pengeluaran") : p.total,
       baris: baris.map((r) => ({ keterangan: String(r.fields[AG.keterangan] || ""), jenis: sel(r.fields[AG.jenis]), nominal: Number(r.fields[AG.nominal] || 0) })),
