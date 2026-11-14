@@ -104,3 +104,16 @@ describe("kolom cari di halaman absensi", () => {
     expect(d.getElementById("lh").textContent).not.toContain("Ani Lengkap");
   });
 });
+
+describe("angka ringkasan bisa diklik", () => {
+  it("klik 'sudah hadir' menggulir ke daftar sudah hadir, 'belum hadir' ke daftar belum hadir, 'total' ke awal daftar", async () => {
+    const { w } = await buka(); const d = w.document;
+    const hit: string[] = [];
+    ["hh", "hb"].forEach((id) => { d.getElementById(id).scrollIntoView = () => hit.push(id); });
+    d.getElementById("cnt-h").click();
+    d.getElementById("cnt-b").click();
+    d.getElementById("cnt-t").click();
+    expect(hit).toEqual(["hh", "hb", "hb"]);
+    expect(d.getElementById("cnt-h").getAttribute("role")).toBe("button");
+  });
+});
