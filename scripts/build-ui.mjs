@@ -241,6 +241,7 @@ var EPK = {
     EPK.modal("Profil saya", dl);
   }
 };
+var APK_VERSI = "1.1"; /* samakan dengan versionName di android/app/build.gradle */
 function applyMe() {
   var me = window.__ME__; if (!me) return;
   ["beranda", "pengurus", "pewarta", "luar", "pd", "umat", "kalender", "event", "kep", "inventaris", "keuangan", "proker", "admin"].forEach(function (t) {
@@ -265,7 +266,7 @@ function applyMe() {
   }
   el.appendChild(EPK.el("span", { class: "epk-wrap" }, [who, menu]));
   el.appendChild(EPK.el("span", { class: "epk-lvl", text: me.level === "Superadmin" ? "Superadmin" : me.level === "Admin" ? "Admin" : me.level === "Edit" ? "Akses edit" : "Hanya lihat" }));
-  el.appendChild(EPK.el("a", { class: "epk-apk", href: "/e-PKK-BPKPKK-Bandung.apk", download: "", text: "⬇ Download app Android" }));
+  el.appendChild(EPK.el("a", { class: "epk-apk", href: "/e-PKK-BPKPKK-Bandung.apk", download: "e-PKK-BPKPKK-Bandung-v" + APK_VERSI + ".apk", text: "⬇ Download app Android (v" + APK_VERSI + ")" }));
   if (me.viewAs) {
     var bar = EPK.el("div", { class: "epk-asbar", role: "status" }, [
       EPK.el("span", { text: "Mode Lihat sebagai: Anda melihat tampilan " + (me.nama || me.email) + " (" + me.level + "). Pratinjau saja, data tidak bisa diubah." }),

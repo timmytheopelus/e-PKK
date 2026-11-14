@@ -82,6 +82,8 @@ describe("lonceng di header", () => {
     const a = boot({ level: "View" }).querySelector("#me a.epk-apk") as any;
     expect(a.textContent).toContain("Download app Android");
     expect(a.getAttribute("href")).toBe("/e-PKK-BPKPKK-Bandung.apk");
-    expect(a.hasAttribute("download")).toBe(true);
+    const ver = /versionName '([^']+)'/.exec(require("fs").readFileSync("android/app/build.gradle", "utf8"))![1];
+    expect(a.textContent).toContain("(v" + ver + ")"); // harus sama dengan versi APK yang dibangun
+    expect(a.getAttribute("download")).toBe("e-PKK-BPKPKK-Bandung-v" + ver + ".apk");
   });
 });
