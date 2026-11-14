@@ -129,21 +129,14 @@ export async function acaraAbsensi(now = new Date()) {
 
 const UM = { nama: "fldIpQTSkFB9sU0lo", pgl: "fld469PYR80nAUNIF", wa: "fldzY1Z2QvIIEkYXR", email: "fldAaQ3zmiLBhp4z9", pd: "fldrHJ6q3HZvApccl", pdNama: "fldOovF470MdN2fMg", paroki: "fldv0BCQFNy6Dm5pH" };
 
-/** Cari nama untuk go show di seluruh Team Umat (nama lengkap atau panggilan). Rapat BPK: pengurus BPK ditampilkan lebih dulu. Yang sudah terdaftar tidak ditampilkan. */
+/** Cari nama untuk go show di seluruh Team Umat (nama lengkap atau panggilan). Berlaku sama untuk semua acara, termasuk rapat BPK. Yang sudah terdaftar tidak ditampilkan. */
 export async function cariGoShow(token: string, q: string) {
   const m = await muat(token);
   const kata = String(q || "").replace(/\s+/g, " ").trim().toLowerCase();
   type H = { id: string; nama: string; info: string };
-  if (kata.length < 2) return { sumber: m.bpk ? "pengurus" : "umat", hasil: [] as H[] };
+  if (kata.length < 2) return { sumber: "umat", hasil: [] as H[] };
   const hasil: H[] = [];
   const ada = new Set<string>();
-  if (m.bpk) {
-    for (const o of m.orang) {
-      if (m.umatPend.has(o.umat) || !o.nama.toLowerCase().includes(kata)) continue;
-      ada.add(o.umat);
-      hasil.push({ id: o.umat, nama: o.nama, info: [...new Set(o.jab.map((j) => j.seksi).filter(Boolean))].join(", ") });
-    }
-  }
   const k = esc(kata);
   const { records } = await listPage(BASE_BPK, T.umat, { fieldIds: [UM.nama, UM.pgl, UM.pdNama, UM.paroki], pageSize: 50, formula: `OR(SEARCH("${k}", LOWER({${UM.nama}})), SEARCH("${k}", LOWER({${UM.pgl}})))` });
   for (const r of records) {
@@ -152,7 +145,7 @@ export async function cariGoShow(token: string, q: string) {
     ada.add(r.id);
     hasil.push({ id: r.id, nama: one(r.fields[UM.nama]), info: one(m.kep ? r.fields[UM.paroki] : r.fields[UM.pdNama]) });
   }
-  return { sumber: m.bpk ? "pengurus" : "umat", hasil: hasil.slice(0, 15) };
+  return { sumber: "umat", hasil: hasil.slice(0, 15) };
 }
 
 /** Go show: orang yang datang tanpa daftar. Dipilih dari daftar (umat) atau dibuat baru (Nama, WA, Email), lalu langsung didaftarkan dan ditandai hadir. */

@@ -33,25 +33,15 @@ const T = () => buatToken("recEVENT00000000A");
 beforeEach(() => { process.env.AUTH_SECRET = "rahasia"; calls.length = 0; namaEvent = "261114-Rapat Pleno 3"; kelEvent = undefined; umatCari = []; sudahAda = []; });
 
 describe("cariGoShow", () => {
-  it("rapat BPK: pengurus BPK tampil dulu (dengan seksinya), lalu umat lain dari Team Umat; yang sudah terdaftar dan duplikat tidak muncul", async () => {
+  it("rapat BPK: sama seperti acara lain, mencari di seluruh umat (bukan hanya pengurus); yang sudah terdaftar tidak muncul", async () => {
     umatCari = [
-      { id: "recUMAT0000000002", fields: { fldIpQTSkFB9sU0lo: "Cantik Pengurus" } },
-      { id: "recUMAT0000000009", fields: { fldIpQTSkFB9sU0lo: "Cahyo Umat", fldOovF470MdN2fMg: ["PD Dua"] } },
+      { id: "recUMAT0000000009", fields: { fldIpQTSkFB9sU0lo: "Dodi Umat", fldOovF470MdN2fMg: ["PD Dua"] } },
       { id: "recUMAT0000000001", fields: { fldIpQTSkFB9sU0lo: "Budi Terdaftar" } },
     ];
-    const r = await cariGoShow(T(), "ca");
-    expect(r.sumber).toBe("pengurus");
-    expect(r.hasil).toEqual([
-      { id: "recUMAT0000000002", nama: "Cantik Pengurus", info: "Litbang" },
-      { id: "recUMAT0000000009", nama: "Cahyo Umat", info: "PD Dua" },
-    ]);
-    umatCari = [{ id: "recUMAT0000000001", fields: { fldIpQTSkFB9sU0lo: "Budi Terdaftar" } }];
-    expect((await cariGoShow(T(), "budi")).hasil).toEqual([]); // sudah terdaftar
-    expect((await cariGoShow(T(), "c")).hasil).toEqual([]);    // terlalu pendek
-  });
-  it("rapat BPK: orang yang bukan pengurus tetap bisa dipilih dari data umat", async () => {
-    umatCari = [{ id: "recUMAT0000000009", fields: { fldIpQTSkFB9sU0lo: "Dodi Umat" } }];
-    expect((await cariGoShow(T(), "dodi")).hasil.map((h) => h.nama)).toEqual(["Dodi Umat"]);
+    const r = await cariGoShow(T(), "do");
+    expect(r.sumber).toBe("umat");
+    expect(r.hasil).toEqual([{ id: "recUMAT0000000009", nama: "Dodi Umat", info: "PD Dua" }]);
+    expect((await cariGoShow(T(), "d")).hasil).toEqual([]); // terlalu pendek
   });
   it("pencarian umat juga mencocokkan nama panggilan", async () => {
     namaEvent = "261121-Misa Awal Tahun"; umatCari = [];
