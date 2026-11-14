@@ -78,4 +78,10 @@ describe("lonceng di header", () => {
   it("tidak tampil saat Lihat sebagai", () => {
     expect(boot({ level: "View", viewAs: "x@y.z" }).getElementById("epkBell")).toBeNull();
   });
+  it("ada tautan Download app Android di dekat profil", () => {
+    const a = boot({ level: "View" }).querySelector("#me a.epk-apk") as any;
+    expect(a.textContent).toContain("Download app Android");
+    expect(a.getAttribute("href")).toBe("/e-PKK-BPKPKK-Bandung.apk");
+    expect(a.hasAttribute("download")).toBe(true);
+  });
 });

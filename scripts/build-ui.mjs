@@ -107,6 +107,7 @@ const shim = `<style>
 .meta { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; justify-content: flex-end; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
 .meta a { color: var(--accent); }
 .epk-wrap { position: relative; display: inline-block; }
+.epk-apk { font-size: 12.5px; color: var(--accent, #1d7f8c); text-decoration: underline; white-space: nowrap; }
 .epk-who, .epk-bell { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; cursor: pointer; }
 .epk-bell { position: relative; }
 .epk-badge { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; border-radius: 9px; background: var(--danger); color: #fff; font-size: 11px; line-height: 18px; text-align: center; padding: 0 4px; }
@@ -264,6 +265,7 @@ function applyMe() {
   }
   el.appendChild(EPK.el("span", { class: "epk-wrap" }, [who, menu]));
   el.appendChild(EPK.el("span", { class: "epk-lvl", text: me.level === "Superadmin" ? "Superadmin" : me.level === "Admin" ? "Admin" : me.level === "Edit" ? "Akses edit" : "Hanya lihat" }));
+  el.appendChild(EPK.el("a", { class: "epk-apk", href: "/e-PKK-BPKPKK-Bandung.apk", download: "", text: "⬇ Download app Android" }));
   if (me.viewAs) {
     var bar = EPK.el("div", { class: "epk-asbar", role: "status" }, [
       EPK.el("span", { text: "Mode Lihat sebagai: Anda melihat tampilan " + (me.nama || me.email) + " (" + me.level + "). Pratinjau saja, data tidak bisa diubah." }),
