@@ -30,5 +30,16 @@ jobs:
       - uses: actions/upload-artifact@v4
         with: { name: e-PKK-APK, path: e-PKK-BPKPKK-Bandung.apk }
       - name: Rilis
+        continue-on-error: true
         env: { GH_TOKEN: "${{ github.token }}" }
-        run: gh release create "apk-${{ github.run_number }}" e-PKK-BPKPKK-Bandung.apk --title "APK e-PKK #${{ github.run_number }}" --notes "Pintasan untuk membuka e-PKK BPKPKK Bandung. Unduh, lalu izinkan pemasangan dari sumber ini di HP."
+        run: gh release create "apk-${{ github.run_number }}" e-PKK-BPKPKK-Bandung.apk --repo "${{ github.repository }}" --target "${{ github.sha }}" --title "APK e-PKK #${{ github.run_number }}" --notes "Pintasan untuk membuka e-PKK BPKPKK Bandung."
+      # Salinan di situs agar bisa dibagikan lewat satu link: https://e-pkk-one.vercel.app/e-PKK-BPKPKK-Bandung.apk
+      - name: Simpan APK ke situs
+        run: |
+          cp e-PKK-BPKPKK-Bandung.apk public/e-PKK-BPKPKK-Bandung.apk
+          git config user.name "github-actions"
+          git config user.email "actions@users.noreply.github.com"
+          git add public/e-PKK-BPKPKK-Bandung.apk
+          git commit -m "APK e-PKK #${{ github.run_number }}" || exit 0
+          git pull --rebase origin main
+          git push origin HEAD:main
