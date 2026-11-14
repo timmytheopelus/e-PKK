@@ -931,6 +931,8 @@ function wilayahOf(s) {
   if (!s) return "-";
   return /luar/i.test(s) ? "L" : "K";
 }
+/* Seksi yang urutan barisnya mengikuti nomor "urut" jabatan di Airtable (bukan peran lalu tingkat). */
+var URUT_SEKSI = ["Forkom 2", "Alpha / TMCE"];
 function buildRoster(recs, jabMap) {
   var rows = recs.map(function (r) {
     var v = r.cellValuesByFieldId || {};
@@ -957,7 +959,7 @@ function buildRoster(recs, jabMap) {
       t: tingkatOf(cellFirst(v[F_PNG_TINGKAT])), w: wilayahOf(cellFirst(v[F_PNG_WIL])),
       pst: best ? pstKey(best.nama, nama) : 2,
       b: best ? best.bidang : UNGROUPED, g: best ? best.seksi : UNGROUPED,
-      br: best ? rankOf(ORDER.bidang, best.bidang) : 9999, sr: best ? best.sr : 9999, rr: best ? (best.seksi === "Forkom 2" && best.urut < 999 ? 1000 + best.urut : best.pr) : 9999
+      br: best ? rankOf(ORDER.bidang, best.bidang) : 9999, sr: best ? best.sr : 9999, rr: best ? (URUT_SEKSI.indexOf(best.seksi) > -1 && best.urut < 999 ? 1000 + best.urut : best.pr) : 9999
     };
   });
   rows.sort(function (a, b) {
@@ -973,7 +975,7 @@ function buildRoster(recs, jabMap) {
       if (j.bidang === d.b && j.seksi === d.g) return;
       var k = j.bidang + "\u0001" + j.seksi;
       (by[k] = by[k] || { b: j.bidang, g: j.seksi, jab: [], pr: 9999 }).jab.push(j.nama);
-      by[k].pr = Math.min(by[k].pr, j.seksi === "Forkom 2" && j.urut < 999 ? 1000 + j.urut : rankOf(ORDER.peran, j.peran));
+      by[k].pr = Math.min(by[k].pr, URUT_SEKSI.indexOf(j.seksi) > -1 && j.urut < 999 ? 1000 + j.urut : rankOf(ORDER.peran, j.peran));
     });
     Object.keys(by).forEach(function (k) {
       var a = by[k];
