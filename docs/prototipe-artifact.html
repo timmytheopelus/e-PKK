@@ -957,7 +957,7 @@ function buildRoster(recs, jabMap) {
       t: tingkatOf(cellFirst(v[F_PNG_TINGKAT])), w: wilayahOf(cellFirst(v[F_PNG_WIL])),
       pst: best ? pstKey(best.nama, nama) : 2,
       b: best ? best.bidang : UNGROUPED, g: best ? best.seksi : UNGROUPED,
-      br: best ? rankOf(ORDER.bidang, best.bidang) : 9999, sr: best ? best.sr : 9999, rr: best ? best.pr : 9999
+      br: best ? rankOf(ORDER.bidang, best.bidang) : 9999, sr: best ? best.sr : 9999, rr: best ? (best.seksi === "Forkom 2" && best.urut < 999 ? 1000 + best.urut : best.pr) : 9999
     };
   });
   rows.sort(function (a, b) {
