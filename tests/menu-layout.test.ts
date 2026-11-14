@@ -277,3 +277,47 @@ describe("hapus pendaftar event (Admin/Superadmin)", () => {
     expect(h).toContain('aksi: "batal"');
   });
 });
+
+describe("daftar PD diurutkan menurut dekanat lalu nama", () => {
+  it("dekanat A-Z, nama A-Z di dalam dekanat, tanpa dekanat di akhir; data asli tidak diubah", async () => {
+    const { JSDOM } = await import("jsdom");
+    const html = require("node:fs").readFileSync("docs/prototipe-artifact.html", "utf8");
+    const m = html.match(/function pdSort\([\s\S]*?\/\* end pdSort \*\//);
+    expect(m).toBeTruthy();
+    const w: any = new JSDOM("<body></body>", { runScripts: "outside-only" }).window;
+    w.eval('function cmpId(a,b){return a.localeCompare(b,"id")}' + m[0] + ";window.pdSort=pdSort;");
+    const src = [
+      { nama: "PDPKK St. Odilia", dekanat: "Dekanat Priangan 2" },
+      { nama: "BPKPKK Bandung", dekanat: "" },
+      { nama: "PDPKK Fire Youth", dekanat: "Dekanat Kepemudaan" },
+      { nama: "KomPKK Creative Ministry", dekanat: "Dekanat Kepemudaan" },
+      { nama: "KomPKK Catholic Family", dekanat: "Dekanat Bandung Selatan" },
+      { nama: "Komunitas Soli Deo", dekanat: "Dekanat Bandung Timur" },
+      { nama: "PDPKK Bunda Tujuh", dekanat: "Dekanat Bandung Barat" },
+    ];
+    const out = w.pdSort(src).map((p: any) => p.nama);
+    expect(out).toEqual(["PDPKK Bunda Tujuh", "KomPKK Catholic Family", "Komunitas Soli Deo", "KomPKK Creative Ministry", "PDPKK Fire Youth", "PDPKK St. Odilia", "BPKPKK Bandung"]);
+    expect(src[0].nama).toBe("PDPKK St. Odilia");
+    expect(html).toContain("list = pdSort(list);");
+  });
+});
+
+describe("pencarian PD mencakup dekanat", () => {
+  it("mengetik nama dekanat menemukan PD di dekanat itu, selain nama, koordinator, pastor", async () => {
+    const { JSDOM } = await import("jsdom");
+    const html = require("node:fs").readFileSync("docs/prototipe-artifact.html", "utf8");
+    const m = html.match(/function pdCocok\([^\n]*\n\/\* end pdCocok \*\//);
+    expect(m).toBeTruthy();
+    const w: any = new JSDOM("<body></body>", { runScripts: "outside-only" }).window;
+    w.eval('function pgl(n){return String(n||"").split(" ")[0]}' + m[0] + ";window.pdCocok=pdCocok;");
+    const p = { nama: "PDPKK Fire Youth Community", dekanat: "Dekanat Kepemudaan", koor: "Richie Osfred", pastor: "Rm. Danang" };
+    expect(w.pdCocok(p, "kepemudaan")).toBe(true);
+    expect(w.pdCocok(p, "dekanat kep")).toBe(true);
+    expect(w.pdCocok(p, "fire")).toBe(true);
+    expect(w.pdCocok(p, "richie")).toBe(true);
+    expect(w.pdCocok(p, "danang")).toBe(true);
+    expect(w.pdCocok(p, "priangan")).toBe(false);
+    expect(w.pdCocok({ nama: "BPKPKK", koor: "", pastor: "" }, "dekanat")).toBe(false);
+    expect(html).toContain("Cari nama PD, dekanat, koordinator, atau pastor");
+  });
+});

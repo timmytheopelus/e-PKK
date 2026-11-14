@@ -33,12 +33,21 @@ const T = () => buatToken("recEVENT00000000A");
 beforeEach(() => { process.env.AUTH_SECRET = "rahasia"; calls.length = 0; namaEvent = "261114-Rapat Pleno 3"; kelEvent = undefined; umatCari = []; sudahAda = []; });
 
 describe("cariGoShow", () => {
-  it("rapat BPK: hanya pengurus BPK yang belum terdaftar, cocok nama, dengan seksinya", async () => {
-    const r = await cariGoShow(T(), "ca");
-    expect(r.sumber).toBe("pengurus");
-    expect(r.hasil).toEqual([{ id: "recUMAT0000000002", nama: "Cantik Pengurus", info: "Litbang" }]);
-    expect((await cariGoShow(T(), "budi")).hasil).toEqual([]); // sudah terdaftar
-    expect((await cariGoShow(T(), "c")).hasil).toEqual([]);    // terlalu pendek
+  it("rapat BPK: sama seperti acara lain, mencari di seluruh umat (bukan hanya pengurus); yang sudah terdaftar tidak muncul", async () => {
+    umatCari = [
+      { id: "recUMAT0000000009", fields: { fldIpQTSkFB9sU0lo: "Dodi Umat", fldOovF470MdN2fMg: ["PD Dua"] } },
+      { id: "recUMAT0000000001", fields: { fldIpQTSkFB9sU0lo: "Budi Terdaftar" } },
+    ];
+    const r = await cariGoShow(T(), "do");
+    expect(r.sumber).toBe("umat");
+    expect(r.hasil).toEqual([{ id: "recUMAT0000000009", nama: "Dodi Umat", info: "PD Dua" }]);
+    expect((await cariGoShow(T(), "d")).hasil).toEqual([]); // terlalu pendek
+  });
+  it("pencarian umat juga mencocokkan nama panggilan", async () => {
+    namaEvent = "261121-Misa Awal Tahun"; umatCari = [];
+    await cariGoShow(T(), "dodi");
+    const f = (await import("@/lib/airtable") as any).listPage.mock.calls.at(-1)[2].formula;
+    expect(f).toContain("fldIpQTSkFB9sU0lo"); expect(f).toContain("fld469PYR80nAUNIF");
   });
   it("acara lain: mencari di seluruh umat (Team Umat), tidak menampilkan yang sudah terdaftar", async () => {
     namaEvent = "261121-Misa Awal Tahun";

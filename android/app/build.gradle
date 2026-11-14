@@ -1,0 +1,31 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'org.karismatikkatolikbandung.epkk'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'org.karismatikkatolikbandung.epkk'
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+    signingConfigs {
+        release {
+            storeFile file(System.getenv('KEYSTORE_FILE') ?: 'release.keystore')
+            storePassword System.getenv('KEYSTORE_PASSWORD') ?: ''
+            keyAlias System.getenv('KEY_ALIAS') ?: 'epkk'
+            keyPassword System.getenv('KEYSTORE_PASSWORD') ?: ''
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.browser:browser:1.8.0'
+}

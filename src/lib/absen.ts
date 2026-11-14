@@ -129,20 +129,23 @@ export async function acaraAbsensi(now = new Date()) {
 
 const UM = { nama: "fldIpQTSkFB9sU0lo", pgl: "fld469PYR80nAUNIF", wa: "fldzY1Z2QvIIEkYXR", email: "fldAaQ3zmiLBhp4z9", pd: "fldrHJ6q3HZvApccl", pdNama: "fldOovF470MdN2fMg", paroki: "fldv0BCQFNy6Dm5pH" };
 
-/** Cari nama untuk go show. Rapat BPK: dari Pengurus BPK; acara lain: dari seluruh Team Umat. Yang sudah terdaftar tidak ditampilkan. */
+/** Cari nama untuk go show di seluruh Team Umat (nama lengkap atau panggilan). Berlaku sama untuk semua acara, termasuk rapat BPK. Yang sudah terdaftar tidak ditampilkan. */
 export async function cariGoShow(token: string, q: string) {
   const m = await muat(token);
   const kata = String(q || "").replace(/\s+/g, " ").trim().toLowerCase();
-  if (kata.length < 2) return { sumber: m.bpk ? "pengurus" : "umat", hasil: [] as { id: string; nama: string; info: string }[] };
-  if (m.bpk) {
-    const hasil = m.orang.filter((o) => !m.umatPend.has(o.umat) && o.nama.toLowerCase().includes(kata))
-      .slice(0, 15).map((o) => ({ id: o.umat, nama: o.nama, info: [...new Set(o.jab.map((j) => j.seksi).filter(Boolean))].join(", ") }));
-    return { sumber: "pengurus", hasil };
+  type H = { id: string; nama: string; info: string };
+  if (kata.length < 2) return { sumber: "umat", hasil: [] as H[] };
+  const hasil: H[] = [];
+  const ada = new Set<string>();
+  const k = esc(kata);
+  const { records } = await listPage(BASE_BPK, T.umat, { fieldIds: [UM.nama, UM.pgl, UM.pdNama, UM.paroki], pageSize: 50, formula: `OR(SEARCH("${k}", LOWER({${UM.nama}})), SEARCH("${k}", LOWER({${UM.pgl}})))` });
+  for (const r of records) {
+    if (hasil.length >= 15) break;
+    if (m.umatPend.has(r.id) || ada.has(r.id) || !one(r.fields[UM.nama])) continue;
+    ada.add(r.id);
+    hasil.push({ id: r.id, nama: one(r.fields[UM.nama]), info: one(m.kep ? r.fields[UM.paroki] : r.fields[UM.pdNama]) });
   }
-  const { records } = await listPage(BASE_BPK, T.umat, { fieldIds: [UM.nama, UM.pgl, UM.pdNama, UM.paroki], pageSize: 20, formula: `SEARCH("${esc(kata)}", LOWER({${UM.nama}}))` });
-  const hasil = records.filter((r) => !m.umatPend.has(r.id) && one(r.fields[UM.nama])).slice(0, 15)
-    .map((r) => ({ id: r.id, nama: one(r.fields[UM.nama]), info: one(m.kep ? r.fields[UM.paroki] : r.fields[UM.pdNama]) }));
-  return { sumber: "umat", hasil };
+  return { sumber: "umat", hasil: hasil.slice(0, 15) };
 }
 
 /** Go show: orang yang datang tanpa daftar. Dipilih dari daftar (umat) atau dibuat baru (Nama, WA, Email), lalu langsung didaftarkan dan ditandai hadir. */

@@ -29,7 +29,10 @@ describe("halaman absensi", () => {
     expect(d.getElementById("lb").textContent).toContain("Budi Lengkap");
     expect(d.getElementById("lh").textContent).toContain("Ani Lengkap");
     expect(d.getElementById("lh").textContent).toContain("Seksi BPK: Sekretariat");
-    expect(d.getElementById("lh").textContent).toContain("PD: PD Satu");
+    expect(d.querySelector("#lh .tx b").textContent).toBe("Ani Lengkap");
+    expect(d.querySelector("#lh .tx .as").textContent).toBe("· PD Satu"); // nama PD/KomPKK tepat setelah nama peserta
+    expect(d.querySelector("#lh .tx b").nextElementSibling!.className).toBe("as");
+    expect(d.getElementById("lh").textContent).not.toContain("PD: PD Satu"); // tidak diulang di baris bawah
     expect(d.getElementById("lb").textContent).toContain("Panggilan: Bud");
     expect(d.querySelector("#lh a.wa").getAttribute("href")).toBe("https://wa.me/628111");
     expect(d.body.textContent).not.toContain("628111");
@@ -84,5 +87,33 @@ describe("go show di halaman absensi", () => {
     await new Promise((r) => setTimeout(r, 20));
     expect(posts.find((p) => p.aksi === "goshow")).toMatchObject({ baru: { nama: "Eko Baru", wa: "0812345678", email: "e@x.com" } });
     expect(d.getElementById("gm").textContent).toContain("sudah ada di data umat");
+  });
+});
+
+describe("kolom cari di halaman absensi", () => {
+  it("menyebut PD/KomPKK dan benar-benar mencocokkan PD", async () => {
+    const res = await GET(new Request("http://t.test/absen/tok"), { params: Promise.resolve({ token: "tok" }) });
+    const dom = new JSDOM(await res.text(), { runScripts: "dangerously", url: "http://t.test/absen/tok", beforeParse(w: any) {
+      w.fetch = async () => ({ ok: true, json: async () => data });
+    } });
+    await new Promise((r) => setTimeout(r, 20));
+    const d = dom.window.document as any;
+    expect(d.getElementById("q").placeholder).toContain("PD/KomPKK");
+    d.getElementById("q").value = "pd dua"; d.getElementById("q").dispatchEvent(new dom.window.Event("input"));
+    expect(d.getElementById("lb").textContent).toContain("Budi Lengkap");
+    expect(d.getElementById("lh").textContent).not.toContain("Ani Lengkap");
+  });
+});
+
+describe("angka ringkasan bisa diklik", () => {
+  it("klik 'sudah hadir' menggulir ke daftar sudah hadir, 'belum hadir' ke daftar belum hadir, 'total' ke awal daftar", async () => {
+    const { w } = await buka(); const d = w.document;
+    const hit: string[] = [];
+    ["hh", "hb"].forEach((id) => { d.getElementById(id).scrollIntoView = () => hit.push(id); });
+    d.getElementById("cnt-h").click();
+    d.getElementById("cnt-b").click();
+    d.getElementById("cnt-t").click();
+    expect(hit).toEqual(["hh", "hb", "hb"]);
+    expect(d.getElementById("cnt-h").getAttribute("role")).toBe("button");
   });
 });
