@@ -6,3 +6,8 @@ node_modules/
 src/ui/dashboard-html.ts
 next-env.d.ts
 *.tsbuildinfo
+
+android/.gradle/
+android/build/
+android/app/build/
+*.keystore

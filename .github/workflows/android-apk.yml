@@ -1,0 +1,35 @@
+name: Bangun APK e-PKK
+on:
+  workflow_dispatch:
+  push:
+    paths: ["android/**", ".github/workflows/android-apk.yml"]
+permissions:
+  contents: write
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17" }
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: "8.9" }
+      # Kunci penandatangan dibuat sekali lalu disimpan di cache agar APK berikutnya bisa menimpa yang lama.
+      - name: Cache kunci
+        id: ks
+        uses: actions/cache@v4
+        with: { path: android/app/release.keystore, key: epkk-keystore-v1 }
+      - name: Buat kunci (jika belum ada)
+        if: steps.ks.outputs.cache-hit != 'true'
+        run: keytool -genkeypair -v -keystore android/app/release.keystore -alias epkk -keyalg RSA -keysize 2048 -validity 10000 -storepass epkk-bpkpkk -keypass epkk-bpkpkk -dname "CN=e-PKK BPKPKK Bandung"
+      - name: Bangun APK
+        working-directory: android
+        env: { KEYSTORE_PASSWORD: epkk-bpkpkk, KEY_ALIAS: epkk }
+        run: gradle assembleRelease --no-daemon
+      - run: cp android/app/build/outputs/apk/release/app-release.apk e-PKK-BPKPKK-Bandung.apk
+      - uses: actions/upload-artifact@v4
+        with: { name: e-PKK-APK, path: e-PKK-BPKPKK-Bandung.apk }
+      - name: Rilis
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: gh release create "apk-${{ github.run_number }}" e-PKK-BPKPKK-Bandung.apk --title "APK e-PKK #${{ github.run_number }}" --notes "Pintasan untuk membuka e-PKK BPKPKK Bandung. Unduh, lalu izinkan pemasangan dari sumber ini di HP."
