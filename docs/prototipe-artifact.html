@@ -973,7 +973,7 @@ function buildRoster(recs, jabMap) {
       if (j.bidang === d.b && j.seksi === d.g) return;
       var k = j.bidang + "\u0001" + j.seksi;
       (by[k] = by[k] || { b: j.bidang, g: j.seksi, jab: [], pr: 9999 }).jab.push(j.nama);
-      by[k].pr = Math.min(by[k].pr, rankOf(ORDER.peran, j.peran));
+      by[k].pr = Math.min(by[k].pr, j.seksi === "Forkom 2" && j.urut < 999 ? 1000 + j.urut : rankOf(ORDER.peran, j.peran));
     });
     Object.keys(by).forEach(function (k) {
       var a = by[k];
